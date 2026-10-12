@@ -47,12 +47,16 @@ export const FOLDER_DATA_SET_METADATA = {
 /** Longest metadata value FWSS accepts. */
 const MAX_METADATA_VALUE = 96
 
-/** A step of a job, reported as progress. */
+/**
+ * A step of a job, reported as progress. `link` is not a step: it reports
+ * the retrieval link as soon as it works, before the commit confirms.
+ */
 export type JobPhase =
   | 'packing'
   | 'hashing'
   | 'placing'
   | 'uploading'
+  | 'link'
   | 'committing'
   | 'removing'
 
@@ -69,7 +73,11 @@ export type JobContext = {
   /** Aborted on SIGINT, SIGTERM, or SIGHUP; stops at the next step. */
   signal?: AbortSignal
   /** Progress for the caller to report on stderr. */
-  progress?: (event: { phase: JobPhase; message: string }) => void
+  progress?: (event: {
+    phase: JobPhase
+    message: string
+    data?: Record<string, unknown>
+  }) => void
   /** Called once the job's operation is saved and locked. */
   onOperation?: (operation: Operation) => void
 }
@@ -430,14 +438,41 @@ async function runPut(ctx: JobContext, op: Operation): Promise<JobResult> {
     op = save(ctx, op, { stored: true })
   }
 
-  const committed = await commit(ctx, op, placement, { pieceCid, name })
+  // Links that work before the commit confirms. The provider hint makes
+  // fil-api redirect to the provider, which serves a parked piece at once.
+  // A folder's browser link needs Curio's IPFS index, which Curio starts
+  // building when it receives the commit, so it is reported after sending.
+  const early = retrievalUrls({
+    apiUrl: ctx.apiUrl,
+    chainId: op.chainId,
+    pieceCid,
+    rootCid: op.checkpoint.rootCid,
+    providerId: placement.providerId.toString(),
+  })
+  const reportLink = () =>
+    ctx.progress?.({
+      phase: 'link',
+      message: early.browser,
+      data: { pieceCid, urls: early },
+    })
+  if (kind === 'file') reportLink()
 
+  const committed = await commit(
+    ctx,
+    op,
+    placement,
+    { pieceCid, name },
+    kind === 'folder' ? reportLink : undefined
+  )
+
+  // Once committed, the indexer ranks the copies; the links need no hint.
   const urls = retrievalUrls({
     apiUrl: ctx.apiUrl,
     chainId: op.chainId,
     pieceCid,
     rootCid: op.checkpoint.rootCid,
   })
+
   const resource: Resource = {
     ref: op.resourceRef,
     kind,
@@ -484,7 +519,8 @@ async function commit(
   ctx: JobContext,
   op: Operation,
   placement: Placement,
-  piece: { pieceCid: string; name: string }
+  piece: { pieceCid: string; name: string },
+  onSent?: () => void
 ): Promise<CommittedPiece> {
   const pieceMetadata: Record<string, string> = {
     name: piece.name.slice(0, MAX_METADATA_VALUE),
@@ -528,6 +564,7 @@ async function commit(
     })
   }
 
+  onSent?.()
   ctx.progress?.({
     phase: 'committing',
     message: 'Waiting for on-chain confirmation',

@@ -171,7 +171,13 @@ A file becomes a resource of kind `file`, and a folder becomes a resource of kin
 - **`urls.piece`** is `<api>/get/<pieceCid>?network=<net>`. fil-api redirects it to `/piece/<pieceCid>` on a provider that stores the piece, which serves the exact stored bytes.
 - **`urls.browser`** is the URL in the table. fil-api redirects a file to the same `/piece` URL, and a browser renders it. It redirects a folder's root CID to inbrowser.link, which fetches and verifies the blocks in the browser.
 
-fil-api finds the provider of a PieceCID in its indexer, so `urls.piece` and a file's `urls.browser` return 404 until the indexer has the piece. A folder's browser URL needs no lookup, so it works at once. `<api>` is `https://fil-api.hugomrdias.dev` unless `FIL_API_URL` sets another origin. `ls` and `inspect` rebuild the URLs from the resource, so they follow `FIL_API_URL`.
+fil-api finds the provider of a PieceCID in its indexer, so `urls.piece` and a file's `urls.browser` return 404 until the indexer has the piece. A folder's browser URL goes to inbrowser.link without a lookup.
+
+Before the commit confirms, `put` reports early links as `link` progress, with `pieceCid` and `urls` in `data`. The early `/piece` links add `provider=<id>`, and fil-api redirects to that provider until its indexer has the piece. Curio serves `/piece/<pieceCid>` for a parked piece, so a file's early link works as soon as the upload finishes. The result's links carry no hint, so once the indexer has the piece, its ranking of the copies applies.
+
+A folder's browser URL carries no hint, because fil-api never looks it up. inbrowser.link finds the blocks through IPNI. Curio sets `needs_indexing` when it receives the add-pieces request, not when the transaction confirms ([`handlers_add.go`](https://github.com/filecoin-project/curio/blob/e00c24bdbb347dcec7ea0bf289d06985f0738023/pdp/handlers_add.go#L432-L470)). Its indexing task runs about every 3 seconds, and its IPNI task about every 30 seconds. A folder's browser URL therefore starts working shortly after the commit is sent, before it confirms, and `put` reports a folder's early link at that point. Curio's `/ipfs` endpoint also answers only after indexing.
+
+`<api>` is `https://fil-api.hugomrdias.dev` unless `FIL_API_URL` sets another origin. `ls` and `inspect` rebuild the URLs from the resource, so they follow `FIL_API_URL`.
 
 ### Phases and checkpoints
 
@@ -197,9 +203,9 @@ The phase is separate from the operation's execution status, which is `pending`,
    - Without `--provider`, the CLI calls `fetchProviderSelectionInput` and then `selectProviders({count: 1})`, which prefers an existing data set with matching metadata.
    - The CLI checks each candidate with `SP.ping`. It excludes a provider that does not answer and runs selection again.
    - `getUploadCosts` then checks the funding. If the account is short, the result is `insufficient_funds` with the fil-app funding link as a `by: "user"` step.
-4. **Upload.** Call `SP.findPiece` first. If the provider does not have the piece yet, call `SP.uploadPieceStreaming` from a file stream. Then call `findPiece({poll: true})` until the provider has parked the piece. Save `stored`.
+4. **Upload.** Call `SP.findPiece` first. If the provider does not have the piece yet, call `SP.uploadPieceStreaming` from a file stream. Then call `findPiece({poll: true})` until the provider has parked the piece. Save `stored`. For a file, report the early links as `link` progress.
 5. **Sign.** Choose a random add-pieces `nonce`. For a new data set, also choose a `clientDataSetId`. Sign the payload with `signAddPieces` or `signCreateDataSetAndAddPieces`, with `payee = provider.payee` and `payer = rootAddress`. Save the signed `extraData` and the nonce before sending the commit.
-6. **Send.** Pass the saved `extraData` to `SP.addPieces` or `SP.createDataSetAndAddPieces`. Curio submits the transaction and pays gas. Save `statusUrl` and `transactionHash`.
+6. **Send.** Pass the saved `extraData` to `SP.addPieces` or `SP.createDataSetAndAddPieces`. Curio submits the transaction and pays gas. Save `statusUrl` and `transactionHash`. For a folder, report the early links as `link` progress.
 7. **Confirm.** Call `waitForCreateDataSetAddPieces` or `waitForAddPieces`, which return `dataSetId` and `pieceId`. In one SQLite transaction, save the resource and mark the operation completed. Then try to delete the staging directory. A failure to delete it does not fail the put.
 
 `fil` sets two synapse-core arguments explicitly:
@@ -306,7 +312,7 @@ Every query filters on `(chainId, payer)`, so one database can hold several netw
 
 clipact writes the results. In machine mode, stdout carries one compact JSON object. Machine mode applies with `--json`, with `FIL_OUTPUT=json`, under a detected agent, or when stdout is not a terminal. In every other case, each command's `human()` formatter writes text.
 
-The JSON object has `data` on success or `error` on failure, then optional `next` steps. The exit code is `0` when the result has `data` and `1` when it has `error`. On-chain IDs and amounts are decimal strings. Progress goes to stderr. A human sees a status line that `fil` rewrites in place. An agent sees a plain line at most every 15 seconds.
+The JSON object has `data` on success or `error` on failure, then optional `next` steps. The exit code is `0` when the result has `data` and `1` when it has `error`. On-chain IDs and amounts are decimal strings. Progress goes to stderr. A human sees a status line that `fil` rewrites in place. An agent sees a plain line for each new phase, and at most one line every 15 seconds within a phase.
 
 Errors are clipact `CliError`s with a stable snake_case `code`, a `retryable` flag, optional `details`, and `next` steps. Each command lists its codes in its definition, and `schema` and help show them. An error from viem or synapse-core that is not a `CliError` goes through the lazily loaded `map-error.ts`. That module maps RPC and HTTP failures to `service_unavailable` or `timeout`. clipact marks those two codes retryable only for read-only and idempotent commands. Any other error becomes `internal_error`.
 
