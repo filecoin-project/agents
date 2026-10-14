@@ -16,18 +16,18 @@ Pick the way in that matches what your agent can do. In every case, a person own
 In Claude Code and Codex, install the fil plugin. It adds the agent skill and the read-only [MCP server](#mcp-server) in one step. In Claude Code:
 
 ```sh
-claude plugin marketplace add hugomrdias/fil
+claude plugin marketplace add filecoin-project/agents
 claude plugin install fil@fil
 ```
 
 In Codex:
 
 ```sh
-codex plugin marketplace add hugomrdias/fil
+codex plugin marketplace add filecoin-project/agents
 codex plugin add fil@fil
 ```
 
-The plugin follows the [Agent Plugins](https://agent-plugins.org) format, so other agents that support it can load it from the repository's [`plugins/fil`](https://github.com/hugomrdias/fil/tree/main/plugins/fil) directory.
+The plugin follows the [Agent Plugins](https://agent-plugins.org) format, so other agents that support it can load it from the repository's [`plugins/fil`](https://github.com/filecoin-project/agents/tree/main/plugins/fil) directory.
 
 In other agents, install the agent skill. It tells the agent when to use `fil`, the workflow, and the rules, and points it to the CLI's own help, which always matches the installed version:
 
@@ -35,7 +35,7 @@ In other agents, install the agent skill. It tells the agent when to use `fil`, 
 npx skills add https://fil-app.hugomrdias.dev
 ```
 
-`npx skills add hugomrdias/fil` installs the same skill from GitHub. Agents that support [agent skills discovery](https://github.com/cloudflare/agent-skills-discovery-rfc) find it at [`/.well-known/agent-skills/index.json`](/.well-known/agent-skills/index.json).
+`npx skills add filecoin-project/agents` installs the same skill from GitHub. Agents that support [agent skills discovery](https://github.com/cloudflare/agent-skills-discovery-rfc) find it at [`/.well-known/agent-skills/index.json`](/.well-known/agent-skills/index.json).
 
 The agent runs the CLI with `npx -y @hugomrdias/fil`, which needs Node.js 24 or newer. To install it instead, run `npm install -g @hugomrdias/fil`. Then `fil skills install` installs the copy of the skill that matches the installed CLI.
 

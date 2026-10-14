@@ -12,7 +12,7 @@ The plugin follows the [Agent Plugins](https://agent-plugins.org/specification) 
 | [`assets/logo.png`](assets/logo.png) | The Filecoin logo, rendered from fil-app's favicon | Codex and Anthropic's plugin directory |
 | [`skills/`](skills) | The agent skills. This is their only source: the fil-cli build copies them for `fil skills install`, and fil-app publishes them under `/.well-known/agent-skills/`. | Every client |
 
-The repository root is the marketplace for both clients. [`.claude-plugin/marketplace.json`](../../.claude-plugin/marketplace.json) lists the plugin for Claude Code. `npx skills add hugomrdias/fil` finds the skills through the entry's `skills` list, so a new skill must be added there too; `pnpm check:plugin` fails until it is. [`.agents/plugins/marketplace.json`](../../.agents/plugins/marketplace.json) lists it for Codex.
+The repository root is the marketplace for both clients. [`.claude-plugin/marketplace.json`](../../.claude-plugin/marketplace.json) lists the plugin for Claude Code. `npx skills add filecoin-project/agents` finds the skills through the entry's `skills` list, so a new skill must be added there too; `pnpm check:plugin` fails until it is. [`.agents/plugins/marketplace.json`](../../.agents/plugins/marketplace.json) lists it for Codex.
 
 ## Install
 
@@ -21,14 +21,14 @@ Each client adds this repository as a marketplace from GitHub, then installs the
 In Claude Code:
 
 ```sh
-claude plugin marketplace add hugomrdias/fil
+claude plugin marketplace add filecoin-project/agents
 claude plugin install fil@fil
 ```
 
 In Codex:
 
 ```sh
-codex plugin marketplace add hugomrdias/fil
+codex plugin marketplace add filecoin-project/agents
 codex plugin add fil@fil
 ```
 

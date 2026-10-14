@@ -18,4 +18,4 @@ The agent never holds the wallet key. It gets a session key, which the wallet ow
 
 - [Quickstart](/docs/quickstart): install the CLI, log in, and store a file.
 - [Agents](/agents): add `fil` to Claude, ChatGPT, or another agent.
-- [Source code](https://github.com/hugomrdias/fil) on GitHub.
+- [Source code](https://github.com/filecoin-project/agents) on GitHub.

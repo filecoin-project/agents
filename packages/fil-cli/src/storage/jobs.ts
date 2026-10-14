@@ -513,7 +513,7 @@ async function runPut(ctx: JobContext, op: Operation): Promise<JobResult> {
  * the same signature is sent again, and FWSS rejects any second use of its
  * nonce, so at most one commit takes effect.
  *
- * @see https://github.com/hugomrdias/fil/issues/1
+ * @see https://github.com/filecoin-project/agents/issues/1
  */
 async function commit(
   ctx: JobContext,

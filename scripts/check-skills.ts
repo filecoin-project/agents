@@ -2,7 +2,7 @@
  * Checks the agent skills the repository publishes from the fil plugin's
  * `plugins/fil/skills/` directory. The plugin installs them, the fil-cli
  * build copies them, fil-app's build publishes them with
- * `@hugomrdias/vite-plugin-agent-skills`, and `npx skills add hugomrdias/fil`
+ * `@hugomrdias/vite-plugin-agent-skills`, and `npx skills add filecoin-project/agents`
  * finds them on GitHub through `.claude-plugin/marketplace.json`.
  *
  * - Every skill must pass the Vite plugin's validation, which fil-app's build

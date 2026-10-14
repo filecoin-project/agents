@@ -241,15 +241,15 @@ A failure marks the operation `failed` and becomes an error with a `fil operatio
 
 `fil operations resume <id>` applies these rules:
 
-- **The commit was signed.** When the checkpoint has a saved `commit`, the resume first reads `clientNonces(payer, nonce)` from the FWSS view contract. FWSS stores `((firstAdded + count) << 128) | dataSetId` for every used add-pieces nonce, including the add half of create-and-add. A non-zero value means the commit landed and gives both IDs, so the operation completes without sending anything. A zero value means the commit did not land. The resume then sends the same `extraData` again, or waits on its `statusUrl` if one was saved. FWSS rejects a second use of a nonce, so at most one commit takes effect, even if the first one lands late ([#1](https://github.com/hugomrdias/fil/issues/1)).
+- **The commit was signed.** When the checkpoint has a saved `commit`, the resume first reads `clientNonces(payer, nonce)` from the FWSS view contract. FWSS stores `((firstAdded + count) << 128) | dataSetId` for every used add-pieces nonce, including the add half of create-and-add. A non-zero value means the commit landed and gives both IDs, so the operation completes without sending anything. A zero value means the commit did not land. The resume then sends the same `extraData` again, or waits on its `statusUrl` if one was saved. FWSS rejects a second use of a nonce, so at most one commit takes effect, even if the first one lands late ([#1](https://github.com/filecoin-project/agents/issues/1)).
 - **The provider rejected the commit.** When the provider reports a failed transaction, `fil` clears the saved `statusUrl`. The next resume checks the nonce and sends the same signature again.
 - **The piece is already uploaded.** When `stored` is set, or the provider already has the piece, the resume skips the upload and goes to the commit.
 - **The source changed.** The resume recomputes the PieceCID from the source file, or from the staged CAR for a folder. A mismatch fails with `source_changed`, so `fil` never stores different bytes.
 - **The staged CAR is missing.** If the CAR is gone after the operation saved its PieceCID, the resume fails with `staging_missing`.
 
-The lock is a compare-and-swap `UPDATE` on `(execution_status, pid)`. If an operation is `running` but its process is gone, because `process.kill(pid, 0)` fails, another process can take it over. If a live process holds the lock, the result is `operation_running`. The process also tracks its own locks in memory, so `fil` refuses a second call for the same operation in the same process. `fil` also takes over a `running` row whose PID the system has since reused ([#3](https://github.com/hugomrdias/fil/issues/3)).
+The lock is a compare-and-swap `UPDATE` on `(execution_status, pid)`. If an operation is `running` but its process is gone, because `process.kill(pid, 0)` fails, another process can take it over. If a live process holds the lock, the result is `operation_running`. The process also tracks its own locks in memory, so `fil` refuses a second call for the same operation in the same process. `fil` also takes over a `running` row whose PID the system has since reused ([#3](https://github.com/filecoin-project/agents/issues/3)).
 
-`fil` saves the completed operation in the same transaction as the resource. A stop after the commit therefore leaves a completed operation, never one that looks unfinished but cannot resume ([#4](https://github.com/hugomrdias/fil/issues/4)).
+`fil` saves the completed operation in the same transaction as the resource. A stop after the commit therefore leaves a completed operation, never one that looks unfinished but cannot resume ([#4](https://github.com/filecoin-project/agents/issues/4)).
 
 ### Dry run
 
@@ -264,7 +264,7 @@ The lock is a compare-and-swap `UPDATE` on `(execution_status, pid)`. If an oper
 
 clipact aborts `ctx.signal` on the first SIGINT, SIGTERM, or SIGHUP. Handlers pass the signal to `createApp`, which binds it to the RPC transport. After the abort, every chain read through synapse-core or viem rejects at once, and no new request starts. A request already in flight keeps running, because passing the signal to viem's HTTP transport would replace the transport's own timeout.
 
-`storage/synapse.ts` passes `app.signal` to every provider call: ping, upload, piece polling, commit submission, the wait for a commit, and removal. The abort cancels the HTTP request in flight. synapse-core checks the signal before it sends a commit or a removal, so neither starts after an abort. A resume then looks up the commit by its nonce before it sends the saved signature again. viem's receipt wait for a removal takes no signal, so `storage/synapse.ts` races it against the signal with `abortable()`, and the handler returns without waiting. [#67](https://github.com/hugomrdias/fil/issues/67) tracks the viem support that would remove both workarounds.
+`storage/synapse.ts` passes `app.signal` to every provider call: ping, upload, piece polling, commit submission, the wait for a commit, and removal. The abort cancels the HTTP request in flight. synapse-core checks the signal before it sends a commit or a removal, so neither starts after an abort. A resume then looks up the commit by its nonce before it sends the saved signature again. viem's receipt wait for a removal takes no signal, so `storage/synapse.ts` races it against the signal with `abortable()`, and the handler returns without waiting. [#12](https://github.com/filecoin-project/agents/issues/12) tracks the viem support that would remove both workarounds.
 
 `runOperation` marks the operation `failed` with the error `Interrupted`. clipact then writes an `interrupted` result with the resume step from the latest checkpoint and re-raises the signal, so the shell sees `130`, `143`, or `129`.
 
@@ -289,7 +289,7 @@ Extraction checks the bytes of every block against its CID, as `ipfs-car unpack 
 3. Wait for the receipt and check its status.
 4. In one transaction, mark the resource `removal_pending` and complete the operation.
 
-If the transaction reverts, the resource stays `active` and the delete fails with `removal_reverted`. `fil` clears the saved hash, so a resume signs a new removal ([#2](https://github.com/hugomrdias/fil/issues/2)).
+If the transaction reverts, the resource stays `active` and the delete fails with `removal_reverted`. `fil` clears the saved hash, so a resume signs a new removal ([#2](https://github.com/filecoin-project/agents/issues/2)).
 
 The provider removes the piece later, at a proving boundary. `ls` hides resources that are pending removal unless you pass `--all`.
 
