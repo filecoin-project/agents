@@ -38,7 +38,7 @@ pnpm --filter filecoin-app dev
 
 The dev server runs the app in workerd through the [Cloudflare Vite plugin](https://developers.cloudflare.com/workers/vite-plugin/), as in production.
 
-The app calls `https://api.filecoin.cloud` by default. Set `VITE_FILECOIN_API_URL` to point it elsewhere, for example a local `wrangler dev` of filecoin-api (see `.env.example`). `VITE_SITE_URL` sets the site origin used in canonical and Open Graph URLs, and defaults to `https://poc.filecoin.cloud`.
+The app calls `https://api.filecoin.cloud` by default. Set `VITE_FILECOIN_API_URL` to point it elsewhere, for example a local `wrangler dev` of filecoin-api (see `.env.example`). `VITE_FILECOIN_MCP_URL` sets the MCP server URL that the site advertises, and defaults to `https://mcp.filecoin.cloud`, or to the API URL plus `/mcp` when only `VITE_FILECOIN_API_URL` is set. `VITE_SITE_URL` sets the site origin used in canonical and Open Graph URLs, and defaults to `https://poc.filecoin.cloud`.
 
 Scripts:
 - `pnpm gen:api`: regenerates `src/lib/api/schema.d.ts` from filecoin-api's `/openapi.json`. Set `FILECOIN_API_URL` to generate from another deployment. It runs `openapi-typescript` through `pnpm dlx` with TypeScript 5, because `openapi-typescript` does not support the repo's TypeScript 7.

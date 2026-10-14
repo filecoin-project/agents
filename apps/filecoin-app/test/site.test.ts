@@ -268,17 +268,24 @@ describe('content links', () => {
 
 describe('discovery documents', () => {
   it('builds an RFC 9727 linkset for filecoin-api', () => {
-    const [entry] = apiCatalog('https://api.example').linkset
+    const [entry] = apiCatalog(
+      'https://api.example',
+      'https://mcp.example'
+    ).linkset
     assert.equal(entry?.anchor, 'https://api.example/')
     assert.equal(
       entry?.['service-desc'][0]?.href,
       'https://api.example/openapi.json'
     )
-    assert.deepEqual(entry?.item, [{ href: 'https://api.example/mcp' }])
+    assert.deepEqual(entry?.item, [{ href: 'https://mcp.example' }])
   })
 
   it('declares the REST API, MCP server, and CLI for integrations.sh', () => {
-    const doc = integrationsJson('https://api.example', 'https://site.example')
+    const doc = integrationsJson(
+      'https://api.example',
+      'https://mcp.example',
+      'https://site.example'
+    )
     assert.equal(doc.version, 3)
     assert.deepEqual(
       doc.surfaces.map((surface) => [surface.type, surface.auth.status]),
@@ -296,18 +303,18 @@ describe('discovery documents', () => {
     }
     const [api, mcp, cli] = doc.surfaces
     assert.equal(api?.spec, 'https://api.example/openapi.json')
-    assert.equal(mcp?.url, 'https://api.example/mcp')
+    assert.equal(mcp?.url, 'https://mcp.example')
     assert.equal(cli?.packages?.[0]?.identifier, 'filecoin')
     const used = cli?.auth.entries?.[0]?.use[0]?.id
     assert.ok(used !== undefined && used in doc.credentials)
   })
 
   it('builds a server card with one Streamable HTTP remote', () => {
-    const card = mcpServerCard('https://api.example', 'https://site.example')
+    const card = mcpServerCard('https://mcp.example', 'https://site.example')
     assert.equal(card.name.split('/').length, 2)
     assert.deepEqual(
       card.remotes.map((remote) => [remote.type, remote.url]),
-      [['streamable-http', 'https://api.example/mcp']]
+      [['streamable-http', 'https://mcp.example']]
     )
   })
 

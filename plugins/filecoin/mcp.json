@@ -3,7 +3,7 @@
   "mcpServers": {
     "filecoin-api": {
       "type": "streamable-http",
-      "url": "https://api.filecoin.cloud/mcp"
+      "url": "https://mcp.filecoin.cloud"
     }
   }
 }

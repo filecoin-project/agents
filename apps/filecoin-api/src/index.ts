@@ -1,4 +1,5 @@
 import { createApp } from './app.ts'
+import { withMcpHosts } from './mcp-host.ts'
 
 /** Worker entrypoint. */
-export default createApp()
+export default withMcpHosts(createApp())

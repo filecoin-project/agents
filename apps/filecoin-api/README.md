@@ -16,6 +16,8 @@ Built with [Hono](https://hono.dev), [`@hono/zod-openapi`](https://github.com/ho
 
 Every data route is namespaced by network: `/calibration/...` or `/mainnet/...`.
 
+`https://mcp.filecoin.cloud` serves only the MCP server, at `POST /`. [`src/mcp-host.ts`](src/mcp-host.ts) rewrites `/` to `/mcp` for the hostnames in the `MCP_HOSTS` variable, so the MCP host shares the `/mcp` handler, rate limit and CORS, and returns `404` for every other path. `https://api.filecoin.cloud/mcp` keeps working. See [MCP domains](../../docs/filecoin/mcp-domains.md).
+
 | Route | Filters |
 | --- | --- |
 | `/{network}/status` | none |
@@ -87,7 +89,7 @@ Scripts:
 
 | Trigger | Result |
 | --- | --- |
-| Push to `main` | Runs typecheck, tests and lint, then `wrangler deploy` to https://api.filecoin.cloud and probes `/health` |
+| Push to `main` | Runs typecheck, tests and lint, then `wrangler deploy` to https://api.filecoin.cloud and https://mcp.filecoin.cloud, probes `/health`, and sends an MCP `initialize` to the MCP host |
 | Pull request opened or updated | `wrangler preview --name pr-<number>` creates a [Worker Preview](https://developers.cloudflare.com/workers/previews/) on `workers.dev`, probes `/health` and comments its URL on the PR |
 | Pull request closed | `wrangler preview delete` removes the preview |
 
