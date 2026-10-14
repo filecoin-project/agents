@@ -4,7 +4,11 @@
   "tasks": {
     "build": {
       "env": ["VITE_*"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/plugins/filecoin/skills/**"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env*",
+        "$TURBO_ROOT$/plugins/filecoin/skills/**"
+      ],
       "outputs": ["dist/**"]
     },
     "deploy": {
