@@ -131,7 +131,7 @@ Ctrl+C, SIGTERM, or SIGHUP stops the work at the next step. `filecoin` returns a
 | `FILECOIN_STATE_DIR` | SQLite state and staged CARs. Default: the platform data directory for `filecoin` |
 | `FILECOIN_RPC_URL` | RPC endpoint. Default: synapse-core's fallback transport for the chain |
 | `FILECOIN_CONSOLE_URL` | filecoin-app origin for approval and funding links, such as `http://localhost:5173` for a local app. Default: `https://poc.filecoin.cloud` |
-| `FILECOIN_API_URL` | filecoin-api origin for retrieval links, such as `http://localhost:8787` for a local API. Default: `https://api.filecoin.cloud` |
+| `FILECOIN_API_URL` | filecoin-api origin for retrieval links, such as `http://localhost:8787` for a local API. Default: `https://api.filecoin.io` |
 | `FILECOIN_OUTPUT`, `FILECOIN_AGENT` | Override clipact's output mode and agent detection |
 
 The prototype saves the session private key in the config file with mode 0600, so only its owner can read it. `filecoin logout` deletes the local key. The key stays authorized on chain until it expires or you revoke it on the filecoin-app session keys page.

@@ -21,7 +21,7 @@
   "mcpServers": {
     "filecoin-api": {
       "type": "http",
-      "url": "https://mcp.filecoin.cloud"
+      "url": "https://mcp.filecoin.io"
     }
   }
 }

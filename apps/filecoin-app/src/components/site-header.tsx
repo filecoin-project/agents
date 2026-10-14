@@ -172,7 +172,7 @@ export function SiteFooter() {
         <div className="flex gap-5">
           <a
             className="transition-colors hover:text-foreground"
-            href="https://api.filecoin.cloud/docs"
+            href="https://api.filecoin.io/docs"
             rel="noreferrer"
             target="_blank"
           >
