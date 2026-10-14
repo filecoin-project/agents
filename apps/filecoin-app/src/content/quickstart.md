@@ -37,7 +37,7 @@ Teaches any agent with a shell when and how to run `filecoin`.
 ### Connect the MCP server
 
 ```sh
-npx -y add-mcp https://mcp.filecoin.cloud -g
+npx -y add-mcp https://mcp.filecoin.io -g
 ```
 
 Read-only tools for providers, data sets, and pieces. It cannot store files.

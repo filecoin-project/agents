@@ -177,7 +177,7 @@ Before the commit confirms, `put` reports early links as `link` progress, with `
 
 A folder's browser URL carries no hint, because filecoin-api never looks it up. inbrowser.link finds the blocks through IPNI. Curio sets `needs_indexing` when it receives the add-pieces request, not when the transaction confirms ([`handlers_add.go`](https://github.com/filecoin-project/curio/blob/e00c24bdbb347dcec7ea0bf289d06985f0738023/pdp/handlers_add.go#L432-L470)). Its indexing task runs about every 3 seconds, and its IPNI task about every 30 seconds. A folder's browser URL therefore starts working shortly after the commit is sent, before it confirms, and `put` reports a folder's early link at that point. Curio's `/ipfs` endpoint also answers only after indexing.
 
-`<api>` is `https://api.filecoin.cloud` unless `FILECOIN_API_URL` sets another origin. `ls` and `inspect` rebuild the URLs from the resource, so they follow `FILECOIN_API_URL`.
+`<api>` is `https://api.filecoin.io` unless `FILECOIN_API_URL` sets another origin. `ls` and `inspect` rebuild the URLs from the resource, so they follow `FILECOIN_API_URL`.
 
 ### Phases and checkpoints
 

@@ -7,7 +7,7 @@ This is a prototype. It runs on the calibration test network unless you choose m
 ## Ways to use it
 
 - **CLI.** `filecoin put ./site` stores a folder and returns a browser link. `filecoin get` downloads and verifies it. See the [CLI docs](/docs/cli).
-- **MCP server.** `https://mcp.filecoin.cloud` gives agents read-only tools for providers, data sets, pieces, payment rails, and session keys. See [API and MCP](/docs/api).
+- **MCP server.** `https://mcp.filecoin.io` gives agents read-only tools for providers, data sets, pieces, payment rails, and session keys. See [API and MCP](/docs/api).
 - **Web app.** [filecoin-app](https://poc.filecoin.cloud) is an explorer for that data and a wallet dashboard for funding storage and approving keys. See [Web app](/docs/app).
 
 ## How an agent gets access

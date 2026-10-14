@@ -91,7 +91,7 @@ Each error has a stable `code`, and `filecoin schema <command>` lists the codes 
 | `FILECOIN_STATE_DIR` | Local state and staged folders. Default: the platform data directory for `filecoin` |
 | `FILECOIN_RPC_URL` | RPC endpoint |
 | `FILECOIN_CONSOLE_URL` | filecoin-app origin for approval and funding links. Default: `https://poc.filecoin.cloud` |
-| `FILECOIN_API_URL` | filecoin-api origin for retrieval links. Default: `https://api.filecoin.cloud` |
+| `FILECOIN_API_URL` | filecoin-api origin for retrieval links. Default: `https://api.filecoin.io` |
 | `FILECOIN_OUTPUT`, `FILECOIN_AGENT` | Override the output mode and agent detection |
 
 The prototype saves the session key in the config file, readable only by its owner. `filecoin logout` deletes the local key. The key stays authorized on chain until it expires or you revoke it on the filecoin-app [session keys page](https://poc.filecoin.cloud/dashboard/session-keys).

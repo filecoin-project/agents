@@ -16,7 +16,7 @@ Built with [Hono](https://hono.dev), [`@hono/zod-openapi`](https://github.com/ho
 
 Every data route is namespaced by network: `/calibration/...` or `/mainnet/...`.
 
-`https://mcp.filecoin.cloud` serves only the MCP server, at `POST /`. [`src/mcp-host.ts`](src/mcp-host.ts) rewrites `/` to `/mcp` for the hostnames in the `MCP_HOSTS` variable, so the MCP host shares the `/mcp` handler, rate limit and CORS, and returns `404` for every other path. `https://api.filecoin.cloud/mcp` keeps working. See [MCP domains](../../docs/filecoin/mcp-domains.md).
+`https://mcp.filecoin.io` and `https://mcp.filecoin.cloud` serve only the MCP server, at `POST /`. [`src/mcp-host.ts`](src/mcp-host.ts) rewrites `/` to `/mcp` for the hostnames in the `MCP_HOSTS` variable, so the MCP host shares the `/mcp` handler, rate limit and CORS, and returns `404` for every other path. `/mcp` keeps working on the API hosts. See [API and MCP domains](../../docs/filecoin/mcp-domains.md).
 
 | Route | Filters |
 | --- | --- |
@@ -89,7 +89,7 @@ Scripts:
 
 | Trigger | Result |
 | --- | --- |
-| Push to `main` | Runs typecheck, tests and lint, then `wrangler deploy` to https://api.filecoin.cloud and https://mcp.filecoin.cloud, probes `/health`, and sends an MCP `initialize` to the MCP host |
+| Push to `main` | Runs typecheck, tests and lint, then `wrangler deploy` to https://api.filecoin.io and https://mcp.filecoin.io, and to their `filecoin.cloud` twins. Probes `/health` on https://api.filecoin.io, and sends an MCP `initialize` to https://mcp.filecoin.io |
 | Pull request opened or updated | `wrangler preview --name pr-<number>` creates a [Worker Preview](https://developers.cloudflare.com/workers/previews/) on `workers.dev`, probes `/health` and comments its URL on the PR |
 | Pull request closed | `wrangler preview delete` removes the preview |
 
@@ -111,6 +111,7 @@ Both Workers deploy to the FilOz Cloudflare account, which `account_id` in `wran
    wrangler hyperdrive create fil-api-calibration --connection-string="postgresql://user:password@host:5432/indexers" --max-age 5 --swr 0 --origin-connection-limit 60
    ```
    Hyperdrive caches read queries for 60 seconds by default and never invalidates them, which would make the indexer status, and every read after a write, up to 75 seconds stale. Both configs cache for 5 seconds with no stale-while-revalidate. To change an existing config, run `wrangler hyperdrive update <id> --caching-disabled=false --max-age 5 --swr 0`.
+4. Connect `api.filecoin.io` and `mcp.filecoin.io`, whose DNS is on DNSimple, as Cloudflare for SaaS custom hostnames on the `filecoin.cloud` zone. These are one-time dashboard steps, described in [API and MCP domains](../../docs/filecoin/mcp-domains.md#a-domain-on-another-dns-provider). The deploy token can create the Worker routes but not the custom hostnames.
 
 To deploy manually, run `pnpm --filter filecoin-api deploy`.
 

@@ -6,11 +6,16 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-08-15",
   "compatibility_flags": ["nodejs_compat"],
-  // Production is served from the custom domains only; Previews use workers.dev.
+  // Production is served from these hostnames only; Previews use workers.dev.
   // The MCP hosts serve only the MCP endpoint, at `/` (see src/mcp-host.ts).
+  // filecoin.io's DNS is on DNSimple, so its hostnames are Cloudflare for SaaS
+  // custom hostnames on the filecoin.cloud zone, reached by Worker routes.
+  // https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/start/advanced-settings/worker-as-origin/
   "routes": [
     { "pattern": "api.filecoin.cloud", "custom_domain": true },
-    { "pattern": "mcp.filecoin.cloud", "custom_domain": true }
+    { "pattern": "mcp.filecoin.cloud", "custom_domain": true },
+    { "pattern": "api.filecoin.io/*", "zone_name": "filecoin.cloud" },
+    { "pattern": "mcp.filecoin.io/*", "zone_name": "filecoin.cloud" }
   ],
   "workers_dev": false,
   "preview_urls": true,
@@ -38,7 +43,7 @@
     }
   ],
   // Comma-separated hostnames that serve only the MCP endpoint.
-  "vars": { "MCP_HOSTS": "mcp.filecoin.cloud" },
+  "vars": { "MCP_HOSTS": "mcp.filecoin.io,mcp.filecoin.cloud" },
   "ratelimits": [
     {
       "name": "RATE_LIMIT_API",

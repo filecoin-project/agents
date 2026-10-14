@@ -11,7 +11,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test 'test/**/*.test.ts'",
     "lint": "biome check .",
-    "gen:api": "pnpm dlx --package openapi-typescript@7.13.0 --package typescript@5.9.3 openapi-typescript ${FILECOIN_API_URL:-https://api.filecoin.cloud}/openapi.json -o src/lib/api/schema.d.ts",
+    "gen:api": "pnpm dlx --package openapi-typescript@7.13.0 --package typescript@5.9.3 openapi-typescript ${FILECOIN_API_URL:-https://api.filecoin.io}/openapi.json -o src/lib/api/schema.d.ts",
     "deploy": "wrangler deploy",
     "cf-preview": "wrangler preview",
     "check": "pnpm typecheck && pnpm test && pnpm lint"

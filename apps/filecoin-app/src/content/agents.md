@@ -65,13 +65,13 @@ A browser agent cannot run the CLI. You can store files from the dashboard's upl
 filecoin-api's MCP server gives any agent read-only tools for storage providers, data sets, pieces, Filecoin Pay rails, and session keys, on mainnet and calibration. It uses Streamable HTTP and needs no authentication. It cannot store or delete content.
 
 ```text
-https://mcp.filecoin.cloud
+https://mcp.filecoin.io
 ```
 
 The [filecoin plugin](#local-agents) adds it in Claude Code and Codex. To add the server alone, [add-mcp](https://github.com/neon-solutions/add-mcp) writes it into the configuration of Claude Code, Codex, Cursor, VS Code, and about 20 other agents:
 
 ```sh
-npx -y add-mcp https://mcp.filecoin.cloud
+npx -y add-mcp https://mcp.filecoin.io
 ```
 
 It asks which agents to configure, and adds the server to the current project. Add `-g` to add it for your user instead.
@@ -79,8 +79,8 @@ It asks which agents to configure, and adds the server to the current project. A
 Claude Code and Codex also add it with their own commands:
 
 ```sh
-claude mcp add --transport http filecoin-api https://mcp.filecoin.cloud
-codex mcp add filecoin-api --url https://mcp.filecoin.cloud
+claude mcp add --transport http filecoin-api https://mcp.filecoin.io
+codex mcp add filecoin-api --url https://mcp.filecoin.io
 ```
 
 In the Claude and ChatGPT apps, add the URL as a custom connector. [API and MCP](/docs/api#mcp-server) lists the tools.
