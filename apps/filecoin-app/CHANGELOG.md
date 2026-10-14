@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.5.0](https://github.com/filecoin-project/agents/compare/filecoin-app-v0.4.0...filecoin-app-v0.5.0) (2026-10-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* the npm package is `filecoin` and the command is `filecoin`. Environment variables are `FILECOIN_*` instead of `FIL_*`, the config and state folders are named `filecoin`, so existing users log in again. New data sets carry `source: 'filecoin'` and session keys the `filecoin` origin, so data sets tagged `fil` are no longer reused. The plugin installs as `filecoin@filecoin`, and trace attributes use the `filecoin.` prefix.
+
+### Bug Fixes
+
+* **filecoin-app:** rebuild when .env changes ([#17](https://github.com/filecoin-project/agents/issues/17)) ([35999f2](https://github.com/filecoin-project/agents/commit/35999f2d078bf3cf2e28fa9af252f2c479cf8feb))
+
+
+### Miscellaneous Chores
+
+* rename fil to filecoin ([#15](https://github.com/filecoin-project/agents/issues/15)) ([29b1720](https://github.com/filecoin-project/agents/commit/29b1720acba53a49ec493398b22884a30511ce30))
+
 ## [0.4.0](https://github.com/hugomrdias/fil/compare/fil-app-v0.3.0...fil-app-v0.4.0) (2026-10-12)
 
 
