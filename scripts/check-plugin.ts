@@ -1,5 +1,5 @@
 /**
- * Checks the fil agent plugin in `plugins/fil` and the two marketplaces that
+ * Checks the filecoin agent plugin in `plugins/filecoin` and the two marketplaces that
  * list it. The plugin carries a portable Agent Plugins manifest and a Claude
  * Code manifest, which must describe the same plugin.
  *
@@ -16,7 +16,7 @@
  *   paths; Claude Code scans `skills/` either way and loads each skill once.
  *
  * `claude plugin validate` checks Claude Code's own rules; CI does not have
- * Claude Code, so run it by hand as `plugins/fil/README.md` describes.
+ * Claude Code, so run it by hand as `plugins/filecoin/README.md` describes.
  *
  * @see https://agent-plugins.org/specification
  * @see https://code.claude.com/docs/en/plugins-reference
@@ -29,7 +29,7 @@ import { isDeepStrictEqual } from 'node:util'
 type Json = Record<string, unknown>
 
 /** The plugin root, relative to the repository root. */
-const ROOT = 'plugins/fil'
+const ROOT = 'plugins/filecoin'
 
 /** Base of the Agent Plugins 1.0.0 schema identifiers. */
 const SCHEMAS = 'https://agent-plugins.org/schemas/1.0.0'
@@ -61,7 +61,7 @@ const SHARED_FIELDS = [
 ]
 
 /**
- * Claude Code's name for each remote Agent Plugins transport. fil's MCP
+ * Claude Code's name for each remote Agent Plugins transport. The plugin's MCP
  * server is remote; a stdio server would also need `${PLUGIN_ROOT}` mapped to
  * `${CLAUDE_PLUGIN_ROOT}`.
  */

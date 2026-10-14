@@ -21,11 +21,11 @@
     { "type": "ci", "section": "Continuous Integration", "hidden": true }
   ],
   "packages": {
-    "packages/fil-cli": { "component": "fil-cli" },
-    "apps/fil-api": { "component": "fil-api" },
-    "apps/fil-app": { "component": "fil-app" },
-    "plugins/fil": {
-      "component": "fil-plugin",
+    "packages/filecoin-cli": { "component": "filecoin-cli" },
+    "apps/filecoin-api": { "component": "filecoin-api" },
+    "apps/filecoin-app": { "component": "filecoin-app" },
+    "plugins/filecoin": {
+      "component": "filecoin-plugin",
       "release-type": "simple",
       "extra-files": [
         { "type": "json", "path": "plugin.json", "jsonpath": "$.version" },

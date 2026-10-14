@@ -1,6 +1,6 @@
 {
-  "packages/fil-cli": "0.4.0",
-  "apps/fil-api": "0.2.0",
-  "apps/fil-app": "0.4.0",
-  "plugins/fil": "0.1.1"
+  "packages/filecoin-cli": "0.4.0",
+  "apps/filecoin-api": "0.2.0",
+  "apps/filecoin-app": "0.4.0",
+  "plugins/filecoin": "0.1.1"
 }
