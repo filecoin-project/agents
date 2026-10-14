@@ -38,7 +38,7 @@ pnpm --filter filecoin-app dev
 
 The dev server runs the app in workerd through the [Cloudflare Vite plugin](https://developers.cloudflare.com/workers/vite-plugin/), as in production.
 
-The app calls `https://fil-api.hugomrdias.dev` by default. Set `VITE_FILECOIN_API_URL` to point it elsewhere, for example a local `wrangler dev` of filecoin-api (see `.env.example`). `VITE_SITE_URL` sets the site origin used in canonical and Open Graph URLs, and defaults to `https://fil-app.hugomrdias.dev`.
+The app calls `https://api.filecoin.cloud` by default. Set `VITE_FILECOIN_API_URL` to point it elsewhere, for example a local `wrangler dev` of filecoin-api (see `.env.example`). `VITE_SITE_URL` sets the site origin used in canonical and Open Graph URLs, and defaults to `https://poc.filecoin.cloud`.
 
 Scripts:
 - `pnpm gen:api`: regenerates `src/lib/api/schema.d.ts` from filecoin-api's `/openapi.json`. Set `FILECOIN_API_URL` to generate from another deployment. It runs `openapi-typescript` through `pnpm dlx` with TypeScript 5, because `openapi-typescript` does not support the repo's TypeScript 7.
@@ -121,13 +121,13 @@ The app registers [WebMCP](https://webmachinelearning.github.io/webmcp/) tools, 
 
 The read-only tools default to the connected wallet and to the network in the page URL, else the wallet's network. Their input schemas come from the zod schemas in `src/lib/read-tools.ts`, which also parse each call. Bad input and failed reads return `{ ok: false, errors }` instead of throwing. Lists take `limit` (up to 100) and the previous page's `nextCursor`.
 
-WebMCP is an early preview. Production turns it on for Chrome 149 and later through the [WebMCP origin trial](https://developer.chrome.com/origintrials/#/register_trial/4163014905550602241): `src/start.ts` sends the `Origin-Trial` token for `https://fil-app.hugomrdias.dev`, which expires on 2027-03-30. Renew the token before then, or remove the header when the trial ends. The token does not cover other origins, such as PR previews and local dev, so use `chrome://flags/#enable-webmcp-testing` there. Other browsers skip the tools, and the page works the same.
+WebMCP is an early preview. Production turns it on for Chrome 149 and later through the [WebMCP origin trial](https://developer.chrome.com/origintrials/#/register_trial/4163014905550602241): `src/start.ts` sends the `Origin-Trial` token for `https://filecoin.cloud` and its subdomains, which expires on 2027-03-30. Renew the token before then, or remove the header when the trial ends. The token does not cover other origins, such as PR previews and local dev, so use `chrome://flags/#enable-webmcp-testing` there. Other browsers skip the tools, and the page works the same.
 
 The ChatGPT desktop app's built-in browser calls WebMCP tools "site tools", and the ChatGPT Chrome extension also finds them. That runtime does not check input against `inputSchema` and passes no `options` to `execute`, so each tool validates its own input. See the [Codex site tools compatibility notes](https://docs.mcp-b.ai/reference/webmcp/codex-site-tools).
 
 ## Deploy
 
-The app deploys as a Worker (`wrangler.jsonc`) at https://fil-app.hugomrdias.dev. The Worker renders pages, and Cloudflare serves the client build from `dist/client` as static assets. `public/_headers` sets the cache headers for those assets. [`.github/workflows/filecoin-app.yml`](../../.github/workflows/filecoin-app.yml) mirrors filecoin-api's workflow:
+The app deploys as a Worker (`wrangler.jsonc`) at https://poc.filecoin.cloud. The Worker renders pages, and Cloudflare serves the client build from `dist/client` as static assets. `public/_headers` sets the cache headers for those assets. [`.github/workflows/filecoin-app.yml`](../../.github/workflows/filecoin-app.yml) mirrors filecoin-api's workflow:
 
 | Trigger | Result |
 | --- | --- |
@@ -135,4 +135,4 @@ The app deploys as a Worker (`wrangler.jsonc`) at https://fil-app.hugomrdias.dev
 | Pull request opened or updated | Builds, creates a `wrangler preview --name pr-<number>`, probes it and comments the URL on the PR |
 | Pull request closed | `wrangler preview delete` |
 
-The production deploy uses its own `fil-app-production` GitHub environment. The workflow uses the same `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets as filecoin-api.
+The production deploy uses its own `fil-app-production` GitHub environment. The workflow uses the same `CLOUDFLARE_API_TOKEN` repository secret as filecoin-api, and `wrangler.jsonc` pins the same FilOz account ([setup](../filecoin-api/README.md#setup)).

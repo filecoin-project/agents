@@ -110,7 +110,7 @@ We measured startup on Node 26 as the median of 20 runs after 5 warmups, with a 
 
 `filecoin` resolves the network from `--network`, then `FILECOIN_NETWORK`, then the config file, then `calibration`. clipact has no global flags, so `network` is a field of every command's input, in the `account` fragment of `commands/shared.ts`. The field has `FILECOIN_NETWORK` as its environment fallback and no schema default, so the config file still applies when neither is set. Each network has its own session.
 
-`filecoin` takes credentials from `FILECOIN_SESSION_KEY` with `FILECOIN_ROOT_ADDRESS` first, then from the saved session. Both variables are also command input fields. `sessionKey` is a clipact secret. clipact reads it only from the environment, rejects it as a flag, and redacts it in `--debug` and `schema`. `filecoin` reports a pending session as `login_pending`, not as logged out. CI and cloud agents, whose disk does not outlive the session, use the variables with a key exported from filecoin-app's session keys page ([cloud agents](https://fil-app.hugomrdias.dev/agents#cloud-agents)).
+`filecoin` takes credentials from `FILECOIN_SESSION_KEY` with `FILECOIN_ROOT_ADDRESS` first, then from the saved session. Both variables are also command input fields. `sessionKey` is a clipact secret. clipact reads it only from the environment, rejects it as a flag, and redacts it in `--debug` and `schema`. `filecoin` reports a pending session as `login_pending`, not as logged out. CI and cloud agents, whose disk does not outlive the session, use the variables with a key exported from filecoin-app's session keys page ([cloud agents](https://poc.filecoin.cloud/agents#cloud-agents)).
 
 `FILECOIN_CONFIG_DIR`, `FILECOIN_STATE_DIR`, `FILECOIN_RPC_URL`, `FILECOIN_CONSOLE_URL`, and `FILECOIN_API_URL` are process settings, not command input. `filecoin doctor` shows each resolved value and its source.
 
@@ -177,7 +177,7 @@ Before the commit confirms, `put` reports early links as `link` progress, with `
 
 A folder's browser URL carries no hint, because filecoin-api never looks it up. inbrowser.link finds the blocks through IPNI. Curio sets `needs_indexing` when it receives the add-pieces request, not when the transaction confirms ([`handlers_add.go`](https://github.com/filecoin-project/curio/blob/e00c24bdbb347dcec7ea0bf289d06985f0738023/pdp/handlers_add.go#L432-L470)). Its indexing task runs about every 3 seconds, and its IPNI task about every 30 seconds. A folder's browser URL therefore starts working shortly after the commit is sent, before it confirms, and `put` reports a folder's early link at that point. Curio's `/ipfs` endpoint also answers only after indexing.
 
-`<api>` is `https://fil-api.hugomrdias.dev` unless `FILECOIN_API_URL` sets another origin. `ls` and `inspect` rebuild the URLs from the resource, so they follow `FILECOIN_API_URL`.
+`<api>` is `https://api.filecoin.cloud` unless `FILECOIN_API_URL` sets another origin. `ls` and `inspect` rebuild the URLs from the resource, so they follow `FILECOIN_API_URL`.
 
 ### Phases and checkpoints
 

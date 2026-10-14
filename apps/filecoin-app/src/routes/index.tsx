@@ -130,12 +130,12 @@ function Transcript() {
           <JsonLine depth={6}>
             <Key>browser</Key>:{' '}
             <span className="text-brand-500">
-              "https://fil-api.hugomrdias.dev/get/bafybei…?browser=true"
+              "https://api.filecoin.cloud/get/bafybei…?browser=true"
             </span>
             ,
           </JsonLine>
           <JsonLine depth={6}>
-            <Key>piece</Key>: "https://fil-api.hugomrdias.dev/get/bafkzcib…"
+            <Key>piece</Key>: "https://api.filecoin.cloud/get/bafkzcib…"
           </JsonLine>
           <JsonLine depth={4}>{'}'}</JsonLine>
           <JsonLine depth={2}>{'}'}</JsonLine>
@@ -166,7 +166,7 @@ function WaysIn() {
     {
       name: 'MCP server',
       text: 'Read-only tools for providers, data sets, pieces, payment rails, and session keys, with no sign-up.',
-      code: 'https://fil-api.hugomrdias.dev/mcp',
+      code: 'https://api.filecoin.cloud/mcp',
       link: (
         <Link
           className="text-primary underline-offset-4 hover:underline"
@@ -180,7 +180,7 @@ function WaysIn() {
     {
       name: 'Web app',
       text: 'Explore what is stored on chain, fund your account, and approve or revoke the keys your agents use.',
-      code: 'fil-app.hugomrdias.dev',
+      code: 'poc.filecoin.cloud',
       link: (
         <Link
           className="text-primary underline-offset-4 hover:underline"

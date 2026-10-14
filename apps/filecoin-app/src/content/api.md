@@ -1,8 +1,8 @@
 # API and MCP
 
-[filecoin-api](https://fil-api.hugomrdias.dev) serves read-only Filecoin data: storage providers, data sets, pieces, Filecoin Pay rails, and session keys. It reads from an indexer of the Filecoin chain, so its data trails the chain. `/health` reports the latest indexed block. It cannot store, delete, or sign anything.
+[filecoin-api](https://api.filecoin.cloud) serves read-only Filecoin data: storage providers, data sets, pieces, Filecoin Pay rails, and session keys. It reads from an indexer of the Filecoin chain, so its data trails the chain. `/health` reports the latest indexed block. It cannot store, delete, or sign anything.
 
-The interactive reference is at [`/docs`](https://fil-api.hugomrdias.dev/docs), and the OpenAPI 3.1 document is at [`/openapi.json`](https://fil-api.hugomrdias.dev/openapi.json).
+The interactive reference is at [`/docs`](https://api.filecoin.cloud/docs), and the OpenAPI 3.1 document is at [`/openapi.json`](https://api.filecoin.cloud/openapi.json).
 
 ## Routes
 
@@ -33,7 +33,7 @@ Legacy v1 PieceCIDs (`baga…`) and strings that aren't CIDs return `400`. If no
 
 ## MCP server
 
-The MCP server at `https://fil-api.hugomrdias.dev/mcp` offers one read-only tool for each data route. Each tool requires a `network` argument.
+The MCP server at `https://api.filecoin.cloud/mcp` offers one read-only tool for each data route. Each tool requires a `network` argument.
 
 | Tool | Reads |
 | --- | --- |

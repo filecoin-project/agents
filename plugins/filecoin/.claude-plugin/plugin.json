@@ -7,7 +7,7 @@
     "name": "Hugo Dias",
     "email": "hugomrdias@gmail.com"
   },
-  "homepage": "https://fil-app.hugomrdias.dev/agents",
+  "homepage": "https://poc.filecoin.cloud/agents",
   "repository": "https://github.com/filecoin-project/agents",
   "license": "MIT",
   "keywords": [
@@ -21,7 +21,7 @@
   "mcpServers": {
     "filecoin-api": {
       "type": "http",
-      "url": "https://fil-api.hugomrdias.dev/mcp"
+      "url": "https://api.filecoin.cloud/mcp"
     }
   }
 }

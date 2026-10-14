@@ -8,8 +8,8 @@ const CID =
 describe('retrievalUrl', () => {
   it('points at filecoin-api /get with the network and browser mode', () => {
     assert.equal(
-      retrievalUrl('https://fil-api.hugomrdias.dev', 'calibration', CID),
-      `https://fil-api.hugomrdias.dev/get/${CID}?network=calibration&browser=true`
+      retrievalUrl('https://api.filecoin.cloud', 'calibration', CID),
+      `https://api.filecoin.cloud/get/${CID}?network=calibration&browser=true`
     )
   })
 

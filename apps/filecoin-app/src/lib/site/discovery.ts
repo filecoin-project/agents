@@ -17,7 +17,7 @@ export interface LlmsPage {
 /**
  * Build `llms.txt`: a Markdown index of the site for language models.
  *
- * @param options.origin - Site origin, such as `https://fil-app.hugomrdias.dev`.
+ * @param options.origin - Site origin, such as `https://poc.filecoin.cloud`.
  * @param options.summary - One-sentence summary of the site, shown as a quote.
  * @param options.details - Markdown blocks, such as paragraphs and lists,
  *   that an agent should know before it reads the pages.
@@ -231,7 +231,7 @@ export function mcpServerCard(apiUrl: string, siteUrl: string) {
 /**
  * Build an XML sitemap of absolute page URLs.
  *
- * @param origin - Site origin, such as `https://fil-app.hugomrdias.dev`.
+ * @param origin - Site origin, such as `https://poc.filecoin.cloud`.
  * @param paths - Site paths to list, each starting with `/`.
  * @see https://www.sitemaps.org/protocol.html
  */

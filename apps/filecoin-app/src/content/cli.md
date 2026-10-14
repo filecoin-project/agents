@@ -19,7 +19,7 @@ This page explains how `filecoin` works. The CLI describes its own commands, whi
 filecoin login
 ```
 
-`filecoin login` makes a session key and saves it on your machine. It then opens the [filecoin-app](https://fil-app.hugomrdias.dev) setup page with the key's address. The wallet owner reviews the request there and approves it with their wallet. The CLI finds the approval on chain, so there is nothing to copy back.
+`filecoin login` makes a session key and saves it on your machine. It then opens the [filecoin-app](https://poc.filecoin.cloud) setup page with the key's address. The wallet owner reviews the request there and approves it with their wallet. The CLI finds the approval on chain, so there is nothing to copy back.
 
 By default, `filecoin login` asks for the `createDataSet`, `addPieces`, and `schedulePieceRemovals` permissions for 30 days, under the name `filecoin-cli`. Repeat `--scopes` to ask for others. `--name` sets the name the owner sees, which is recorded on chain, and `--days` sets the expiry. The owner can change all three on the page before approving.
 
@@ -90,8 +90,8 @@ Each error has a stable `code`, and `filecoin schema <command>` lists the codes 
 | `FILECOIN_CONFIG_DIR` | Config directory. Default: the platform config directory for `filecoin` |
 | `FILECOIN_STATE_DIR` | Local state and staged folders. Default: the platform data directory for `filecoin` |
 | `FILECOIN_RPC_URL` | RPC endpoint |
-| `FILECOIN_CONSOLE_URL` | filecoin-app origin for approval and funding links. Default: `https://fil-app.hugomrdias.dev` |
-| `FILECOIN_API_URL` | filecoin-api origin for retrieval links. Default: `https://fil-api.hugomrdias.dev` |
+| `FILECOIN_CONSOLE_URL` | filecoin-app origin for approval and funding links. Default: `https://poc.filecoin.cloud` |
+| `FILECOIN_API_URL` | filecoin-api origin for retrieval links. Default: `https://api.filecoin.cloud` |
 | `FILECOIN_OUTPUT`, `FILECOIN_AGENT` | Override the output mode and agent detection |
 
-The prototype saves the session key in the config file, readable only by its owner. `filecoin logout` deletes the local key. The key stays authorized on chain until it expires or you revoke it on the filecoin-app [session keys page](https://fil-app.hugomrdias.dev/dashboard/session-keys).
+The prototype saves the session key in the config file, readable only by its owner. `filecoin logout` deletes the local key. The key stays authorized on chain until it expires or you revoke it on the filecoin-app [session keys page](https://poc.filecoin.cloud/dashboard/session-keys).

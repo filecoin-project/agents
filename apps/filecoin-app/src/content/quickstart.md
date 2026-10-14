@@ -29,7 +29,7 @@ Adds the agent skill and the read-only MCP server to Claude Code or Codex.
 ### Install the agent skill
 
 ```sh
-npx skills add https://fil-app.hugomrdias.dev
+npx skills add https://poc.filecoin.cloud
 ```
 
 Teaches any agent with a shell when and how to run `filecoin`.
@@ -37,7 +37,7 @@ Teaches any agent with a shell when and how to run `filecoin`.
 ### Connect the MCP server
 
 ```sh
-npx -y add-mcp https://fil-api.hugomrdias.dev/mcp -g
+npx -y add-mcp https://api.filecoin.cloud/mcp -g
 ```
 
 Read-only tools for providers, data sets, and pieces. It cannot store files.

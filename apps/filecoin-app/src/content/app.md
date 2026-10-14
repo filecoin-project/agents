@@ -1,6 +1,6 @@
 # Web app
 
-[filecoin-app](https://fil-app.hugomrdias.dev) has three parts:
+[filecoin-app](https://poc.filecoin.cloud) has three parts:
 
 - **Explorer** (`/mainnet`, `/calibration`): public pages for data sets, pieces, storage providers, Filecoin Pay rails and settlements, session keys, and each address. Search with `/` or ⌘K from any page.
 - **Dashboard** (`/dashboard`): connect a wallet to manage your Filecoin Pay account, the Warm Storage approval, data sets, uploads, rails, and session keys.
@@ -41,4 +41,4 @@ filecoin-app registers [WebMCP](https://webmachinelearning.github.io/webmcp/) to
 | `lookup_piece` | Every page | Finds the data sets that hold a PieceCID v2 |
 | `list_session_keys` | Every page | Lists the session keys a wallet approved |
 
-The read tools default to the connected wallet and the network in the page address. WebMCP is an early preview. It works in Chrome 149 and later on fil-app.hugomrdias.dev, and in the ChatGPT desktop app's browser, where the tools are called site tools. Other browsers ignore the tools, and agents use setup links instead.
+The read tools default to the connected wallet and the network in the page address. WebMCP is an early preview. It works in Chrome 149 and later on poc.filecoin.cloud, and in the ChatGPT desktop app's browser, where the tools are called site tools. Other browsers ignore the tools, and agents use setup links instead.

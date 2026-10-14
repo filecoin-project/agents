@@ -25,7 +25,7 @@ filecoin --help
 filecoin login
 ```
 
-`filecoin login` generates a session key and saves it locally. It then opens the [filecoin-app](https://fil-app.hugomrdias.dev) setup page with the key's address. The wallet owner reviews the request there and approves it with their wallet. The private key never leaves the machine, and the CLI finds the approval on chain, so there is nothing to copy back.
+`filecoin login` generates a session key and saves it locally. It then opens the [filecoin-app](https://poc.filecoin.cloud) setup page with the key's address. The wallet owner reviews the request there and approves it with their wallet. The private key never leaves the machine, and the CLI finds the approval on chain, so there is nothing to copy back.
 
 By default, `filecoin login` requests the `createDataSet`, `addPieces`, and `schedulePieceRemovals` scopes for 30 days, under the name `filecoin-cli`. To request other scopes, repeat `--scopes`. `--name` sets the name the owner sees, which is recorded on chain, and `--days` sets the expiry. The owner can change all three on the page before approving.
 
@@ -130,8 +130,8 @@ Ctrl+C, SIGTERM, or SIGHUP stops the work at the next step. `filecoin` returns a
 | `FILECOIN_CONFIG_DIR` | Config directory. Default: the platform config directory for `filecoin` |
 | `FILECOIN_STATE_DIR` | SQLite state and staged CARs. Default: the platform data directory for `filecoin` |
 | `FILECOIN_RPC_URL` | RPC endpoint. Default: synapse-core's fallback transport for the chain |
-| `FILECOIN_CONSOLE_URL` | filecoin-app origin for approval and funding links, such as `http://localhost:5173` for a local app. Default: `https://fil-app.hugomrdias.dev` |
-| `FILECOIN_API_URL` | filecoin-api origin for retrieval links, such as `http://localhost:8787` for a local API. Default: `https://fil-api.hugomrdias.dev` |
+| `FILECOIN_CONSOLE_URL` | filecoin-app origin for approval and funding links, such as `http://localhost:5173` for a local app. Default: `https://poc.filecoin.cloud` |
+| `FILECOIN_API_URL` | filecoin-api origin for retrieval links, such as `http://localhost:8787` for a local API. Default: `https://api.filecoin.cloud` |
 | `FILECOIN_OUTPUT`, `FILECOIN_AGENT` | Override clipact's output mode and agent detection |
 
 The prototype saves the session private key in the config file with mode 0600, so only its owner can read it. `filecoin logout` deletes the local key. The key stays authorized on chain until it expires or you revoke it on the filecoin-app session keys page.

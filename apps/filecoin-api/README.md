@@ -87,7 +87,7 @@ Scripts:
 
 | Trigger | Result |
 | --- | --- |
-| Push to `main` | Runs typecheck, tests and lint, then `wrangler deploy` to https://fil-api.hugomrdias.dev and probes `/health` |
+| Push to `main` | Runs typecheck, tests and lint, then `wrangler deploy` to https://api.filecoin.cloud and probes `/health` |
 | Pull request opened or updated | `wrangler preview --name pr-<number>` creates a [Worker Preview](https://developers.cloudflare.com/workers/previews/) on `workers.dev`, probes `/health` and comments its URL on the PR |
 | Pull request closed | `wrangler preview delete` removes the preview |
 
@@ -97,15 +97,16 @@ Previews don't inherit production bindings, so the `previews` block in `wrangler
 
 ### Setup
 
-1. Create a Cloudflare API token from the **Edit Cloudflare Workers** template. Scope it to your account and the `hugomrdias.dev` zone.
-2. Add the repository secrets:
+Both Workers deploy to the FilOz Cloudflare account, which `account_id` in `wrangler.jsonc` pins, so Wrangler never asks which account to use and CI needs no account secret.
+
+1. Create a Cloudflare API token from the **Edit Cloudflare Workers** template. Scope it to the FilOz account and the `filecoin.cloud` zone.
+2. Add it as a repository secret:
    ```bash
    gh secret set CLOUDFLARE_API_TOKEN
-   gh secret set CLOUDFLARE_ACCOUNT_ID
    ```
 3. Create a Hyperdrive config for each network and put the ids in `wrangler.jsonc`, in both the top-level `hyperdrive` list and `previews.hyperdrive`:
    ```bash
-   wrangler hyperdrive create fil-api-calibration --connection-string="postgresql://user:password@host:5432/indexers" --max-age 5 --swr 0
+   wrangler hyperdrive create fil-api-calibration --connection-string="postgresql://user:password@host:5432/indexers" --max-age 5 --swr 0 --origin-connection-limit 60
    ```
    Hyperdrive caches read queries for 60 seconds by default and never invalidates them, which would make the indexer status, and every read after a write, up to 75 seconds stale. Both configs cache for 5 seconds with no stale-while-revalidate. To change an existing config, run `wrangler hyperdrive update <id> --caching-disabled=false --max-age 5 --swr 0`.
 

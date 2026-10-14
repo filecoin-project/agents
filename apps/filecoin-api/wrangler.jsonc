@@ -1,11 +1,13 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "fil-api",
+  // FilOz Cloudflare account, which holds the filecoin.cloud zone.
+  "account_id": "ea5f8b8a063d8e31ae32dec2e89342d5",
   "main": "src/index.ts",
   "compatibility_date": "2026-08-15",
   "compatibility_flags": ["nodejs_compat"],
   // Production is served from the custom domain only; Previews use workers.dev.
-  "routes": [{ "pattern": "fil-api.hugomrdias.dev", "custom_domain": true }],
+  "routes": [{ "pattern": "api.filecoin.cloud", "custom_domain": true }],
   "workers_dev": false,
   "preview_urls": true,
   // Run next to Hyperdrive's connection pool, which sits in Frankfurt for the
@@ -24,11 +26,11 @@
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE_CALIBRATION",
-      "id": "77e9b6369ca942179a30025beff6d74d"
+      "id": "09dbc3226bff4457a7a41f5e48041a69"
     },
     {
       "binding": "HYPERDRIVE_MAINNET",
-      "id": "89488b339add4f6aaf318af0e2c42844"
+      "id": "fcdad634474a4b8bb15649ba2b002c3a"
     }
   ],
   "ratelimits": [
@@ -50,11 +52,11 @@
     "hyperdrive": [
       {
         "binding": "HYPERDRIVE_CALIBRATION",
-        "id": "77e9b6369ca942179a30025beff6d74d"
+        "id": "09dbc3226bff4457a7a41f5e48041a69"
       },
       {
         "binding": "HYPERDRIVE_MAINNET",
-        "id": "89488b339add4f6aaf318af0e2c42844"
+        "id": "fcdad634474a4b8bb15649ba2b002c3a"
       }
     ],
     "ratelimits": [

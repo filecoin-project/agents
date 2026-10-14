@@ -144,7 +144,7 @@ export const listSessionKeysInput = z.strictObject({
 
 /** Base URLs that tool results link to. */
 export interface ResultLinks {
-  /** filecoin-app origin, e.g. `https://fil-app.hugomrdias.dev`. */
+  /** filecoin-app origin, e.g. `https://poc.filecoin.cloud`. */
   app: string
   /** filecoin-api base URL. */
   api: string

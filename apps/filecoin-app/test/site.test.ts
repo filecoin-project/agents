@@ -205,7 +205,7 @@ describe('llmsTxt', () => {
 })
 
 /** The live site, as the agent skill links to it. */
-const SITE_ORIGIN = 'https://fil-app.hugomrdias.dev'
+const SITE_ORIGIN = 'https://poc.filecoin.cloud'
 
 /**
  * Heading ids of a site page, as the rendered page has them.

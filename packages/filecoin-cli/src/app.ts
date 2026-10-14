@@ -17,10 +17,10 @@ import { abortable } from './errors.ts'
 import { openDatabase, stateDir } from './state/db.ts'
 
 /** Default filecoin-app origin, whose dashboard approves keys and funds accounts. */
-const DEFAULT_CONSOLE_URL = 'https://fil-app.hugomrdias.dev'
+const DEFAULT_CONSOLE_URL = 'https://poc.filecoin.cloud'
 
 /** Default filecoin-api origin, whose `/get/{cid}` route redirects to providers. */
-const DEFAULT_API_URL = 'https://fil-api.hugomrdias.dev'
+const DEFAULT_API_URL = 'https://api.filecoin.cloud'
 
 /**
  * Shared per-invocation context: resolved network, chain client, config, and
