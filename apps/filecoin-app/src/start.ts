@@ -5,14 +5,14 @@ import { prefersMarkdown } from '@/lib/site/negotiate'
 import { findSitePage } from '@/lib/site/pages'
 
 /**
- * WebMCP origin-trial token for `https://fil-app.hugomrdias.dev`, which
- * expires on 2027-03-30. Renew it before then, or remove it when the trial
+ * WebMCP origin-trial token for `https://filecoin.cloud` and its subdomains,
+ * which expires on 2027-03-30. Renew it before then, or remove it when the trial
  * ends.
  *
  * @see https://developer.chrome.com/origintrials/#/register_trial/4163014905550602241
  */
 const WEBMCP_ORIGIN_TRIAL =
-  'AhlfIhMveG7Mf8JN9RXrWtptkuF2m0akoxfxk22MtD0F/Q6jpLW0SVPM8fogovxFgHOMjSss4B7b54tSnJUoPw4AAABWeyJvcmlnaW4iOiJodHRwczovL2ZpbC1hcHAuaHVnb21yZGlhcy5kZXY6NDQzIiwiZmVhdHVyZSI6IldlYk1DUCIsImV4cGlyeSI6MTgwNjM2NDgwMH0='
+  'Av9cMcd5qPDuT+dgSPZNbZ19+AJREW3/eDae8Gdxat1oJ8UzKcUSV4orX7GV91SqKpllOdqL0+0omRJLUBp4UAYAAABheyJvcmlnaW4iOiJodHRwczovL2ZpbGVjb2luLmNsb3VkOjQ0MyIsImZlYXR1cmUiOiJXZWJNQ1AiLCJleHBpcnkiOjE4MDYzNjQ4MDAsImlzU3ViZG9tYWluIjp0cnVlfQ=='
 
 /** Headers sent with every response the Worker renders. */
 const RESPONSE_HEADERS = {

@@ -7,7 +7,7 @@
     "name": "Hugo Dias",
     "email": "hugomrdias@gmail.com"
   },
-  "homepage": "https://fil-app.hugomrdias.dev/agents",
+  "homepage": "https://poc.filecoin.cloud/agents",
   "repository": "https://github.com/filecoin-project/agents",
   "license": "MIT",
   "keywords": [
@@ -29,7 +29,7 @@
           "Read",
           "Write"
         ],
-        "websiteURL": "https://fil-app.hugomrdias.dev",
+        "websiteURL": "https://poc.filecoin.cloud",
         "brandColor": "#0090FF",
         "composerIcon": "./assets/logo.png",
         "logo": "./assets/logo.png",

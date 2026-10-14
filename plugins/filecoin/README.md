@@ -34,7 +34,7 @@ codex plugin add filecoin@filecoin
 
 The MCP server needs no sign-in. Ask the agent to store or share a file on Filecoin, and it loads the skill. In Claude Code, `/filecoin:filecoin` also invokes it. If you added filecoin-api as a standalone MCP server before, remove it, so the agent has one copy of its tools.
 
-Another Agent Plugins client loads the `plugins/filecoin` directory as it is. Claude and ChatGPT on the web don't install local plugins; add `https://fil-api.hugomrdias.dev/mcp` as a custom connector there instead, which gives the MCP tools without the skill.
+Another Agent Plugins client loads the `plugins/filecoin` directory as it is. Claude and ChatGPT on the web don't install local plugins; add `https://api.filecoin.cloud/mcp` as a custom connector there instead, which gives the MCP tools without the skill.
 
 ## Versions
 

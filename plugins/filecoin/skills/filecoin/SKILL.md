@@ -37,5 +37,5 @@ Don't guess flags or fields. The installed CLI describes itself:
 
 Fetch these pages; each is Markdown:
 
-- No browser to open, or a disk that is gone when the session ends, such as a cloud sandbox: read [Cloud agents](https://fil-app.hugomrdias.dev/agents.md#cloud-agents) before `filecoin login`.
-- A link returns 404, the user wants proof the content is intact, or `filecoin ls` is missing content stored elsewhere: read [Retrieve and verify](https://fil-app.hugomrdias.dev/docs/retrieve.md).
+- No browser to open, or a disk that is gone when the session ends, such as a cloud sandbox: read [Cloud agents](https://poc.filecoin.cloud/agents.md#cloud-agents) before `filecoin login`.
+- A link returns 404, the user wants proof the content is intact, or `filecoin ls` is missing content stored elsewhere: read [Retrieve and verify](https://poc.filecoin.cloud/docs/retrieve.md).

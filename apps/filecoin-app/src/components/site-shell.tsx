@@ -114,7 +114,7 @@ function SiteFooterLinks() {
   const links = [
     { href: '/llms.txt', label: 'llms.txt' },
     { href: '/.well-known/api-catalog', label: 'API catalog' },
-    { href: 'https://fil-api.hugomrdias.dev/docs', label: 'API reference' },
+    { href: 'https://api.filecoin.cloud/docs', label: 'API reference' },
     { href: REPO_URL, label: 'GitHub' },
   ]
   return (

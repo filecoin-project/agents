@@ -32,7 +32,7 @@ The plugin follows the [Agent Plugins](https://agent-plugins.org) format, so oth
 In other agents, install the agent skill. It tells the agent when to use `filecoin`, the workflow, and the rules, and points it to the CLI's own help, which always matches the installed version:
 
 ```sh
-npx skills add https://fil-app.hugomrdias.dev
+npx skills add https://poc.filecoin.cloud
 ```
 
 `npx skills add filecoin-project/agents` installs the same skill from GitHub. Agents that support [agent skills discovery](https://github.com/cloudflare/agent-skills-discovery-rfc) find it at [`/.well-known/agent-skills/index.json`](/.well-known/agent-skills/index.json).
@@ -47,7 +47,7 @@ A cloud agent has a shell, so it uses the same skill and CLI as a local agent. I
 
 Give the agent a key that outlives the session instead:
 
-1. On the filecoin-app [session keys page](https://fil-app.hugomrdias.dev/dashboard/session-keys), generate a session key, authorize it, and export it.
+1. On the filecoin-app [session keys page](https://poc.filecoin.cloud/dashboard/session-keys), generate a session key, authorize it, and export it.
 2. In the agent's environment settings, add the key as the secret `FILECOIN_SESSION_KEY`, and your wallet address as `FILECOIN_ROOT_ADDRESS`.
 
 `filecoin` then skips `filecoin login`, and `filecoin status` confirms the key works. The key cannot move funds, and it expires. Revoke it on the same page to stop the agent. Never paste the key into a chat.
@@ -65,13 +65,13 @@ A browser agent cannot run the CLI. You can store files from the dashboard's upl
 filecoin-api's MCP server gives any agent read-only tools for storage providers, data sets, pieces, Filecoin Pay rails, and session keys, on mainnet and calibration. It uses Streamable HTTP and needs no authentication. It cannot store or delete content.
 
 ```text
-https://fil-api.hugomrdias.dev/mcp
+https://api.filecoin.cloud/mcp
 ```
 
 The [filecoin plugin](#local-agents) adds it in Claude Code and Codex. To add the server alone, [add-mcp](https://github.com/neon-solutions/add-mcp) writes it into the configuration of Claude Code, Codex, Cursor, VS Code, and about 20 other agents:
 
 ```sh
-npx -y add-mcp https://fil-api.hugomrdias.dev/mcp
+npx -y add-mcp https://api.filecoin.cloud/mcp
 ```
 
 It asks which agents to configure, and adds the server to the current project. Add `-g` to add it for your user instead.
@@ -79,8 +79,8 @@ It asks which agents to configure, and adds the server to the current project. A
 Claude Code and Codex also add it with their own commands:
 
 ```sh
-claude mcp add --transport http filecoin-api https://fil-api.hugomrdias.dev/mcp
-codex mcp add filecoin-api --url https://fil-api.hugomrdias.dev/mcp
+claude mcp add --transport http filecoin-api https://api.filecoin.cloud/mcp
+codex mcp add filecoin-api --url https://api.filecoin.cloud/mcp
 ```
 
 In the Claude and ChatGPT apps, add the URL as a custom connector. [API and MCP](/docs/api#mcp-server) lists the tools.
@@ -93,7 +93,7 @@ The agent never holds the wallet key. It gets a session key instead, and the wal
 2. You open the link, connect your wallet, and review the request on the filecoin-app setup page. Approve the session key, the Warm Storage approval, and a USDFC deposit if the page asks for them.
 3. The agent runs `filecoin login --check` to confirm, then `filecoin put`. `--check` never makes a new key, so it can't replace the one you approved.
 
-When the account runs low, `filecoin status` and `filecoin put` return `insufficient_funds` with a prefilled funding link for you. To stop the agent, revoke its key on the filecoin-app [session keys page](https://fil-app.hugomrdias.dev/dashboard/session-keys).
+When the account runs low, `filecoin status` and `filecoin put` return `insufficient_funds` with a prefilled funding link for you. To stop the agent, revoke its key on the filecoin-app [session keys page](https://poc.filecoin.cloud/dashboard/session-keys).
 
 ## Discovery files
 
@@ -112,7 +112,7 @@ This site describes itself to agents:
 Every docs page also has a Markdown version. Add `.md` to the path, such as [`/docs/cli.md`](/docs/cli.md), or send `Accept: text/markdown`:
 
 ```sh
-curl -H 'Accept: text/markdown' https://fil-app.hugomrdias.dev/docs/cli
+curl -H 'Accept: text/markdown' https://poc.filecoin.cloud/docs/cli
 ```
 
 A request that accepts only Markdown gets a Markdown answer from every page. A missing page returns `404` with links to `llms.txt` and the sitemap. An explorer or dashboard page, which has no Markdown version, returns `406`.
