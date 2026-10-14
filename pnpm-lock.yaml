@@ -39,7 +39,7 @@ importers:
         specifier: 'catalog:'
         version: 7.0.2
 
-  apps/fil-api:
+  apps/filecoin-api:
     dependencies:
       '@filoz/synapse-core':
         specifier: 0.10.1
@@ -88,7 +88,7 @@ importers:
         specifier: 4.147.0
         version: 4.147.0(@types/node@26.5.1)
 
-  apps/fil-app:
+  apps/filecoin-app:
     dependencies:
       '@base-ui/react':
         specifier: 1.8.0
@@ -206,7 +206,7 @@ importers:
         specifier: 4.147.0
         version: 4.147.0(@types/node@26.5.1)
 
-  packages/fil-cli:
+  packages/filecoin-cli:
     devDependencies:
       '@filoz/synapse-core':
         specifier: ^0.10.1
@@ -867,11 +867,6 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
-
-  '@filoz/synapse-core@0.10.0':
-    resolution: {integrity: sha512-i1mN0YbjMUtNrkg0VxgiOoHoJ5ytBvrtMcbAWK/IDzmOZUC879pkEUPpgQPkBrBeJi+0YfkKuRc560fkju3jbQ==}
-    peerDependencies:
-      viem: 2.x
 
   '@filoz/synapse-core@0.10.1':
     resolution: {integrity: sha512-ILb5+iTOOu6wALZt9B3jSggVk4+RUp+bqiiH+AObBKDhIU4nGt5ha0US42wJJczU7GuTj23G3Nynh9POKuQ5zw==}
@@ -4955,20 +4950,6 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
-  '@filoz/synapse-core@0.10.0(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))':
-    dependencies:
-      dnum: 2.17.0
-      iso-web: 3.1.2
-      multiformats: 14.0.5
-      ox: 0.14.29(typescript@7.0.2)(zod@4.4.3)
-      p-locate: 7.0.0
-      p-some: 7.0.0
-      sync-multihash-sha2: 1.0.0
-      viem: 2.57.2(typescript@7.0.2)(zod@4.6.5)
-      zod: 4.4.3
-    transitivePeerDependencies:
-      - typescript
-
   '@filoz/synapse-core@0.10.1(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))':
     dependencies:
       dnum: 2.17.0
@@ -4985,7 +4966,7 @@ snapshots:
 
   '@filoz/synapse-react@0.5.0(@tanstack/react-query@5.104.0(react@19.3.0))(@wagmi/core@3.6.5(@tanstack/query-core@5.104.0)(@types/react@19.3.0)(react@19.3.0)(typescript@7.0.2)(use-sync-external-store@1.7.0(react@19.3.0))(viem@2.57.2(typescript@7.0.2)(zod@4.6.5)))(iso-filecoin@7.4.7(typescript@7.0.2))(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))(wagmi@3.7.7(@tanstack/query-core@5.104.0)(@tanstack/react-query@5.104.0(react@19.3.0))(@types/react@19.3.0)(react@19.3.0)(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5)))':
     dependencies:
-      '@filoz/synapse-core': 0.10.0(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))
+      '@filoz/synapse-core': 0.10.1(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))
       '@filoz/synapse-sdk': 2.0.2(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))
       '@hugomrdias/filsnap-adapter': 3.3.9(iso-filecoin@7.4.7(typescript@7.0.2))
       '@tanstack/react-query': 5.104.0(react@19.3.0)
@@ -4998,7 +4979,7 @@ snapshots:
 
   '@filoz/synapse-sdk@2.0.2(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))':
     dependencies:
-      '@filoz/synapse-core': 0.10.0(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))
+      '@filoz/synapse-core': 0.10.1(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))
       multiformats: 14.0.5
       viem: 2.57.2(typescript@7.0.2)(zod@4.6.5)
     transitivePeerDependencies:

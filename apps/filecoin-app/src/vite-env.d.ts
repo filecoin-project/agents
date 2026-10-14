@@ -1,0 +1,12 @@
+/// <reference types="vite/client" />
+
+/** Typed `VITE_*` variables. */
+interface ImportMetaEnv {
+  readonly VITE_FILECOIN_API_URL?: string
+  readonly VITE_SITE_URL?: string
+}
+
+/** Vite `import.meta` with the typed env. */
+interface ImportMeta {
+  readonly env: ImportMetaEnv
+}

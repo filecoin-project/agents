@@ -1,4 +1,4 @@
-# fil repository instructions
+# Filecoin for Agents repository instructions
 
 <!-- intent-skills:start -->
 ## Skill Loading
@@ -12,7 +12,7 @@ Before editing files for a substantial task:
 - Multiple matches: prefer the most specific local skill for the package or concern you are changing; load additional skills only when the task spans multiple packages or concerns.
 <!-- intent-skills:end -->
 
-- Cloudflare: before changing `apps/fil-api` or `apps/fil-app` server code, `wrangler.jsonc`, or Cloudflare resources, load the `workers-best-practices` and `wrangler` skills.
+- Cloudflare: before changing `apps/filecoin-api` or `apps/filecoin-app` server code, `wrangler.jsonc`, or Cloudflare resources, load the `workers-best-practices` and `wrangler` skills.
 - Development: read the [root README](README.md#build-and-check) when setting up the local environment or running validation.
 
 ## Changes and validation
@@ -23,5 +23,5 @@ Before editing files for a substantial task:
 
 ## Documentation
 
-- Keep [docs/fil/README.md](docs/fil/README.md) and [docs/fil/architecture.md](docs/fil/architecture.md) current in the same change as the code, including the open questions a change answers and the follow-ups it completes.
+- Keep [docs/filecoin/README.md](docs/filecoin/README.md) and [docs/filecoin/architecture.md](docs/filecoin/architecture.md) current in the same change as the code, including the open questions a change answers and the follow-ups it completes.
 - When code and these docs disagree, list each inconsistency for the user and let them decide which side is right before you edit either.

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "env": ["VITE_*"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/plugins/filecoin/skills/**"],
+      "outputs": ["dist/**"]
+    },
+    "deploy": {
+      "dependsOn": ["^build", "build", "typecheck", "test", "lint"]
+    }
+  }
+}

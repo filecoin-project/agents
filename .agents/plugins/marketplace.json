@@ -1,14 +1,14 @@
 {
-  "name": "fil",
+  "name": "filecoin",
   "interface": {
-    "displayName": "fil"
+    "displayName": "Filecoin for Agents"
   },
   "plugins": [
     {
-      "name": "fil",
+      "name": "filecoin",
       "source": {
         "source": "local",
-        "path": "./plugins/fil"
+        "path": "./plugins/filecoin"
       },
       "policy": {
         "installation": "AVAILABLE",
