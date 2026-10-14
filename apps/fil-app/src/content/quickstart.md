@@ -16,11 +16,11 @@ Add fil to your agent, then ask it to store a file. On its first run, the agent 
 ### Install the plugin
 
 ```sh
-claude plugin marketplace add hugomrdias/fil
+claude plugin marketplace add filecoin-project/agents
 claude plugin install fil@fil
 
 # In Codex
-codex plugin marketplace add hugomrdias/fil
+codex plugin marketplace add filecoin-project/agents
 codex plugin add fil@fil
 ```
 

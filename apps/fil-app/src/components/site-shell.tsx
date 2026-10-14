@@ -16,7 +16,7 @@ import {
 import { DEFAULT_NETWORK } from '@/lib/networks'
 
 /** Repository on GitHub. */
-export const REPO_URL = 'https://github.com/hugomrdias/fil'
+export const REPO_URL = 'https://github.com/filecoin-project/agents'
 
 const LINK_CLASS =
   'rounded-4xl px-3 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground data-[status=active]:bg-muted data-[status=active]:text-foreground'

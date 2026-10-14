@@ -214,7 +214,7 @@ export function mcpServerCard(apiUrl: string, siteUrl: string) {
       'Read-only Filecoin data: storage providers, data sets, pieces, Filecoin Pay rails, and session keys on mainnet and calibration.',
     websiteUrl: `${siteUrl}/docs/api`,
     repository: {
-      url: 'https://github.com/hugomrdias/fil',
+      url: 'https://github.com/filecoin-project/agents',
       source: 'github',
       subfolder: 'apps/fil-api',
     },
@@ -300,7 +300,7 @@ export function softwareApplication(options: {
     url: `${options.origin}/`,
     image: options.image,
     applicationCategory: 'DeveloperApplication',
-    sameAs: ['https://github.com/hugomrdias/fil'],
+    sameAs: ['https://github.com/filecoin-project/agents'],
   }
 }
 

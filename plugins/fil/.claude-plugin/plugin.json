@@ -8,7 +8,7 @@
     "email": "hugomrdias@gmail.com"
   },
   "homepage": "https://fil-app.hugomrdias.dev/agents",
-  "repository": "https://github.com/hugomrdias/fil",
+  "repository": "https://github.com/filecoin-project/agents",
   "license": "MIT",
   "keywords": [
     "filecoin",
