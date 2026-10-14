@@ -166,7 +166,7 @@ function WaysIn() {
     {
       name: 'MCP server',
       text: 'Read-only tools for providers, data sets, pieces, payment rails, and session keys, with no sign-up.',
-      code: 'https://api.filecoin.cloud/mcp',
+      code: 'https://mcp.filecoin.cloud',
       link: (
         <Link
           className="text-primary underline-offset-4 hover:underline"

@@ -82,7 +82,7 @@ function llmsDetails(origin: string) {
       '',
       `- Agents with a shell, local or in the cloud, install the agent skill: \`npx skills add ${origin}\`. It covers storing, retrieving, and verifying with the CLI.`,
       `- Browser agents open [filecoin-app](${origin}/). Its WebMCP tools read the account and prepare the wallet owner's approval.`,
-      `- Agents that only call remote tools add the read-only MCP server at \`${env.filApiUrl}/mcp\`, over Streamable HTTP. It cannot store content.`,
+      `- Agents that only call remote tools add the read-only MCP server at \`${env.mcpUrl}\`, over Streamable HTTP. It cannot store content.`,
     ].join('\n'),
     `A person owns the wallet and approves every agent, which never holds the wallet key. [Agents](${origin}${markdownPath(AGENTS_PAGE.path)}) explains each way in. This is a prototype that runs on the calibration test network by default.`,
   ]
@@ -175,7 +175,7 @@ export function apiCatalogResponse(request: Request) {
   const body =
     request.method === 'HEAD'
       ? null
-      : JSON.stringify(apiCatalog(env.filApiUrl), null, 2)
+      : JSON.stringify(apiCatalog(env.filApiUrl, env.mcpUrl), null, 2)
   return new Response(body, { headers })
 }
 
@@ -190,7 +190,11 @@ export function integrationsResponse(request: Request) {
     request.method === 'HEAD'
       ? null
       : JSON.stringify(
-          integrationsJson(env.filApiUrl, new URL(request.url).origin),
+          integrationsJson(
+            env.filApiUrl,
+            env.mcpUrl,
+            new URL(request.url).origin
+          ),
           null,
           2
         )
@@ -203,7 +207,7 @@ export function integrationsResponse(request: Request) {
  * @param request - Incoming request, for the site origin.
  */
 export function serverCardResponse(request: Request) {
-  const card = mcpServerCard(env.filApiUrl, new URL(request.url).origin)
+  const card = mcpServerCard(env.mcpUrl, new URL(request.url).origin)
   return new Response(JSON.stringify(card, null, 2), {
     headers: agentHeaders('application/json'),
   })

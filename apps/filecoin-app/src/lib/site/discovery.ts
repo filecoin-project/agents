@@ -76,9 +76,10 @@ export const API_CATALOG_TYPE =
  * integrations.sh reads MCP endpoints from `item` links.
  *
  * @param apiUrl - filecoin-api origin.
+ * @param mcpUrl - filecoin-api MCP server URL.
  * @see https://www.rfc-editor.org/rfc/rfc9727
  */
-export function apiCatalog(apiUrl: string) {
+export function apiCatalog(apiUrl: string, mcpUrl: string) {
   return {
     linkset: [
       {
@@ -88,7 +89,7 @@ export function apiCatalog(apiUrl: string) {
         ],
         'service-doc': [{ href: `${apiUrl}/docs`, type: 'text/html' }],
         status: [{ href: `${apiUrl}/health`, type: 'application/json' }],
-        item: [{ href: `${apiUrl}/mcp` }],
+        item: [{ href: mcpUrl }],
       },
     ],
   }
@@ -101,11 +102,16 @@ export function apiCatalog(apiUrl: string) {
  * marked as declared by this file.
  *
  * @param apiUrl - filecoin-api origin.
+ * @param mcpUrl - filecoin-api MCP server URL.
  * @param siteUrl - Site origin, which serves this file and the docs.
  * @see https://integrations.sh/publishing/
  * @see https://github.com/UsefulSoftwareCo/integrations/blob/main/src/lib/discovery-schema.ts
  */
-export function integrationsJson(apiUrl: string, siteUrl: string) {
+export function integrationsJson(
+  apiUrl: string,
+  mcpUrl: string,
+  siteUrl: string
+) {
   const basis = {
     via: 'declared',
     source: `${siteUrl}/.well-known/integrations.json`,
@@ -152,7 +158,7 @@ export function integrationsJson(apiUrl: string, siteUrl: string) {
         slug: 'filecoin-api-mcp',
         name: 'filecoin-api MCP server',
         type: 'mcp',
-        url: `${apiUrl}/mcp`,
+        url: mcpUrl,
         transports: ['streamable-http'],
         docs: `${siteUrl}/docs/api#mcp-server`,
         basis,
@@ -199,11 +205,11 @@ export function integrationsJson(apiUrl: string, siteUrl: string) {
  * Build the MCP server card for filecoin-api's MCP server, in the SEP-2127
  * format.
  *
- * @param apiUrl - filecoin-api origin.
+ * @param mcpUrl - filecoin-api MCP server URL.
  * @param siteUrl - Site origin, used as the website URL.
  * @see https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/seps/2127-mcp-server-cards.md
  */
-export function mcpServerCard(apiUrl: string, siteUrl: string) {
+export function mcpServerCard(mcpUrl: string, siteUrl: string) {
   return {
     $schema:
       'https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json',
@@ -221,7 +227,7 @@ export function mcpServerCard(apiUrl: string, siteUrl: string) {
     remotes: [
       {
         type: 'streamable-http',
-        url: `${apiUrl}/mcp`,
+        url: mcpUrl,
         supportedProtocolVersions: ['2025-11-25', '2025-06-18', '2025-03-26'],
       },
     ],

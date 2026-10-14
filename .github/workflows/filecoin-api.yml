@@ -26,6 +26,7 @@ permissions:
 env:
   WRANGLER_SEND_METRICS: 'false'
   PRODUCTION_URL: https://api.filecoin.cloud
+  MCP_URL: https://mcp.filecoin.cloud
 
 jobs:
   deploy:
@@ -68,6 +69,22 @@ jobs:
         run: |
           for attempt in $(seq 1 12); do
             if curl --fail --show-error --silent "$PRODUCTION_URL/health"; then
+              exit 0
+            fi
+            echo "attempt $attempt failed, retrying in 15s"
+            sleep 15
+          done
+          exit 1
+
+      # The MCP host serves only the MCP endpoint, so probe it with initialize.
+      - name: Probe MCP host
+        run: |
+          body='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}'
+          for attempt in $(seq 1 12); do
+            if curl --fail --show-error --silent "$MCP_URL" \
+              -H 'Content-Type: application/json' \
+              -H 'Accept: application/json, text/event-stream' \
+              --data "$body"; then
               exit 0
             fi
             echo "attempt $attempt failed, retrying in 15s"

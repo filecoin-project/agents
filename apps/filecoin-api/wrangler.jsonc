@@ -6,8 +6,12 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-08-15",
   "compatibility_flags": ["nodejs_compat"],
-  // Production is served from the custom domain only; Previews use workers.dev.
-  "routes": [{ "pattern": "api.filecoin.cloud", "custom_domain": true }],
+  // Production is served from the custom domains only; Previews use workers.dev.
+  // The MCP hosts serve only the MCP endpoint, at `/` (see src/mcp-host.ts).
+  "routes": [
+    { "pattern": "api.filecoin.cloud", "custom_domain": true },
+    { "pattern": "mcp.filecoin.cloud", "custom_domain": true }
+  ],
   "workers_dev": false,
   "preview_urls": true,
   // Run next to Hyperdrive's connection pool, which sits in Frankfurt for the
@@ -33,6 +37,8 @@
       "id": "fcdad634474a4b8bb15649ba2b002c3a"
     }
   ],
+  // Comma-separated hostnames that serve only the MCP endpoint.
+  "vars": { "MCP_HOSTS": "mcp.filecoin.cloud" },
   "ratelimits": [
     {
       "name": "RATE_LIMIT_API",
@@ -49,6 +55,8 @@
   // the same read-only databases but count against separate rate limits.
   // https://developers.cloudflare.com/workers/previews/configuration/
   "previews": {
+    // Previews run on workers.dev, which is no MCP host.
+    "vars": { "MCP_HOSTS": "" },
     "hyperdrive": [
       {
         "binding": "HYPERDRIVE_CALIBRATION",
