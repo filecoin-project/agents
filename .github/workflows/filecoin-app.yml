@@ -7,6 +7,8 @@ on:
       - apps/filecoin-app/**
       # The site serves the filecoin agent skill.
       - plugins/filecoin/skills/**
+      # The app bundles the API client.
+      - packages/filecoin-api-client/**
       - pnpm-lock.yaml
       - pnpm-workspace.yaml
       - turbo.json
@@ -17,6 +19,8 @@ on:
       - apps/filecoin-app/**
       # The site serves the filecoin agent skill.
       - plugins/filecoin/skills/**
+      # The app bundles the API client.
+      - packages/filecoin-api-client/**
       - pnpm-lock.yaml
       - pnpm-workspace.yaml
       - turbo.json

@@ -3,7 +3,7 @@
   "extends": "//",
   "root": false,
   "files": {
-    "includes": ["**", "!src/routeTree.gen.ts", "!src/lib/api/schema.d.ts"]
+    "includes": ["**", "!src/routeTree.gen.ts"]
   },
   "css": {
     "parser": { "tailwindDirectives": true }
