@@ -9,7 +9,10 @@
         ".env*",
         "$TURBO_ROOT$/plugins/filecoin/skills/**"
       ],
-      "outputs": ["dist/**"]
+      // The Cloudflare Vite plugin writes `.wrangler/deploy/config.json`,
+      // which points `wrangler deploy` at the built `dist/server/wrangler.json`.
+      // Without it on a cache hit, Wrangler rebundles `src/server.ts` and fails.
+      "outputs": ["dist/**", ".wrangler/deploy/**"]
     },
     "deploy": {
       "dependsOn": ["^build", "build", "typecheck", "test", "lint"]
