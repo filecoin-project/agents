@@ -120,4 +120,4 @@ The workflow publishes through [npm trusted publishing](https://docs.npmjs.com/t
 
 The publish job runs in the `npm` GitHub environment, which GitHub creates on the first run. Naming `npm` as the trusted publisher's optional environment limits publishing to that job, and the environment's protection rules can later require a reviewer or the `main` branch.
 
-Pull requests that `GITHUB_TOKEN` opens do not trigger CI. To run CI and previews on release pull requests, set a `RELEASE_PLEASE_TOKEN` secret with a token that can open pull requests.
+Pull requests that `GITHUB_TOKEN` opens do not trigger CI. To run CI and previews on release pull requests, set a `FILOZZY_RELEASE_PLEASE_PAT` secret with a token that can open pull requests.
