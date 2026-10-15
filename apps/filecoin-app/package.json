@@ -11,13 +11,13 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test 'test/**/*.test.ts'",
     "lint": "biome check .",
-    "gen:api": "pnpm dlx --package openapi-typescript@7.13.0 --package typescript@5.9.3 openapi-typescript ${FILECOIN_API_URL:-https://api.filecoin.io}/openapi.json -o src/lib/api/schema.d.ts",
     "deploy": "wrangler deploy",
     "cf-preview": "wrangler preview",
     "check": "pnpm typecheck && pnpm test && pnpm lint"
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",
+    "@filecoin-project/api-client": "workspace:*",
     "@filoz/synapse-core": "0.10.1",
     "@filoz/synapse-react": "0.5.0",
     "@fontsource-variable/inter": "5.3.0",
@@ -34,7 +34,6 @@
     "cn": "0.4.0",
     "lucide-react": "1.49.0",
     "marked": "18.1.0",
-    "openapi-fetch": "0.17.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "sonner": "2.0.8",
