@@ -31,7 +31,7 @@ pnpm check
 
 `pnpm check` runs TypeScript, tests, and Biome in every workspace through Turborepo, then lints the root configuration and checks the published agent skills and the plugin manifests. `pnpm check:fix` applies Biome fixes. Also run `pnpm build` when you change package exports or compilation settings.
 
-Never edit a `CHANGELOG.md`, a `version` field, a plugin manifest's `version`, or `.github/.release-please-manifest.json` by hand. release-please owns them, as [Release](#release) describes.
+Never edit a `CHANGELOG.md`, a `version` field, a plugin manifest's `version`, or `.github/release-please-manifest.json` by hand. release-please owns them, as [Release](#release) describes.
 
 ## Write commit messages and pull request titles
 
@@ -64,7 +64,7 @@ release-please reads these messages to pick each release's version and write its
 
 ## Release
 
-[release-please](https://github.com/googleapis/release-please) versions each component from the Conventional Commits on `main`. [`release-please-config.json`](release-please-config.json) lists the components, and [`.release-please-manifest.json`](.release-please-manifest.json) holds their current versions:
+[release-please](https://github.com/googleapis/release-please) versions each component from the Conventional Commits on `main`. [`release-please-config.json`](release-please-config.json) lists the components, and [`release-please-manifest.json`](release-please-manifest.json) holds their current versions:
 
 | Component | Directory | Tag | Released to |
 | --- | --- | --- | --- |
@@ -110,7 +110,7 @@ Leave a release pull request open to batch more changes into that release. Each 
 ### Add a component
 
 1. Add its directory to `packages` in [`release-please-config.json`](release-please-config.json) with a `component` name, and add `extra-files` for any other file that carries the version.
-2. Add its directory and current version to [`.release-please-manifest.json`](.release-please-manifest.json).
+2. Add its directory and current version to [`release-please-manifest.json`](release-please-manifest.json).
 3. For a new npm package, publish it once by hand, then add a trusted publisher for it on npmjs.com, as the next section describes. npm configures a trusted publisher only for a package that exists.
 
 ### Publishing credentials
