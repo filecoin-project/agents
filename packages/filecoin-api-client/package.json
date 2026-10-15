@@ -1,0 +1,60 @@
+{
+  "name": "@filecoin-project/api-client",
+  "version": "0.0.0",
+  "description": "Typed filecoin-api REST client generated from its OpenAPI document",
+  "keywords": [
+    "filecoin",
+    "filecoin-api",
+    "openapi",
+    "api-client",
+    "typescript",
+    "storage",
+    "agents"
+  ],
+  "license": "MIT",
+  "author": "Hugo Dias <hugomrdias@gmail.com>",
+  "homepage": "https://github.com/filecoin-project/agents/tree/main/packages/filecoin-api-client#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/filecoin-project/agents.git",
+    "directory": "packages/filecoin-api-client"
+  },
+  "bugs": {
+    "url": "https://github.com/filecoin-project/agents/issues"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "pnpm clean && tsc -p tsconfig.build.json",
+    "gen": "node scripts/generate.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node scripts/generate.ts --check && node --test 'test/**/*.test.ts'",
+    "lint": "biome check .",
+    "check": "pnpm typecheck && pnpm test && pnpm lint"
+  },
+  "dependencies": {
+    "openapi-fetch": "0.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  }
+}
