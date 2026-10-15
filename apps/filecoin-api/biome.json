@@ -3,6 +3,6 @@
   "extends": "//",
   "root": false,
   "files": {
-    "includes": ["**", "!worker-configuration.d.ts"]
+    "includes": ["**", "!worker-configuration.d.ts", "!openapi.json"]
   }
 }

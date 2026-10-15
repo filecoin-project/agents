@@ -21,6 +21,35 @@ import type { AppEnv } from './types.ts'
 /** API version reported in OpenAPI and MCP server info. */
 export const VERSION = '0.0.0'
 
+/**
+ * OpenAPI document settings for a server origin. `/openapi.json` serves the
+ * request's origin, and the committed `openapi.json` uses the production one.
+ *
+ * @param origin - Server URL listed in the document.
+ * @see https://github.com/honojs/middleware/tree/main/packages/zod-openapi
+ */
+export function openApiConfig(origin: string) {
+  return {
+    openapi: '3.1.0',
+    info: {
+      title: 'filecoin-api',
+      version: VERSION,
+      description:
+        'Read-only Filecoin data: storage providers, data sets, pieces, Filecoin Pay rails and session keys.',
+    },
+    servers: [{ url: origin }],
+    tags: [
+      { name: 'Status' },
+      { name: 'Providers' },
+      { name: 'Data sets' },
+      { name: 'Pieces' },
+      { name: 'Rails' },
+      { name: 'Session keys' },
+      { name: 'Retrieval' },
+    ],
+  }
+}
+
 /** Options for {@link createApp}. */
 export interface AppOptions {
   /** Database client factory; tests inject fakes. */
@@ -93,25 +122,7 @@ export function createApp(options: AppOptions = {}) {
     if (openapi?.origin !== origin) {
       openapi = {
         origin,
-        doc: app.getOpenAPI31Document({
-          openapi: '3.1.0',
-          info: {
-            title: 'filecoin-api',
-            version: VERSION,
-            description:
-              'Read-only Filecoin data: storage providers, data sets, pieces, Filecoin Pay rails and session keys.',
-          },
-          servers: [{ url: origin }],
-          tags: [
-            { name: 'Status' },
-            { name: 'Providers' },
-            { name: 'Data sets' },
-            { name: 'Pieces' },
-            { name: 'Rails' },
-            { name: 'Session keys' },
-            { name: 'Retrieval' },
-          ],
-        }),
+        doc: app.getOpenAPI31Document(openApiConfig(origin)),
       }
     }
     c.header('Cache-Control', 'public, max-age=300')
