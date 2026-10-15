@@ -13,6 +13,10 @@ catalogs:
       specifier: 7.0.2
       version: 7.0.2
 
+patchedDependencies:
+  protons-runtime@6.0.2: b37b0efdb34f86e39af3662efdade4463109a8a1b7af462f281be0210cdc7210
+  protons-runtime@8.0.1: b37b0efdb34f86e39af3662efdade4463109a8a1b7af462f281be0210cdc7210
+
 importers:
 
   .:
@@ -6914,12 +6918,12 @@ snapshots:
 
   ipfs-unixfs@12.0.2:
     dependencies:
-      protons-runtime: 6.0.2
+      protons-runtime: 6.0.2(patch_hash=b37b0efdb34f86e39af3662efdade4463109a8a1b7af462f281be0210cdc7210)
       uint8arraylist: 2.4.9
 
   ipfs-unixfs@13.1.2:
     dependencies:
-      protons-runtime: 8.0.1
+      protons-runtime: 8.0.1(patch_hash=b37b0efdb34f86e39af3662efdade4463109a8a1b7af462f281be0210cdc7210)
       uint8arraylist: 3.0.2
       uint8arrays: 6.1.1
 
@@ -7534,13 +7538,13 @@ snapshots:
       kleur: 3.0.3
       sisteransi: 1.0.5
 
-  protons-runtime@6.0.2:
+  protons-runtime@6.0.2(patch_hash=b37b0efdb34f86e39af3662efdade4463109a8a1b7af462f281be0210cdc7210):
     dependencies:
       uint8-varint: 2.0.5
       uint8arraylist: 2.4.9
       uint8arrays: 5.1.1
 
-  protons-runtime@8.0.1:
+  protons-runtime@8.0.1(patch_hash=b37b0efdb34f86e39af3662efdade4463109a8a1b7af462f281be0210cdc7210):
     dependencies:
       uint8-varint: 3.0.0
       uint8arraylist: 3.0.2
