@@ -26,13 +26,13 @@ jobs:
     steps:
       # Opens or updates the release pull request, and tags and creates the
       # GitHub releases when that pull request merges. Pull requests opened
-      # with GITHUB_TOKEN do not trigger CI, so RELEASE_PLEASE_TOKEN can hold a
-      # token that does.
+      # with GITHUB_TOKEN do not trigger CI, so FILOZZY_RELEASE_PLEASE_PAT can
+      # hold a token that does.
       - name: Run release-please
         id: release
         uses: googleapis/release-please-action@v4
         with:
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          token: ${{ secrets.FILOZZY_RELEASE_PLEASE_PAT || github.token }}
           config-file: .github/release-please-config.json
           manifest-file: .github/release-please-manifest.json
 
