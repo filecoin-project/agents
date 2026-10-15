@@ -17,5 +17,4 @@ minimumReleaseAgeExclude:
   - clipact@0.4.0
 
 patchedDependencies:
-  protons-runtime@6.0.2: patches/protons-runtime@6.0.2.patch
   protons-runtime@8.0.1: patches/protons-runtime@8.0.1.patch

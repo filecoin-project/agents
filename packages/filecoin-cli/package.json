@@ -39,7 +39,7 @@
     "env-paths": "^4.0.0",
     "esbuild": "0.28.2",
     "ipfs-unixfs-exporter": "^16.2.3",
-    "ipfs-unixfs-importer": "^16.1.5",
+    "ipfs-unixfs-importer": "^17.1.1",
     "iso-conf": "^0.4.2",
     "multiformats": "^14.0.5",
     "typescript": "catalog:",

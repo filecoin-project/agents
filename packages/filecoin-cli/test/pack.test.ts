@@ -5,11 +5,7 @@ import { mkdir, open, readFile, symlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { CarIndexer } from '@ipld/car'
-import {
-  type BufferImporter,
-  type BufferImporterResult,
-  importer,
-} from 'ipfs-unixfs-importer'
+import { type BufferImporter, importer } from 'ipfs-unixfs-importer'
 import { CID } from 'multiformats/cid'
 import * as raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
@@ -145,9 +141,6 @@ test('extractCar restores files larger than one read window', async () => {
   assert.ok(bytes.equals(await readFile(join(root, 'out', 'blob.bin'))))
 })
 
-/** The CID type of the importer's own multiformats copy. */
-type CidV13 = BufferImporterResult['cid']
-
 test('the importer encodes 2–4 GiB file sizes as full varints', async () => {
   // protons-runtime wrote uint64 values in [2^31, 2^32) as one varint byte plus
   // four bytes of stale Buffer pool memory (ipfs/protons#212). Fake three 1 GiB
@@ -156,13 +149,13 @@ test('the importer encodes 2–4 GiB file sizes as full varints', async () => {
   const bufferImporter: BufferImporter = async function* () {
     for (let i = 0; i < 3; i++) {
       const digest = await sha256.digest(Uint8Array.of(i))
-      const cid = CID.createV1(raw.code, digest) as unknown as CidV13
+      const cid = CID.createV1(raw.code, digest)
       yield async () => ({ cid, size: gib, block: new Uint8Array() })
     }
   }
   const blocks = new Map<string, Uint8Array>()
   const blockstore = {
-    put(cid: CidV13, bytes: Uint8Array) {
+    put(cid: CID, bytes: Uint8Array) {
       blocks.set(cid.toString(), bytes)
       return cid
     },
@@ -170,7 +163,7 @@ test('the importer encodes 2–4 GiB file sizes as full varints', async () => {
   // Leave non-zero bytes in the Buffer pool, as a long-running pack would.
   for (let i = 0; i < 256; i++) Buffer.allocUnsafe(64).fill(0xa5)
 
-  let root: CidV13 | undefined
+  let root: CID | undefined
   for await (const entry of importer(
     [{ path: 'big.bin', content: [Uint8Array.of(0)] }],
     blockstore,
