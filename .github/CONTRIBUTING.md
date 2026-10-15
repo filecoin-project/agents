@@ -116,7 +116,7 @@ Leave a release pull request open to batch more changes into that release. Each 
 
 ### Publishing credentials
 
-The workflow publishes through [npm trusted publishing](https://docs.npmjs.com/trusted-publishers), so the repository holds no npm token. `filecoin` and `@filecoin-project/api-client` each need a trusted publisher on npmjs.com for the `filecoin-project/agents` repository and the `release.yml` workflow.
+The workflow publishes through [npm trusted publishing](https://docs.npmjs.com/trusted-publishers), so the repository holds no npm token. `filecoin` and `@filecoin-project/api-client` each have a trusted publisher on npmjs.com for the `filecoin-project/agents` repository and the `release.yml` workflow.
 
 The publish job runs in the `npm` GitHub environment, which GitHub creates on the first run. Naming `npm` as the trusted publisher's optional environment limits publishing to that job, and the environment's protection rules can later require a reviewer or the `main` branch.
 
