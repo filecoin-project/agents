@@ -14,8 +14,7 @@ catalogs:
       version: 7.0.2
 
 patchedDependencies:
-  protons-runtime@6.0.2: b37b0efdb34f86e39af3662efdade4463109a8a1b7af462f281be0210cdc7210
-  protons-runtime@8.0.1: b37b0efdb34f86e39af3662efdade4463109a8a1b7af462f281be0210cdc7210
+  protons-runtime@8.0.1: a968848c0c28551a1154da0398488ace0f8297737df23cb673157b8b317ae680
 
 importers:
 
@@ -247,8 +246,8 @@ importers:
         specifier: ^16.2.3
         version: 16.2.3
       ipfs-unixfs-importer:
-        specifier: ^16.1.5
-        version: 16.1.5(supports-color@10.2.2)
+        specifier: ^17.1.1
+        version: 17.1.1(supports-color@10.2.2)
       iso-conf:
         specifier: ^0.4.2
         version: 0.4.2
@@ -2247,8 +2246,8 @@ packages:
   blake3-wasm@2.1.5:
     resolution: {integrity: sha512-F1+K8EbfOZE49dtoPtmxUQrpXaBIl3ICvasLh+nJta0xkz+9kF/7uet9fLnwKqhDrmj6g+6K3Tw9yQPUg2ka5g==}
 
-  blockstore-core@6.1.3:
-    resolution: {integrity: sha512-GLb6XpvbWOlrz1Liz8lTH8iZoXfJ7otY02i26Ok1q6lDkr9uN3jcZq8GzhNq76jJ7CkFG/EGP8J75F3MFo7v6A==}
+  blockstore-core@7.0.1:
+    resolution: {integrity: sha512-HgLzdH8oL6DrMC6J7snxmV0TXzJ/BMPSbskH4v7BBuUO9foDBOMEKUfoMX9yoBpxbH+r3Z9afXHDgXlTifMxHQ==}
 
   body-parser@2.3.0:
     resolution: {integrity: sha512-2cGmJupaNgg+QUwVLAucDuWuoMZ6EX9iHDRswZ5lsNYEmwPaRknMPCLZz07yTzVq/83p4o/wzbDZbBrTvGGTIw==}
@@ -2810,17 +2809,11 @@ packages:
   inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
 
-  interface-blockstore@6.0.2:
-    resolution: {integrity: sha512-Z8LscLfuNWYatKVgaEXK8su+wY6iEEcCXYQiwXf20XVuMvR/zyFa6A0s36epfw8CvUrIv+bXT+FZ2hMEfUCmJw==}
-
   interface-blockstore@7.0.1:
     resolution: {integrity: sha512-a3NsgRXpRppVWtQnJjmZ9jxvjcttY1+WNWqHFWwgKhRcNMMGwWGtFNYpQmcZ+mEnIt5NTJVYzNwLCcALMWPNsA==}
 
   interface-datastore@10.0.1:
     resolution: {integrity: sha512-DYMj/Og5Cz1Qwkx6/x5KRvR8SYEX7rVAv3KKCm2NzTwWSfpNAC4PahjcYbHyoZBP6zPWrhQv5n5wE+vaDdgSAg==}
-
-  interface-store@7.0.2:
-    resolution: {integrity: sha512-KYOPcDH+1peaPhSeoZujR5nwkVeola1EdrnrlHTIM0HRNUs9B0aTsUQMH5kTmIjaQq1BOowoUyoCamgL8IMyww==}
 
   interface-store@8.0.0:
     resolution: {integrity: sha512-e2+s3EEROzM+Wlas4hU3zveTUscvVMf1BOvdsJfpzFm19SoEXLVadpACjWOnM491HqGpvtfFnevyiaN8W+I6Eg==}
@@ -2836,11 +2829,8 @@ packages:
   ipfs-unixfs-exporter@16.2.3:
     resolution: {integrity: sha512-U+YXqw9TnWpx8F+/qLZ/1E/hFsDTs4BSQ9i+ifdctwmLZ5wH65X/zVHSUBkpLvbUedCWbXGIH2om6sgWOH7nsg==}
 
-  ipfs-unixfs-importer@16.1.5:
-    resolution: {integrity: sha512-w/voTDW5gt5RlZlJ/EljU4q4s+4any2LZ+10UJR7i24+xWWv1+ReyaC9dz46U6HB5YqztAKCzBB123OOsDsNFg==}
-
-  ipfs-unixfs@12.0.2:
-    resolution: {integrity: sha512-uZ3rutVVZZ+tw52P+sgDSgOSK6ztExJVlfCjKvSD+NIEVlWQPDeKgdSFm+Kxchmgp7t6g1h+dzir+NgY+VsQXg==}
+  ipfs-unixfs-importer@17.1.1:
+    resolution: {integrity: sha512-Yw91sINTxlImpXc7/D6S9SZ/SwDr/kCiy4vE6VIdbOhnbS9EsXeLnJl8TDywFP/U0bwKfWC6LuJwP8dKDQ//OA==}
 
   ipfs-unixfs@13.1.2:
     resolution: {integrity: sha512-N8LDphmWAEQbRXu35l4iOXrFbBGmYl0o1PKw9kxsp1dcOHG+CCLdF68gt6jREObFsC48VXm4fbgNXIfoNUIcuA==}
@@ -3696,9 +3686,6 @@ packages:
     resolution: {integrity: sha512-NxNv/kLguCA7p3jE8oL2aEBsrJWgAakBpgmgK6lpPWV+WuOmY6r2/zbAVnP+T8bQlA0nzHXSJSJW0Hq7ylaD2Q==}
     engines: {node: '>= 6'}
 
-  protons-runtime@6.0.2:
-    resolution: {integrity: sha512-hiyjyANwGcgmzc+tXc1/ZcSZhKnl5MDjaVNWkISHBgadaU0sjTgKIKZMZ62d9J9zlSTyKHCs/osPkQ/3Z+7yeA==}
-
   protons-runtime@8.0.1:
     resolution: {integrity: sha512-du8V7RuI8QLmRVXJWmZKc2xRngbbeedtP5Hf6+m1YKRKLMyld+ITIkqXyocyBpkzUUkeh/l6mN3zcP2z5RsT9Q==}
 
@@ -4090,9 +4077,6 @@ packages:
   ufo@1.6.4:
     resolution: {integrity: sha512-JFNbkD1Svwe0KvGi8GOeLcP4kAWQ609twvCdcHxq1oSL8svv39ZuSvajcD8B+5D0eL4+s1Is2D/O6KN3qcTeRA==}
 
-  uint8-varint@2.0.5:
-    resolution: {integrity: sha512-jeFLbL/x30wBRnWjKE1qVBXeumG46r7XmYkpis955lTQ+blccGKFrOsSMHlxePwYB1pI7L8YPHz1t4jLxEs3nA==}
-
   uint8-varint@3.0.0:
     resolution: {integrity: sha512-S4DdpXBaLwKcFo7f0bWzWfHjbZ/i3QhM842qn+ZvHjxqFCfUcEB9SQNcmI69S+zMlcmIcKxsk9Iyw77S2Kxv6Q==}
 
@@ -4100,14 +4084,8 @@ packages:
     resolution: {integrity: sha512-8iAasVS4wUx0gPLjH8Xtz2PeDzTSiy8QiLGu2DT3X5GU+egFEQhpnbtkehbAwjvDcxIERmCYcysiODFmE3Ud0Q==}
     engines: {node: '>=18'}
 
-  uint8arraylist@2.4.9:
-    resolution: {integrity: sha512-KxWjyEFzchzik3aoQlK66oaoxIReoMo5bQRm1fcjBUZvE8xv/tyR3CTKhjh6K/faV8VaF6hd5pjr45CzbwuwkA==}
-
   uint8arraylist@3.0.2:
     resolution: {integrity: sha512-LDVoq9BQaGJzGDUovEnoX6rpKCvnY/Jbtws4ikwnBzjRbq5qBAFpBZevUEbSmMM87aO0Sp+wOZy2ZXf5yODmXQ==}
-
-  uint8arrays@5.1.1:
-    resolution: {integrity: sha512-9muQwa4wZG4dKi9gMAIBtnk2Pw87SRpvWTH6lOGm19V2Uqxr4uomUf2PGqPnWc+qs06sN8owUU4jfcoWOcfwVQ==}
 
   uint8arrays@6.1.1:
     resolution: {integrity: sha512-iz7JN0XCSZYA111lhFG2Ui9EhFvTNekqSRHw3lvMHq+dzwWy1OQftxFQREEh4rffU0oSoXdQHsk2TiHKVm4fsA==}
@@ -6253,15 +6231,16 @@ snapshots:
 
   blake3-wasm@2.1.5: {}
 
-  blockstore-core@6.1.3:
+  blockstore-core@7.0.1:
     dependencies:
       '@libp2p/logger': 6.2.13
-      interface-blockstore: 6.0.2
-      interface-store: 7.0.2
+      abort-error: 1.0.2
+      interface-blockstore: 7.0.1
+      interface-store: 8.0.0
       it-all: 3.0.11
       it-filter: 3.1.6
       it-merge: 3.0.15
-      multiformats: 13.4.2
+      multiformats: 14.0.5
 
   body-parser@2.3.0(supports-color@10.2.2):
     dependencies:
@@ -6849,11 +6828,6 @@ snapshots:
 
   inherits@2.0.4: {}
 
-  interface-blockstore@6.0.2:
-    dependencies:
-      interface-store: 7.0.2
-      multiformats: 13.4.2
-
   interface-blockstore@7.0.1:
     dependencies:
       interface-store: 8.0.0
@@ -6864,8 +6838,6 @@ snapshots:
       abort-error: 1.0.2
       interface-store: 8.0.0
       uint8arrays: 6.1.1
-
-  interface-store@7.0.2: {}
 
   interface-store@8.0.0:
     dependencies:
@@ -6894,36 +6866,30 @@ snapshots:
       p-queue: 9.3.3
       progress-events: 1.1.0
 
-  ipfs-unixfs-importer@16.1.5(supports-color@10.2.2):
+  ipfs-unixfs-importer@17.1.1(supports-color@10.2.2):
     dependencies:
       '@ipld/dag-pb': 4.2.0
       '@multiformats/murmur3': 2.2.8
-      blockstore-core: 6.1.3
+      blockstore-core: 7.0.1
       hamt-sharding: 3.0.8
-      interface-blockstore: 6.0.2
-      interface-store: 7.0.2
-      ipfs-unixfs: 12.0.2
+      interface-blockstore: 7.0.1
+      ipfs-unixfs: 13.1.2
       it-all: 3.0.11
       it-batch: 3.0.11
       it-first: 3.0.11
       it-parallel-batch: 3.0.11
-      multiformats: 13.4.2
+      multiformats: 14.0.5
       progress-events: 1.1.0
       rabin-wasm: 0.1.5(supports-color@10.2.2)
-      uint8arraylist: 2.4.9
-      uint8arrays: 5.1.1
+      uint8arraylist: 3.0.2
+      uint8arrays: 6.1.1
     transitivePeerDependencies:
       - encoding
       - supports-color
 
-  ipfs-unixfs@12.0.2:
-    dependencies:
-      protons-runtime: 6.0.2(patch_hash=b37b0efdb34f86e39af3662efdade4463109a8a1b7af462f281be0210cdc7210)
-      uint8arraylist: 2.4.9
-
   ipfs-unixfs@13.1.2:
     dependencies:
-      protons-runtime: 8.0.1(patch_hash=b37b0efdb34f86e39af3662efdade4463109a8a1b7af462f281be0210cdc7210)
+      protons-runtime: 8.0.1(patch_hash=a968848c0c28551a1154da0398488ace0f8297737df23cb673157b8b317ae680)
       uint8arraylist: 3.0.2
       uint8arrays: 6.1.1
 
@@ -7538,13 +7504,7 @@ snapshots:
       kleur: 3.0.3
       sisteransi: 1.0.5
 
-  protons-runtime@6.0.2(patch_hash=b37b0efdb34f86e39af3662efdade4463109a8a1b7af462f281be0210cdc7210):
-    dependencies:
-      uint8-varint: 2.0.5
-      uint8arraylist: 2.4.9
-      uint8arrays: 5.1.1
-
-  protons-runtime@8.0.1(patch_hash=b37b0efdb34f86e39af3662efdade4463109a8a1b7af462f281be0210cdc7210):
+  protons-runtime@8.0.1(patch_hash=a968848c0c28551a1154da0398488ace0f8297737df23cb673157b8b317ae680):
     dependencies:
       uint8-varint: 3.0.0
       uint8arraylist: 3.0.2
@@ -8013,11 +7973,6 @@ snapshots:
 
   ufo@1.6.4: {}
 
-  uint8-varint@2.0.5:
-    dependencies:
-      uint8arraylist: 2.4.9
-      uint8arrays: 5.1.1
-
   uint8-varint@3.0.0:
     dependencies:
       uint8arraylist: 3.0.2
@@ -8025,17 +7980,9 @@ snapshots:
 
   uint8array-extras@1.6.0: {}
 
-  uint8arraylist@2.4.9:
-    dependencies:
-      uint8arrays: 5.1.1
-
   uint8arraylist@3.0.2:
     dependencies:
       uint8arrays: 6.1.1
-
-  uint8arrays@5.1.1:
-    dependencies:
-      multiformats: 13.4.2
 
   uint8arrays@6.1.1:
     dependencies:

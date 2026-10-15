@@ -16,3 +16,22 @@ index d8a898e76ff83f0a2ab6b4af454ee4d24e9fe544..76f82e9014f052898d62b6732c755e21
      }
      /**
       * Converts this long bits to a possibly unsafe JavaScript number
+diff --git a/src/utils/longbits.ts b/src/utils/longbits.ts
+index 12cc5d4303cd3af7523de2aba802fd715064abb7..31b120f2af5487dd8026efbcae66ed0625a33fb2 100644
+--- a/src/utils/longbits.ts
++++ b/src/utils/longbits.ts
+@@ -22,12 +22,12 @@ export class LongBits {
+     /**
+      * Low bits
+      */
+-    this.lo = lo | 0
++    this.lo = lo >>> 0
+ 
+     /**
+      * High bits
+      */
+-    this.hi = hi | 0
++    this.hi = hi >>> 0
+   }
+ 
+   /**

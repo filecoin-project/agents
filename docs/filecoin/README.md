@@ -155,7 +155,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **CLI performance.** Hash PieceCIDs with `@hugomrdias/commp-wasm` ([#5](https://github.com/filecoin-project/agents/issues/5)).
 - **CLI keys.** Store the session key in the OS keychain. Revoke the key on chain from `logout`.
 - **CLI cancellation.** Pass the abort signal to viem once its actions and `fallback` transport accept one. Then remove `withSignal()` and `abortable()` ([#12](https://github.com/filecoin-project/agents/issues/12)).
-- **CLI dependencies.** Drop the protons-runtime patches in `patches/` once a release with [ipfs/protons#212](https://github.com/ipfs/protons/pull/212) is on npm, and move to `ipfs-unixfs-importer` 17 ([folder packing](architecture.md#folder-packing)).
+- **CLI dependencies.** Drop the protons-runtime patch in `patches/` once a release with [ipfs/protons#212](https://github.com/ipfs/protons/pull/212) is on npm ([folder packing](architecture.md#folder-packing)).
 - **CLI state.** Track a removal until the provider deletes the piece. Check every file of a folder in `inspect --check`.
 - **Old hosts.** Delete the `fil-api` and `fil-app` Workers and their `hugomrdias.dev` domains from the personal Cloudflare account. Released CLIs and plugins point at `filecoin.cloud` since `filecoin` 0.5.0 and the plugin 0.2.0; only earlier releases still call the old hosts.
 - **MCP servers.** Review the [foc-observer](https://github.com/FilOzone/foc-observer) MCP server. Merge its tools into the filecoin-api MCP server.

@@ -144,10 +144,10 @@ export async function packDirectory(
   try {
     for await (const entry of importer(
       candidates(),
-      blockstore as never,
+      blockstore,
       IMPORTER_OPTIONS
     )) {
-      if (entry.path === name) rootCid = entry.cid as unknown as CID
+      if (entry.path === name) rootCid = entry.cid
     }
     await writer.close()
     await written
@@ -250,7 +250,7 @@ export async function extractCar(
     const rootCid = CID.decode(headerRoot.bytes)
     const blockstore = {
       async *get(cid: CID) {
-        const block = await reader.get(cid as never)
+        const block = await reader.get(cid)
         if (!block) throw new Error(`Block ${cid} missing from CAR.`)
         if (verifyBlocks) await assertBlock(cid, block.bytes)
         yield block.bytes
@@ -265,7 +265,7 @@ export async function extractCar(
           message: `Refusing to write outside ${outDir}: ${dest}`,
         })
       }
-      const node = await exporter(cid, blockstore as never)
+      const node = await exporter(cid, blockstore)
       if (node.type === 'directory') {
         await mkdir(dest, { recursive: true })
         for await (const entry of node.entries()) {
@@ -275,7 +275,7 @@ export async function extractCar(
               message: `Refusing entry name with a path separator: ${entry.name}`,
             })
           }
-          await write(entry.cid as unknown as CID, resolve(dest, entry.name))
+          await write(entry.cid, resolve(dest, entry.name))
         }
       } else if (node.type === 'file') {
         await mkdir(dirname(dest), { recursive: true })
