@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/filecoin-project/agents/compare/filecoin-app-v0.5.0...filecoin-app-v0.5.1) (2026-10-15)
+
+
+### Bug Fixes
+
+* **filecoin-app:** cache the Wrangler deploy redirect with the build ([c95ec9b](https://github.com/filecoin-project/agents/commit/c95ec9b5b646320f438aaf8f0b7058b82a489764))
+
 ## [0.5.0](https://github.com/filecoin-project/agents/compare/filecoin-app-v0.4.0...filecoin-app-v0.5.0) (2026-10-14)
 
 
