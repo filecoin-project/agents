@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/filecoin-project/agents/compare/filecoin-cli-v0.5.0...filecoin-cli-v0.5.1) (2026-10-15)
+
+
+### Bug Fixes
+
+* **filecoin-cli:** patch protons-runtime uint64 encoding for 2–4 GiB files ([842fcd1](https://github.com/filecoin-project/agents/commit/842fcd1abf0223961a888ed991addd3ab9bcfd6a))
+
 ## [0.5.0](https://github.com/filecoin-project/agents/compare/filecoin-cli-v0.4.0...filecoin-cli-v0.5.0) (2026-10-14)
 
 

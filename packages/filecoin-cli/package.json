@@ -1,6 +1,6 @@
 {
   "name": "filecoin",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Command-line interface for Filecoin storage",
   "license": "MIT",
   "author": "Hugo Dias <hugomrdias@gmail.com>",
