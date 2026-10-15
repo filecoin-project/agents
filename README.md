@@ -35,7 +35,7 @@ pnpm check
 
 ## Release
 
-[release-please](https://github.com/googleapis/release-please) versions the CLI, the two apps, and the plugin from [Conventional Commits](https://www.conventionalcommits.org/). [`.github/release-please-config.json`](.github/release-please-config.json) lists them, and [`.github/.release-please-manifest.json`](.github/.release-please-manifest.json) holds their current versions.
+[release-please](https://github.com/googleapis/release-please) versions the CLI, the two apps, and the plugin from [Conventional Commits](https://www.conventionalcommits.org/). [`.github/release-please-config.json`](.github/release-please-config.json) lists them, and [`.github/release-please-manifest.json`](.github/release-please-manifest.json) holds their current versions.
 
 1. On each push to `main`, the [Release workflow](.github/workflows/release.yml) opens or updates one release pull request for each package, app, or plugin that a commit touched since its last release. Each pull request bumps that component's version and updates its `CHANGELOG.md`. `always-update` rebuilds every open release pull request from `main` on each push, even when its changelog is unchanged, so its checks and previews always test the current code. The first release of each was 0.1.0, because `initial-version` overrides release-please's default of 1.0.0. Below 1.0.0, `feat` bumps the minor version and `fix` the patch version.
 2. Merging a release pull request tags that release as `<component>-v<version>`, such as `filecoin-cli-v0.1.0`, and creates its GitHub release. A change that spans components, such as a rename, is released once each of their pull requests merges.
