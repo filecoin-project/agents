@@ -2,7 +2,7 @@
 
 Tools that let AI agents, and the people who run them, store and retrieve data on [Filecoin](https://docs.filecoin.cloud/). The `filecoin` CLI uploads files and folders to a storage provider and returns retrieval URLs. An agent plugin brings its skills to Claude Code, Codex, and other clients. A read-only REST API and MCP server expose providers, data sets, pieces, and payment rails. A web app pairs an explorer for that data with a wallet dashboard for Filecoin Pay.
 
-This is a pnpm and Turborepo monorepo. The CLI publishes to npm, the plugin installs from this repository, and the apps stay private.
+This is a pnpm and Turborepo monorepo. The CLI and the API client publish to npm, the plugin installs from this repository, and the apps stay private.
 
 ## Packages
 
@@ -11,6 +11,7 @@ Packages under `packages/` publish to npm.
 | Directory | npm | Contents |
 | --- | --- | --- |
 | [`packages/filecoin-cli`](packages/filecoin-cli/README.md) | [`filecoin`](https://www.npmjs.com/package/filecoin) | `filecoin`, a prototype CLI that stores files and folders on one Curio provider and returns retrieval URLs. People and agents both run it. |
+| [`packages/filecoin-api-client`](packages/filecoin-api-client/README.md) | [`@filecoin-project/api-client`](https://www.npmjs.com/package/@filecoin-project/api-client) | A typed filecoin-api client generated from the API's OpenAPI document. filecoin-app uses it, and the CLI will use it for its reads. |
 
 ## Apps
 

@@ -23,6 +23,7 @@
   ],
   "packages": {
     "packages/filecoin-cli": { "component": "filecoin-cli" },
+    "packages/filecoin-api-client": { "component": "filecoin-api-client" },
     "apps/filecoin-api": { "component": "filecoin-api" },
     "apps/filecoin-app": { "component": "filecoin-app" },
     "plugins/filecoin": {
