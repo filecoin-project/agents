@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createApp, openApiConfig } from '../src/app.ts'
 import { testApp } from './helpers.ts'
 
 interface OpenApiDoc {
@@ -55,6 +56,17 @@ describe('openapi', () => {
     expect(ids).toHaveLength(14)
     expect(ids.every((id) => typeof id === 'string' && id !== '')).toBe(true)
     expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  // @filecoin-project/api-client generates its types from this file. Run
+  // `pnpm gen:openapi` to update it after changing a route or schema.
+  it('matches the committed openapi.json', async () => {
+    const doc = createApp().getOpenAPI31Document(
+      openApiConfig('https://api.filecoin.io')
+    )
+    await expect(`${JSON.stringify(doc, null, 2)}\n`).toMatchFileSnapshot(
+      '../openapi.json'
+    )
   })
 
   it('serves the API reference', async () => {

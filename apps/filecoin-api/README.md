@@ -79,7 +79,8 @@ pnpm --filter filecoin-api dev
 ```
 
 Scripts:
-- `pnpm test`: vitest in workerd via `@cloudflare/vitest-plugin`, with a fake database
+- `pnpm test`: vitest in workerd via `@cloudflare/vitest-plugin`, with a fake database. It fails when `openapi.json` differs from the document the Worker serves.
+- `pnpm gen:openapi`: rewrites `openapi.json` from the routes. Run it after changing a route or schema, then `pnpm --filter @filecoin-project/api-client gen` to update the [client](../../packages/filecoin-api-client/README.md) types.
 - `pnpm typecheck`: checks that the generated worker types are current and runs `tsc`
 - `pnpm cf-typegen`: regenerates `worker-configuration.d.ts` after changing `wrangler.jsonc`
 

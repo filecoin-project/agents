@@ -11,6 +11,7 @@
     "cf-typegen": "CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false wrangler types",
     "typecheck": "CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false wrangler types --check && tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
+    "gen:openapi": "vitest run test/openapi.test.ts -u",
     "lint": "biome check .",
     "check": "pnpm typecheck && pnpm test && pnpm lint"
   },
