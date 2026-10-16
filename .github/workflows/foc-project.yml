@@ -27,7 +27,7 @@ jobs:
             await github.rest.issues.addLabels({
               ...context.repo,
               issue_number: context.issue.number,
-              labels: ['team/fs-wg', 'team/agents'],
+              labels: ['team/fs-wg'],
             });
 
       # Add directly after labeling: GITHUB_TOKEN label events do not start
