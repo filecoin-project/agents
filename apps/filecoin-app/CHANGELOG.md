@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.6.0](https://github.com/filecoin-project/agents/compare/filecoin-app-v0.5.1...filecoin-app-v0.6.0) (2026-10-16)
+
+
+### Features
+
+* **filecoin-api:** add search_docs MCP tool backed by GitBook docs search ([#38](https://github.com/filecoin-project/agents/issues/38)) ([8796467](https://github.com/filecoin-project/agents/commit/87964676a3e9d4543178159300c886934fb45403))
+* **filecoin-app:** use synapse-react 0.5.1 for data sets and uploads ([#42](https://github.com/filecoin-project/agents/issues/42)) ([baafad0](https://github.com/filecoin-project/agents/commit/baafad0cdb1ef55ceb2d209a19d57895eaafcc98))
+
+
+### Bug Fixes
+
+* **filecoin-app:** bill session key data sets to the root wallet ([#36](https://github.com/filecoin-project/agents/issues/36)) ([19a314f](https://github.com/filecoin-project/agents/commit/19a314f0d1cbfabb01a33a198f7a5aacf19534a3))
+
+
+### Performance Improvements
+
+* update filecoin-cli and filecoin-api to synapse-core 0.10.2 ([#43](https://github.com/filecoin-project/agents/issues/43)) ([041a490](https://github.com/filecoin-project/agents/commit/041a4909a66e3487c6aefbd41f1e0bd802516873))
+
 ## [0.5.1](https://github.com/filecoin-project/agents/compare/filecoin-app-v0.5.0...filecoin-app-v0.5.1) (2026-10-15)
 
 
