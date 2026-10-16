@@ -1,0 +1,61 @@
+name: Label and add issues and PRs to FOC
+
+on:
+  issues:
+    types: [opened, labeled]
+  # Run trusted base-branch code so fork PRs can use the project credential.
+  # Never check out or execute PR code in this workflow.
+  pull_request_target:
+    types: [opened, labeled]
+
+permissions: {}
+
+jobs:
+  add-to-project:
+    if: github.event.action == 'opened' || github.event.label.name == 'team/fs-wg'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Label new issues and PRs
+        if: github.event.action == 'opened'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              ...context.repo,
+              issue_number: context.issue.number,
+              labels: ['team/fs-wg', 'team/agents'],
+            });
+
+      # Add directly after labeling: GITHUB_TOKEN label events do not start
+      # another workflow. Only this step needs the cross-organization PAT.
+      - name: Add issue or PR to the FOC project
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          github-token: ${{ secrets.FILOZZY_CI_ADD_TO_PROJECT }}
+          script: |
+            const { organization } = await github.graphql(`
+              query {
+                organization(login: "FilOzone") {
+                  projectV2(number: 14) { id }
+                }
+              }
+            `);
+            const projectId = organization?.projectV2?.id;
+            if (!projectId) {
+              throw new Error('FILOZZY_CI_ADD_TO_PROJECT must have write access to FilOzone project 14 (FOC).');
+            }
+
+            const item = context.payload.issue ?? context.payload.pull_request;
+            // Adding an existing item returns its ID; do not suppress API errors.
+            // https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/using-the-api-to-manage-projects#adding-an-item-to-a-project
+            await github.graphql(`
+              mutation($projectId: ID!, $contentId: ID!) {
+                addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
+                  item { id }
+                }
+              }
+            `, { projectId, contentId: item.node_id });
