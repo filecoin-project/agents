@@ -1,3 +1,4 @@
+import { useDataSets } from '@filoz/synapse-react'
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { CreateDataSetDialog } from '@/components/create-data-set-dialog'
@@ -21,7 +22,6 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { UploadPanel } from '@/components/upload-panel'
-import { usePdpDataSets } from '@/hooks-synapse'
 import { zId } from '@/lib/search-schemas'
 
 export const Route = createFileRoute('/dashboard/upload')({
@@ -34,7 +34,12 @@ function UploadPage() {
   const { address } = useDashboard()
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
-  const dataSets = usePdpDataSets({ address })
+  // Paging every data set is costly, and writes refresh this query.
+  const dataSets = useDataSets({
+    address,
+    includePieces: false,
+    query: { staleTime: 60_000 },
+  })
   const live = (dataSets.data ?? []).filter(
     (d) => d.live && d.pdpEndEpoch === 0n && d.provider
   )

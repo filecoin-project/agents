@@ -1,4 +1,5 @@
 import type { PdpDataSet } from '@filoz/synapse-core/warm-storage'
+import { useDataSets } from '@filoz/synapse-react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { DatabaseIcon } from 'lucide-react'
 import { useMemo } from 'react'
@@ -13,7 +14,6 @@ import { MetadataView } from '@/components/details'
 import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
 import { FlagBadge } from '@/components/status-badge'
-import { usePdpDataSets } from '@/hooks-synapse'
 
 export const Route = createFileRoute('/dashboard/data-sets/')({
   component: MyDataSetsPage,
@@ -23,7 +23,12 @@ export const Route = createFileRoute('/dashboard/data-sets/')({
 function MyDataSetsPage() {
   const { address } = useDashboard()
   const navigate = useNavigate()
-  const dataSets = usePdpDataSets({ address })
+  // Paging every data set is costly, and writes refresh this query.
+  const dataSets = useDataSets({
+    address,
+    includePieces: false,
+    query: { staleTime: 60_000 },
+  })
   const columns = useMemo<Column<PdpDataSet>[]>(() => {
     const c = columnHelper<PdpDataSet>()
     return c.columns([

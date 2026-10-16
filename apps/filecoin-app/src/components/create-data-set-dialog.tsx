@@ -1,5 +1,6 @@
 import { CreateDataSetPermission } from '@filoz/synapse-core/session-key'
-import { useProviders } from '@filoz/synapse-react'
+import { useCreateDataSet, useProviders } from '@filoz/synapse-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { PlusIcon, TrashIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useDashboard } from '@/components/dashboard-context'
@@ -32,7 +33,7 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import { Switch } from '@/components/ui/switch'
 import { useRefreshWhenIndexed } from '@/hooks/use-refresh-when-indexed'
-import { useCreateDataSet } from '@/hooks-synapse'
+import { invalidateStorageQueries } from '@/hooks-synapse'
 import { formatBytes } from '@/lib/format'
 
 /**
@@ -50,6 +51,7 @@ export function CreateDataSetDialog(props: {
   const [metadata, setMetadata] = useState<{ key: string; value: string }[]>([])
   const providers = useProviders({ query: { enabled: open } })
   const refresh = useRefreshWhenIndexed(network)
+  const queryClient = useQueryClient()
   const create = useCreateDataSet({
     sessionKey: signerFor([CreateDataSetPermission]),
     ...txToasts<{ dataSetId: bigint }>(network, 'Create data set', {
@@ -58,6 +60,8 @@ export function CreateDataSetDialog(props: {
         setOpen(false)
         setMetadata([])
         refresh()
+        // The new rail locks funds and uses FWSS allowance.
+        void invalidateStorageQueries(queryClient)
         props.onCreated?.(result.dataSetId)
       },
     }),

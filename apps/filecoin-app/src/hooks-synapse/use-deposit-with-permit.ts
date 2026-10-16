@@ -1,4 +1,5 @@
 import { depositWithPermitSync } from '@filoz/synapse-core/pay'
+import { getSignerClient } from '@filoz/synapse-react'
 import {
   type MutateOptions,
   useMutation,
@@ -7,7 +8,6 @@ import {
 import type { Address } from 'viem'
 import { useChainId, useConfig, useConnection } from 'wagmi'
 import { synapseKeys } from './keys'
-import { getSignerClient } from './utils'
 
 /** Variables for {@link useDepositWithPermit}. */
 export interface UseDepositWithPermitVariables {
