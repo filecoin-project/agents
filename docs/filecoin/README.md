@@ -71,7 +71,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 | [API and MCP domains](mcp-domains.md) | The `filecoin.io` and `filecoin.cloud` hostnames that serve filecoin-api and its MCP server, and the Cloudflare for SaaS setup behind `filecoin.io` |
 | [filecoin-api README](../../apps/filecoin-api/README.md) | Routes, retrieval redirects, MCP tools, deploys, and limits |
 | [filecoin-app README](../../apps/filecoin-app/README.md) | The explorer, the dashboard, the stack, and deploys |
-| [hooks-synapse README](../../apps/filecoin-app/src/hooks-synapse/README.md) | React hooks that synapse-react lacks, the ones the app now takes from synapse-react, and the remaining gaps |
+| [hooks-synapse README](../../apps/filecoin-app/src/hooks-synapse/README.md) | React hooks that synapse-react lacks, and the gaps that remain upstream |
 
 ## Assumptions behind the proof of concept
 
