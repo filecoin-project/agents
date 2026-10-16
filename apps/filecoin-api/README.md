@@ -60,7 +60,7 @@ Resolved providers are cached per network and CID in the [Workers Cache API](htt
 - An entry is fresh for 10 minutes.
 - After that, it is still served immediately for up to 24 hours, and refreshed in the background after the response.
 - The `X-Cache` response header reports `hit`, `stale`, `miss` or `none`.
-- The cache is per datacenter, and it does nothing on `workers.dev` preview URLs.
+- The cache is per datacenter. It also works on `workers.dev` preview URLs; only the dashboard editor and the Playground ignore Cache API calls.
 
 The MCP server offers one tool per data route: `get_status`, `list_providers`, `get_provider`, `list_data_sets`, `get_data_set`, `list_data_set_pieces`, `get_piece`, `list_pieces`, `list_rails`, `get_rail`, `list_rail_settlements`, `list_session_keys` and `list_session_key_events`. Each of these requires a `network` argument.
 
