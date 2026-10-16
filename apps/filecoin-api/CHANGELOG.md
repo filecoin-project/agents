@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/filecoin-project/agents/compare/filecoin-api-v0.3.0...filecoin-api-v0.4.0) (2026-10-16)
+
+
+### Features
+
+* **filecoin-api:** add search_docs MCP tool backed by GitBook docs search ([#38](https://github.com/filecoin-project/agents/issues/38)) ([8796467](https://github.com/filecoin-project/agents/commit/87964676a3e9d4543178159300c886934fb45403))
+
+
+### Performance Improvements
+
+* update filecoin-cli and filecoin-api to synapse-core 0.10.2 ([#43](https://github.com/filecoin-project/agents/issues/43)) ([041a490](https://github.com/filecoin-project/agents/commit/041a4909a66e3487c6aefbd41f1e0bd802516873))
+
 ## [0.3.0](https://github.com/filecoin-project/agents/compare/filecoin-api-v0.2.0...filecoin-api-v0.3.0) (2026-10-14)
 
 
