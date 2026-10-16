@@ -8,12 +8,14 @@ allowBuilds:
   workerd: true
 
 catalog:
+  # One synapse-core for the app, the API and the CLI. The CLI bundles it, so
+  # a bump that only edits this line ships with the CLI's next release.
+  '@filoz/synapse-core': 0.10.2
   '@types/node': 26.5.1
   typescript: 7.0.2
 
 minimumReleaseAgeExclude:
   - iso-conf@0.4.2
-  - '@filoz/synapse-core@0.10.1'
   - clipact@0.4.0
   - '@filoz/synapse-core@0.10.2'
   - '@filoz/synapse-react@0.5.1'

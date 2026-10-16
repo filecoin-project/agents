@@ -95,7 +95,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **`logout` leaves the key valid on chain.** It deletes the key on this machine but does not revoke it.
 - **Local view only.** `filecoin ls` lists only the resources in this machine's state database. It cannot see content stored from another machine, from a cloud sandbox that was reset, or from the app. [Retrieve and verify](https://poc.filecoin.cloud/docs/retrieve#find-stored-content) shows how to find that content by wallet.
 - **Piece removal stops at `removal_pending`.** Nothing tracks when the provider removes the piece.
-- **Slow hashing.** PieceCID hashing takes about 70 seconds per GiB. `put`, `operations resume`, and `get` each hash the whole content ([#5](https://github.com/filecoin-project/agents/issues/5)).
+- **Every transfer hashes the whole content.** `put`, `operations resume`, and `get` each compute the PieceCID of all of it, at about 6 seconds per GiB.
 - **Shallow folder check.** `inspect --check` probes only the piece URL, not each file of a folder.
 - **Result links wait for the indexer.** The piece link and a file's browser link in the `put` result return 404 until filecoin-api's indexer has the new piece. Before that, `put` reports an early link on stderr. A file's early link carries a provider hint and works once the provider has parked the piece. A folder's link goes through inbrowser.link, which works only after Curio indexes the CAR and announces it to IPNI. Curio starts that when it receives the commit, before the transaction confirms. `filecoin get` downloads from the provider directly.
 - **No `--events`, `--fields`, or `operations inspect --refresh`.** The research proposed all three.
@@ -153,7 +153,6 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **Browser verification.** Add a WebMCP tool that checks a file against its PieceCID in the page, and let the upload page store folders.
 - **Two copies.** Store two copies by default in the CLI and the app's upload, as synapse-sdk does.
 - **CLI reads.** Move most CLI reads to filecoin-api through `@filecoin-project/api-client`. Keep synapse-core chain reads as the fallback.
-- **CLI performance.** Hash PieceCIDs with `@hugomrdias/commp-wasm` ([#5](https://github.com/filecoin-project/agents/issues/5)).
 - **CLI keys.** Store the session key in the OS keychain. Revoke the key on chain from `logout`.
 - **CLI cancellation.** Pass the abort signal to viem once its actions and `fallback` transport accept one. Then remove `withSignal()` and `abortable()` ([#12](https://github.com/filecoin-project/agents/issues/12)).
 - **CLI dependencies.** Drop the protons-runtime patch in `patches/` once a release with [ipfs/protons#212](https://github.com/ipfs/protons/pull/212) is on npm ([folder packing](architecture.md#folder-packing)).
