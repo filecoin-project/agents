@@ -1,4 +1,5 @@
 import { SchedulePieceRemovalsPermission } from '@filoz/synapse-core/session-key'
+import type { UseUploadPiecesResult } from '@filoz/synapse-react'
 import {
   useInfiniteQuery,
   useQuery,
@@ -34,11 +35,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
 import { UploadPanel } from '@/components/upload-panel'
 import { useRefreshWhenIndexed } from '@/hooks/use-refresh-when-indexed'
-import {
-  type UseUploadResult,
-  useDeletePieces,
-  usePdpDataSet,
-} from '@/hooks-synapse'
+import { useDeletePieces, usePdpDataSet } from '@/hooks-synapse'
 import type { Piece } from '@/lib/api/client'
 import { dataSetPiecesInfinite } from '@/lib/api/queries'
 import type { Network } from '@/lib/networks'
@@ -68,7 +65,10 @@ function recentPiecesKey(network: Network, dataSetId: string) {
  * @param dataSetId - Data set id.
  * @param result - Upload result.
  */
-function toRecentPieces(dataSetId: string, result: UseUploadResult): Piece[] {
+function toRecentPieces(
+  dataSetId: string,
+  result: UseUploadPiecesResult
+): Piece[] {
   return result.pieces.flatMap((piece) =>
     piece.pieceId === undefined
       ? []
@@ -78,7 +78,7 @@ function toRecentPieces(dataSetId: string, result: UseUploadResult): Piece[] {
             pieceId: piece.pieceId.toString(),
             cid: piece.pieceCid.toString(),
             rawSize: String(piece.size),
-            metadata: piece.metadata,
+            metadata: piece.metadata ?? null,
             removed: false,
             addedAtBlock: null,
             removedAtBlock: null,

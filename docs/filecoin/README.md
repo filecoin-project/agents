@@ -71,7 +71,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 | [API and MCP domains](mcp-domains.md) | The `filecoin.io` and `filecoin.cloud` hostnames that serve filecoin-api and its MCP server, and the Cloudflare for SaaS setup behind `filecoin.io` |
 | [filecoin-api README](../../apps/filecoin-api/README.md) | Routes, retrieval redirects, MCP tools, deploys, and limits |
 | [filecoin-app README](../../apps/filecoin-app/README.md) | The explorer, the dashboard, the stack, and deploys |
-| [hooks-synapse README](../../apps/filecoin-app/src/hooks-synapse/README.md) | React hooks that synapse-react lacks, and the synapse-core and synapse-react bugs found while writing them |
+| [hooks-synapse README](../../apps/filecoin-app/src/hooks-synapse/README.md) | React hooks that synapse-react lacks, and the gaps that remain upstream |
 
 ## Assumptions behind the proof of concept
 
@@ -118,7 +118,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **Site content is a copy.** The site's pages in `apps/filecoin-app/src/content` are edited copies of the READMEs. Nothing keeps them in sync, so they can fall behind the code. They point to `filecoin --help`, `filecoin schema`, and the OpenAPI document instead of copying command, error code, and route tables.
 - **Browser agents can't verify files or store folders.** A file's browser link serves the bytes without checking them, and inbrowser.link checks only folders. The dashboard's upload page stores files, not folders, and needs the wallet owner to sign.
 - **Draft discovery formats.** The MCP server card (SEP-2127) and agent skills discovery are drafts. The site serves the server card at both `/.well-known/mcp/server-card.json` and `/.well-known/mcp-server-card`, because clients check one or the other. integrations.sh reads the older card format's top-level `url` and skips ours, so the API catalog also lists the MCP server as an `item`, and `/.well-known/integrations.json` declares it. filecoin-api's own origin serves none of the discovery files.
-- **Upstream hooks kept in the app.** `hooks-synapse` adds hooks that synapse-react 0.5.0 lacks. It also works around the bugs listed in [its README](../../apps/filecoin-app/src/hooks-synapse/README.md).
+- **Upstream hooks kept in the app.** The app uses synapse-react 0.5.1 for creating data sets, listing them and uploading. `hooks-synapse` adds the hooks synapse-react still lacks, listed with the remaining gaps in [its README](../../apps/filecoin-app/src/hooks-synapse/README.md).
 
 ### Project
 
@@ -161,4 +161,4 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **Old hosts.** Delete the `fil-api` and `fil-app` Workers and their `hugomrdias.dev` domains from the personal Cloudflare account. Released CLIs and plugins point at `filecoin.cloud` since `filecoin` 0.5.0 and the plugin 0.2.0; only earlier releases still call the old hosts.
 - **MCP servers.** Review the [foc-observer](https://github.com/FilOzone/foc-observer) MCP server. Merge its tools into the filecoin-api MCP server.
 - **Indexer.** Index `data_sets(payer)` in the early-repair schema ([#6](https://github.com/filecoin-project/agents/issues/6)). Consider moving the databases near Frankfurt, where Hyperdrive pools their connections, to cut each query from about 30 ms to an estimated 5–10 ms ([placement](../../apps/filecoin-api/README.md#placement)).
-- **Upstream.** Move `hooks-synapse` into synapse-react as the upstream issues linked in its README are fixed.
+- **Upstream.** Move the rest of `hooks-synapse` into synapse-react, starting with the gaps listed in its README.

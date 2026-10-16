@@ -15,6 +15,9 @@ minimumReleaseAgeExclude:
   - iso-conf@0.4.2
   - '@filoz/synapse-core@0.10.1'
   - clipact@0.4.0
+  - '@filoz/synapse-core@0.10.2'
+  - '@filoz/synapse-react@0.5.1'
+  - '@hugomrdias/commp-wasm@0.1.4'
 
 patchedDependencies:
   protons-runtime@8.0.1: patches/protons-runtime@8.0.1.patch

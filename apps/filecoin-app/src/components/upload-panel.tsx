@@ -1,6 +1,11 @@
 import { AddPiecesPermission } from '@filoz/synapse-core/session-key'
 import { SIZE_CONSTANTS } from '@filoz/synapse-core/utils'
 import type { PdpDataSet } from '@filoz/synapse-core/warm-storage'
+import {
+  type UseUploadPiecesResult,
+  useUploadPieces,
+} from '@filoz/synapse-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { FileIcon, UploadIcon, XIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { useDashboard } from '@/components/dashboard-context'
@@ -11,23 +16,44 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Spinner } from '@/components/ui/spinner'
-import {
-  type UploadStage,
-  type UseUploadResult,
-  useUpload,
-  useUploadCosts,
-} from '@/hooks-synapse'
+import { invalidateStorageQueries, useUploadCosts } from '@/hooks-synapse'
 import { formatBytes, shortId } from '@/lib/format'
 import { cn } from '@/lib/utils'
+
+/** Stage of one file in the progress list. */
+type UploadStage = 'queued' | 'uploading' | 'adding' | 'done' | 'error'
+
+/** Progress of one file in the progress list. */
+interface FileProgress {
+  /** File name. */
+  name: string
+  /** File size in bytes. */
+  size: number
+  /** Current stage. */
+  stage: UploadStage
+  /** Bytes sent to the provider. */
+  bytesUploaded: number
+  /** PieceCID once the piece is added. */
+  pieceCid?: string
+  /** Error message when `stage` is `error`. */
+  error?: string
+}
 
 const STAGE_LABEL: Record<UploadStage, string> = {
   queued: 'Queued',
   uploading: 'Uploading',
-  parking: 'Waiting for provider',
-  parked: 'Stored by provider',
   adding: 'Adding to data set',
   done: 'Done',
   error: 'Failed',
+}
+
+/**
+ * Piece metadata stored with each uploaded file.
+ *
+ * @param file - The file being uploaded.
+ */
+function fileMetadata(file: File) {
+  return { name: file.name, ...(file.type ? { type: file.type } : {}) }
 }
 
 /**
@@ -38,17 +64,40 @@ const STAGE_LABEL: Record<UploadStage, string> = {
  */
 export function UploadPanel(props: {
   dataSet: PdpDataSet
-  onDone?: (result: UseUploadResult) => void
+  onDone?: (result: UseUploadPiecesResult) => void
 }) {
   const { address, network, signerFor } = useDashboard()
   const input = useRef<HTMLInputElement>(null)
   const [files, setFiles] = useState<{ id: string; file: File }[]>([])
   const [dragging, setDragging] = useState(false)
+  const [progress, setProgress] = useState<FileProgress[]>([])
+  // Last whole percent rendered per file, so progress re-renders once per
+  // percent rather than once per chunk.
+  const percents = useRef<number[]>([])
+  const queryClient = useQueryClient()
   const toasts = txToasts(network, 'Upload')
-  const upload = useUpload({
+  const patch = (index: number, change: Partial<FileProgress>) =>
+    setProgress((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, ...change } : item))
+    )
+  const upload = useUploadPieces({
     sessionKey: signerFor([AddPiecesPermission]),
     onHash: toasts.onHash,
+    onFileProgress: ({ index, file, bytesUploaded }) => {
+      const percent = Math.floor((bytesUploaded / Math.max(file.size, 1)) * 100)
+      if (percents.current[index] !== percent) {
+        percents.current[index] = percent
+        patch(index, {
+          stage: bytesUploaded >= file.size ? 'adding' : 'uploading',
+          bytesUploaded,
+        })
+      }
+    },
   })
+  const resetProgress = () => {
+    percents.current = []
+    setProgress([])
+  }
   const pieceSizes = files.map(({ file }) => BigInt(file.size))
   const costs = useUploadCosts({
     clientAddress: address,
@@ -74,7 +123,7 @@ export function UploadPanel(props: {
         ...prev,
         ...Array.from(list, (file) => ({ id: crypto.randomUUID(), file })),
       ])
-      upload.resetFiles()
+      resetProgress()
     }
   }
 
@@ -114,9 +163,9 @@ export function UploadPanel(props: {
         type="file"
       />
 
-      {upload.files.length > 0 ? (
+      {progress.length > 0 ? (
         <ul className="flex flex-col divide-y overflow-hidden rounded-3xl border">
-          {upload.files.map((file, index) => (
+          {progress.map((file, index) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: files keep their order
             <li className="flex flex-col gap-2 px-4 py-3" key={index}>
               <div className="flex items-center justify-between gap-2 text-sm">
@@ -201,7 +250,7 @@ export function UploadPanel(props: {
         </Alert>
       ) : null}
 
-      {costs.data && files.length > 0 && upload.files.length === 0 ? (
+      {costs.data && files.length > 0 && progress.length === 0 ? (
         costs.data.ready ? (
           <p className="text-xs text-muted-foreground">
             Adds about{' '}
@@ -238,11 +287,11 @@ export function UploadPanel(props: {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SignerBadge permissions={[AddPiecesPermission]} />
         <div className="flex gap-2">
-          {upload.files.length > 0 && !busy ? (
+          {progress.length > 0 && !busy ? (
             <Button
               onClick={() => {
                 setFiles([])
-                upload.resetFiles()
+                resetProgress()
               }}
               variant="outline"
             >
@@ -257,14 +306,52 @@ export function UploadPanel(props: {
               tooSmall ||
               !props.dataSet.provider
             }
-            onClick={() =>
+            onClick={() => {
+              const inputs = files.map(({ file }) => file)
+              percents.current = []
+              setProgress(
+                inputs.map((file) => ({
+                  name: file.name,
+                  size: file.size,
+                  stage: 'queued',
+                  bytesUploaded: 0,
+                }))
+              )
               upload.mutate(
                 {
                   dataSet: props.dataSet,
-                  files: files.map(({ file }) => file),
+                  files: inputs,
+                  metadata: fileMetadata,
                 },
                 {
                   onSuccess: (result) => {
+                    setProgress((prev) =>
+                      prev.map((item, i) => {
+                        const piece = result.pieces.find(
+                          (p) => p.file === inputs[i]
+                        )
+                        if (piece) {
+                          return {
+                            ...item,
+                            stage: 'done',
+                            bytesUploaded: item.size,
+                            pieceCid: piece.pieceCid.toString(),
+                          }
+                        }
+                        const failed = result.failed.find(
+                          (f) => f.file === inputs[i]
+                        )
+                        return failed
+                          ? {
+                              ...item,
+                              stage: 'error',
+                              error: failed.error.message,
+                            }
+                          : item
+                      })
+                    )
+                    // More data raises the rail rate, lockup and FWSS allowance usage.
+                    void invalidateStorageQueries(queryClient)
                     const count = result.pieces.length
                     const added = `Added ${count} piece${count === 1 ? '' : 's'}`
                     const failed = result.failed.length
@@ -283,10 +370,19 @@ export function UploadPanel(props: {
                     )
                     props.onDone?.(result)
                   },
-                  onError: toasts.mutation.onError,
+                  onError: (error) => {
+                    setProgress((prev) =>
+                      prev.map((item) =>
+                        item.stage === 'done'
+                          ? item
+                          : { ...item, stage: 'error', error: error.message }
+                      )
+                    )
+                    toasts.mutation.onError(error)
+                  },
                 }
               )
-            }
+            }}
           >
             {busy ? <Spinner /> : <UploadIcon />}
             Upload{' '}
