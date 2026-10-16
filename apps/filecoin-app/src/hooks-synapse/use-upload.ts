@@ -4,7 +4,11 @@ import type {
   MetadataObject,
   PdpDataSet,
 } from '@filoz/synapse-core/warm-storage'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  type MutateOptions,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { useCallback, useRef, useState } from 'react'
 import { useChainId, useConfig, useConnection } from 'wagmi'
 import { synapseKeys } from './keys'
@@ -78,6 +82,11 @@ export interface UploadedPiece {
 export interface UseUploadProps extends SessionKeySignerOptions {
   /** Called with the add-pieces transaction hash. */
   onHash?: (hash: string) => void
+  /** Mutation options. */
+  mutation?: Omit<
+    MutateOptions<UseUploadResult, Error, UseUploadVariables>,
+    'mutationFn'
+  >
 }
 
 /**
@@ -99,6 +108,7 @@ export function useUpload(props?: UseUploadProps) {
   const runRef = useRef(0)
 
   const mutation = useMutation({
+    ...props?.mutation,
     mutationFn: async ({
       dataSet,
       files: inputs,
