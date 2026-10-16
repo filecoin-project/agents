@@ -28,10 +28,6 @@ React hooks for Filecoin that [`@filoz/synapse-react`](https://github.com/FilOzo
 | `useDeletePieces` | `sp.schedulePieceDeletions` | Batch delete |
 | `useUpload` | `sp.uploadPieceStreaming`, `sp.findPiece`, `sp.addPieces`, `sp.waitForAddPieces` | Core-only (synapse-react's `useUpload` uses synapse-sdk; its core-only `useUploadSimple` buffers each file and has no progress, no session key, and one failed file rejects the whole upload). Streams 4 files at a time, tracks progress per file and adds every parked piece in one signed request. Waits for the add-pieces transaction to confirm and returns each piece's confirmed id; failed files come back in `failed` ([synapse-sdk#1027](https://github.com/FilOzone/synapse-sdk/issues/1027)) |
 
-## synapse-core issues found while building this
-
-- `sp.waitForAddPieces` keeps polling while `piecesAdded` is `false`, which is also true of a `rejected` status, so a rejected add-pieces transaction surfaces as the 5 minute timeout rather than `WaitForAddPiecesRejectedError`. `sp.waitForCreateDataSet` has the same problem with `dataSetCreated` ([synapse-sdk#1014](https://github.com/FilOzone/synapse-sdk/issues/1014)).
-
 ## synapse-react issues found while building this
 
 - `useDepositAndApprove` passes only `{ amount }` to core, so its `token`, `operator` and allowance props are ignored ([synapse-sdk#1022](https://github.com/FilOzone/synapse-sdk/issues/1022)).
