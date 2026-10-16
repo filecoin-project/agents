@@ -1,6 +1,6 @@
 import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test'
 import { env } from 'cloudflare:workers'
-import { createApp } from '../src/app.ts'
+import { type AppOptions, createApp } from '../src/app.ts'
 import type { Db, Row } from '../src/db.ts'
 import type { Bindings } from '../src/networks.ts'
 import { render, type Sql } from '../src/sql.ts'
@@ -40,10 +40,11 @@ export function fakeDb(
 /** Create an app wired to a fake database and send it a request. */
 export function testApp(
   handler?: (text: string, params: readonly unknown[]) => Row[],
-  bindings: Partial<Bindings> = {}
+  bindings: Partial<Bindings> = {},
+  options: Omit<AppOptions, 'dbFactory'> = {}
 ) {
   const fake = fakeDb(handler)
-  const app = createApp({ dbFactory: () => fake.db })
+  const app = createApp({ ...options, dbFactory: () => fake.db })
   const testEnv = { ...env, ...bindings } as Bindings
   async function request(path: string, init?: RequestInit) {
     const ctx = createExecutionContext()

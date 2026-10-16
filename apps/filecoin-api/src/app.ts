@@ -54,6 +54,8 @@ export function openApiConfig(origin: string) {
 export interface AppOptions {
   /** Database client factory; tests inject fakes. */
   dbFactory?: DbFactory
+  /** Fetch for the MCP docs search's calls to GitBook; tests inject fakes. */
+  docsFetch?: typeof fetch
 }
 
 /**
@@ -64,6 +66,7 @@ export interface AppOptions {
  */
 export function createApp(options: AppOptions = {}) {
   const dbFactory = options.dbFactory ?? hyperdriveDb
+  const docsFetch = options.docsFetch ?? ((input, init) => fetch(input, init))
   const app = new OpenAPIHono<AppEnv>({ defaultHook: validationHook })
 
   app.use(requestId)
@@ -151,6 +154,9 @@ export function createApp(options: AppOptions = {}) {
       dbStats: c.var.dbStats,
       version: VERSION,
       requestId: c.var.requestId,
+      origin: new URL(c.req.url).origin,
+      docsFetch,
+      waitUntil: (p) => c.executionCtx.waitUntil(p),
     })
     const transport = new StreamableHTTPTransport({
       sessionIdGenerator: undefined,

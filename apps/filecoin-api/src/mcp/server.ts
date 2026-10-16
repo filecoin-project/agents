@@ -26,6 +26,8 @@ import {
   hasPieceSelector,
   PIECE_SELECTOR_MESSAGE,
 } from '../schemas/queries.ts'
+import { activeSpan, setAttributes } from '../tracing.ts'
+import { searchDocs } from './docs-search.ts'
 
 /** Dependencies for one MCP request. */
 export interface McpContext {
@@ -34,6 +36,12 @@ export interface McpContext {
   dbStats: DbStats
   version: string
   requestId?: string
+  /** Origin of the request; builds absolute cache keys. */
+  origin: string
+  /** Fetch for the docs search's calls to GitBook. */
+  docsFetch: typeof fetch
+  /** Keep the invocation alive for work after the response. */
+  waitUntil: (promise: Promise<unknown>) => void
 }
 
 /** MCP server plus a function that closes the database clients it opened. */
@@ -176,8 +184,8 @@ const TOOLS: ToolDef[] = [
 
 /**
  * Build a stateless MCP server exposing read-only Filecoin onchain data
- * tools. Database clients are opened per network on first use and closed
- * after the request.
+ * tools and a Filecoin docs search. Database clients are opened per network
+ * on first use and closed after the request.
  *
  * @see https://modelcontextprotocol.io/specification/2025-06-18/server/tools
  */
@@ -186,7 +194,7 @@ export function buildMcpServer(ctx: McpContext): McpHandle {
     { name: 'filecoin-api', version: ctx.version },
     {
       instructions:
-        'Read-only Filecoin data: storage providers, data sets, pieces, Filecoin Pay rails and session keys. Every tool takes a `network` (calibration or mainnet). Large integers are decimal strings. Paginate with `cursor` from `nextCursor`.',
+        'Read-only Filecoin data: storage providers, data sets, pieces, Filecoin Pay rails and session keys. Every data tool takes a `network` (calibration or mainnet). Large integers are decimal strings. Paginate with `cursor` from `nextCursor`. `search_docs` searches the Filecoin docs at docs.filecoin.io.',
     }
   )
   const opened = new Map<NetworkName, NetworkDb>()
@@ -220,34 +228,71 @@ export function buildMcpServer(ctx: McpContext): McpHandle {
             structuredContent: result as Record<string, unknown>,
           }
         } catch (error) {
-          const { body, unexpected } = toErrorResponse(error)
-          if (unexpected) {
-            log('error', {
-              message: 'unhandled tool error',
-              requestId: ctx.requestId,
-              tool: tool.name,
-              error: error instanceof Error ? error.message : String(error),
-              stack: error instanceof Error ? error.stack : undefined,
-            })
-          }
-          return {
-            isError: true,
-            content: [
-              {
-                type: 'text',
-                text: `${body.error.code}: ${body.error.message}`,
-              },
-            ],
-          }
+          return toolError(error, tool.name, ctx.requestId)
         }
       }) as never
     )
   }
+
+  server.registerTool(
+    'search_docs',
+    {
+      description:
+        'Search the Filecoin docs at docs.filecoin.io for concepts, guides and API references. Returns matching page excerpts with titles and links; append `.md` to a link to read the full page as Markdown.',
+      inputSchema: z.object({
+        query: z.string().trim().min(1).max(500).describe('Search terms'),
+      }),
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async ({ query }): Promise<CallToolResult> => {
+      try {
+        const { content, status } = await searchDocs(query, {
+          fetch: ctx.docsFetch,
+          cache: caches.default,
+          origin: ctx.origin,
+          waitUntil: ctx.waitUntil,
+        })
+        setAttributes(activeSpan(), { 'filecoin.docs_search.cache': status })
+        return { content }
+      } catch (error) {
+        return toolError(error, 'search_docs', ctx.requestId)
+      }
+    }
+  )
 
   return {
     server,
     closeDbs: async () => {
       await Promise.all([...opened.values()].map((n) => n.close()))
     },
+  }
+}
+
+/**
+ * Turn a thrown error into an MCP tool error result. Errors outside the API
+ * contract are logged and their details hidden.
+ *
+ * @see https://modelcontextprotocol.io/specification/2025-06-18/server/tools#error-handling
+ */
+function toolError(
+  error: unknown,
+  tool: string,
+  requestId: string | undefined
+): CallToolResult {
+  const { body, unexpected } = toErrorResponse(error)
+  if (unexpected) {
+    log('error', {
+      message: 'unhandled tool error',
+      requestId,
+      tool,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    })
+  }
+  return {
+    isError: true,
+    content: [
+      { type: 'text', text: `${body.error.code}: ${body.error.message}` },
+    ],
   }
 }

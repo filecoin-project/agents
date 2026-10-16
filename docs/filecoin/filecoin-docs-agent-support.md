@@ -26,7 +26,7 @@ Recommended next steps:
 | Self-describing Markdown | Each `.md` page starts with a note pointing to `llms.txt` and the `.md` convention, and ends with agent instructions for `?ask=` |
 | Sitemaps | [`/sitemap.xml`](https://docs.filecoin.io/sitemap.xml), `/sitemap-pages.xml`, and [`/sitemap.md`](https://docs.filecoin.io/sitemap.md) |
 | `robots.txt` | Allows all crawlers, links the sitemap, and sends `Content-Signal: ai-train=yes, search=yes, ai-input=yes` |
-| MCP server | `https://docs.filecoin.io/~gitbook/mcp`, Streamable HTTP. Tools: `searchDocumentation`, `getPage`, `askQuestion`, `sendFeedback` |
+| MCP server | `https://docs.filecoin.io/~gitbook/mcp`, Streamable HTTP. Tools on 2026-10-16: `searchDocumentation`, `getPage`, `sendFeedback`. filecoin-api's `search_docs` forwards to `searchDocumentation` |
 | MCP server card | [`/.well-known/mcp/server-card.json`](https://docs.filecoin.io/.well-known/mcp/server-card.json) |
 | SEO metadata | Canonical URL and Open Graph tags |
 
