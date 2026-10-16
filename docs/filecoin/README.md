@@ -160,4 +160,4 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **Old hosts.** Delete the `fil-api` and `fil-app` Workers and their `hugomrdias.dev` domains from the personal Cloudflare account. Released CLIs and plugins point at `filecoin.cloud` since `filecoin` 0.5.0 and the plugin 0.2.0; only earlier releases still call the old hosts.
 - **MCP servers.** Review the [foc-observer](https://github.com/FilOzone/foc-observer) MCP server. Merge its tools into the filecoin-api MCP server.
 - **Indexer.** Index `data_sets(payer)` in the early-repair schema ([#6](https://github.com/filecoin-project/agents/issues/6)). Consider moving the databases near Frankfurt, where Hyperdrive pools their connections, to cut each query from about 30 ms to an estimated 5–10 ms ([placement](../../apps/filecoin-api/README.md#placement)).
-- **Upstream.** Move `hooks-synapse` into synapse-react. Report the synapse-core and synapse-react bugs listed in its README.
+- **Upstream.** Move `hooks-synapse` into synapse-react as the upstream issues linked in its README are fixed.
