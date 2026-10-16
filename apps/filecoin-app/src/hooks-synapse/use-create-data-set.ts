@@ -61,7 +61,8 @@ export function useCreateDataSet(props?: UseCreateDataSetProps) {
       })
       const { txHash, statusUrl } = await SP.createDataSet(client, {
         payee: provider.payee,
-        payer: connection.address,
+        // A session key signs as itself, so name its root wallet as the payer.
+        payer: props?.sessionKey?.rootAddress ?? connection.address,
         serviceURL: provider.pdp.serviceURL,
         cdn,
         metadata,

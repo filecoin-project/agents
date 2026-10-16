@@ -23,10 +23,10 @@ React hooks for Filecoin that [`@filoz/synapse-react`](https://github.com/FilOzo
 | `usePdpDataSet` | `warmStorage.getPdpDataSet` | |
 | `useStorageSize` | `warmStorage.getAccountTotalStorageSize` | |
 | `useUploadCosts` | `warmStorage.getUploadCosts` | |
-| `useCreateDataSet` | `sp.createDataSet`, `sp.waitForCreateDataSet` | Adds metadata and session key support |
+| `useCreateDataSet` | `sp.createDataSet`, `sp.waitForCreateDataSet` | Adds metadata and session key support. With a session key, the payer is the key's root wallet |
 | `useTerminateDataSet` | `sp.terminateService`, `sp.waitForTerminateService` | |
 | `useDeletePieces` | `sp.schedulePieceDeletions` | Batch delete |
-| `useUpload` | `sp.uploadPieceStreaming`, `sp.findPiece`, `sp.addPieces`, `sp.waitForAddPieces` | Core-only (synapse-react's `useUpload` uses synapse-sdk). Streams 4 files at a time, tracks progress per file and adds every parked piece in one signed request. Waits for the add-pieces transaction to confirm and returns each piece's confirmed id; failed files come back in `failed` |
+| `useUpload` | `sp.uploadPieceStreaming`, `sp.findPiece`, `sp.addPieces`, `sp.waitForAddPieces` | Core-only (synapse-react's `useUpload` uses synapse-sdk; its core-only `useUploadSimple` buffers each file and has no progress, no session key, and one failed file rejects the whole upload). Streams 4 files at a time, tracks progress per file and adds every parked piece in one signed request. Waits for the add-pieces transaction to confirm and returns each piece's confirmed id; failed files come back in `failed` ([synapse-sdk#1027](https://github.com/FilOzone/synapse-sdk/issues/1027)) |
 
 ## synapse-core issues found while building this
 
@@ -34,9 +34,9 @@ React hooks for Filecoin that [`@filoz/synapse-react`](https://github.com/FilOzo
 
 ## synapse-react issues found while building this
 
-- `useDepositAndApprove` passes only `{ amount }` to core, so its `token`, `operator` and allowance props are ignored.
-- `useDataSets` ignores `props.query`, and it loads every piece of every data set.
-- `useDeposit`, `useWithdraw` and `useDepositAndApprove` spread `mutation` after `mutationFn`; the other hooks spread it before.
-- `useCreateDataSet` has no metadata support (it's commented out) and cannot sign with a session key.
-- The package has no `sideEffects` field and its root entry re-exports `useUpload`, so bundles can pull in `@filoz/synapse-sdk` even when `useUpload` is unused.
-- No hook takes a `chainId`, so reading a network other than the connected one needs custom hooks.
+- `useDepositAndApprove` passes only `{ amount }` to core, so its `token`, `operator` and allowance props are ignored ([synapse-sdk#1022](https://github.com/FilOzone/synapse-sdk/issues/1022)).
+- `useDataSets` ignores `props.query`, and it loads every piece of every data set ([synapse-sdk#1023](https://github.com/FilOzone/synapse-sdk/issues/1023)).
+- `useDeposit`, `useWithdraw` and `useDepositAndApprove` spread `mutation` after `mutationFn`; the other hooks spread it before ([synapse-sdk#1022](https://github.com/FilOzone/synapse-sdk/issues/1022)).
+- `useCreateDataSet` has no metadata support (it's commented out) ([synapse-sdk#1024](https://github.com/FilOzone/synapse-sdk/issues/1024)) and cannot sign with a session key ([synapse-sdk#1025](https://github.com/FilOzone/synapse-sdk/issues/1025)).
+- The package has no `sideEffects` field, unlike synapse-core, and its root entry re-exports `useUpload`, which imports `@filoz/synapse-sdk`. esbuild and Vite production builds still tree-shake synapse-sdk out when `useUpload` is unused, so the field is hygiene, not a measured bundle cost.
+- No hook takes a `chainId`, so reading a network other than the connected one needs custom hooks ([synapse-sdk#1026](https://github.com/FilOzone/synapse-sdk/issues/1026)).
