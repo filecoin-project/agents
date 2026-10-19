@@ -6,7 +6,7 @@ A React app for Filecoin, built with [TanStack Start](https://tanstack.com/start
 
 - **Explorer** (`/mainnet`, `/calibration`): public pages for data sets, pieces, storage providers, Filecoin Pay rails and settlements, session keys, and per-address views. All data comes from [filecoin-api](../filecoin-api). The Worker renders these pages on the server.
 - **Dashboard** (`/dashboard`): gated on a connected wallet, and rendered only in the browser. Manage your Filecoin Pay account (deposit, withdraw), the Warm Storage (FWSS) operator approval, data sets (create, terminate, delete pieces), uploads, rails (settle) and session keys (generate, authorize, revoke, sign with them).
-- **Setup page** (`/dashboard/setup`): reviews a request from a [setup link](#setup-links) or an agent to authorize a session key, approve Warm Storage and deposit USDFC.
+- **Setup page** (`/dashboard/setup`): reviews a request from a [setup link](#setup-links) or an agent to authorize a session key, approve Warm Storage and fund Filecoin Pay, with each step's status read from the chain.
 
 Built with:
 - [TanStack Start](https://tanstack.com/start) on [Cloudflare Workers](https://developers.cloudflare.com/workers/framework-guides/web-apps/tanstack-start/)
@@ -91,18 +91,29 @@ Server routes serve the files that agents use to discover the site:
 
 ## Setup links
 
-Browser agents send the wallet owner to `/dashboard/setup`, through a link or the `prepare_setup_request` WebMCP tool. The `filecoin` CLI uses the Filecoin Pay console's setup page, as [its architecture](../../docs/filecoin/architecture.md#login) describes. The page prefills a request from its search params, and the owner reviews it, changes what they need, and approves each step with their wallet. Each step is its own transaction, so nothing is signed until the owner clicks.
+Browser agents send the wallet owner to `/dashboard/setup`, through a link or the `prepare_setup_request` WebMCP tool. The page reads a request from its search params and lists what it asks for as steps, in a fixed order, each with its status read from the chain and polled every 15 seconds:
+
+1. **Authorize a session key**, when the link names one. The form starts from the link's name, scopes and days. The owner can change the name and expiry or drop scopes, but cannot add a scope the link did not ask for. Once every scope is live, the step shows when the grant expires.
+2. **Approve Warm Storage** without spending limits. When the funds step needs a deposit the wallet can cover, one transaction approves and deposits (synapse-core's `fund`). With `approval=unlimited`, an approval with limits reads "Approved with limits": the step shows each limit beside what the tool needs and offers a confirmed Remove spending limits step. An existing approval is never replaced otherwise.
+3. **Fund Filecoin Pay**, unless the link asks only for the approval. It offers a permit deposit from the wallet, or points to the Pay account page when the wallet lacks the USDFC.
+
+When every step is done, the page says to go back to the tool. Reloading the link only shows what is already done. Each step is its own transaction, so nothing is signed until the owner clicks.
+
+The params follow the [Filecoin Pay console's `/console/setup` contract](https://github.com/FilOzone/filecoin-pay-explorer/blob/main/apps/explorer/src/utils/setupLink.ts), the same one the `filecoin` CLI's links use ([architecture](../../docs/filecoin/architecture.md#login)), so a link works on both pages:
 
 | Param | Meaning |
 | --- | --- |
-| `network` | `mainnet` or `calibration`. The page asks to switch the wallet when it is on the other network |
-| `signer` | Session key address to authorize. The private key stays with the tool that made it; the app never sees it |
-| `name` | Session key name, up to 64 characters, recorded on chain as the authorization's `origin`. Default: `filecoin-app` |
-| `scopes` | Comma-separated scope IDs: `createDataSet`, `addPieces`, `schedulePieceRemovals`, `terminateService`. Default: the first three |
-| `days` | Days until the authorization expires, from 1 to 365. Default: 30 |
-| `deposit` | USDFC to deposit, as a decimal amount |
+| `network` | `mainnet` or `calibration`. Required unless the link is bare. The page asks to switch the wallet when it is on the other network |
+| `authorize` or `signer` | Session key address to authorize, all lowercase or EIP-55 checksummed. The private key stays with the tool that made it; the app never sees it |
+| `scopes` | Comma-separated scope IDs: `createDataSet`, `addPieces`, `schedulePieceRemovals`, `terminateService`. Required with a session key; unknown IDs are dropped |
+| `name` | Suggested session key name, recorded on chain as the authorization's `origin`. Cut to 64 characters. Default: `filecoin-app` |
+| `days` | Suggested days until the authorization expires, capped at 365. Default: 30 |
+| `deposit` | USDFC to add on top of what Filecoin Pay holds. Without `balance`, the step is done once this tab sees that much go in. The amount the tab opened with is kept in `sessionStorage` for an hour, so a reload keeps it |
+| `balance` | USDFC the account needs available in Filecoin Pay. The funds step checks this target, debt included, rounded up to the cent |
+| `operator` | `fwss`. With `approval` and no `deposit` or `balance`, the link asks only for the Warm Storage approval |
+| `approval` | `unlimited`: Warm Storage counts as approved only without spending limits, as tools built on synapse-core need |
 
-Every param is optional, and the page drops an invalid value instead of failing. The Warm Storage step appears whenever the wallet has not approved it. `src/lib/setup-request.ts` holds the parsing.
+A value the page cannot read, such as a misspelled address, a missing network or a zero deposit, refuses the whole link: the page shows why and offers nothing. Only `name` and `days` fall back to their defaults. `src/lib/setup-request.ts` holds the parsing, and `src/lib/setup-status.ts` decides what each step offers.
 
 ### WebMCP
 
@@ -110,9 +121,9 @@ The app registers [WebMCP](https://webmachinelearning.github.io/webmcp/) tools, 
 
 | Tool | Where | What it does |
 | --- | --- | --- |
-| `prepare_setup_request` | Every page | Validates a request with the params above (`scopes` as an array, `days` as a number) and opens the prefilled setup page. It never signs anything |
-| `get_setup_status` | `/dashboard/setup` | Read-only. Reports whether a wallet is connected and on Filecoin. Once it is, also reports which requested scopes are authorized and until when, the Warm Storage approval and the Pay balance |
-| `get_account_summary` | Every page | Read-only. Reports a wallet's Filecoin Pay funds, monthly spend and runway, the Warm Storage approval, and whether it can pay for a new upload. When it cannot, it returns a prefilled setup link |
+| `prepare_setup_request` | Every page | Validates a request with the params above and opens the prefilled setup page. It takes `signer`, `scopes` as an array, `days` as a number, and `unlimitedApproval` as a boolean. `network` defaults to the wallet's, and `scopes` to the first three. It never signs anything |
+| `get_setup_status` | `/dashboard/setup` | Read-only. Reports whether a wallet is connected and on the requested network, and why a link cannot be used. Once the steps show, also reports which requested scopes are authorized and until when, the Warm Storage approval state, the Pay balance and what it still lacks, and whether setup is complete |
+| `get_account_summary` | Every page | Read-only. Reports a wallet's Filecoin Pay funds, monthly spend and runway, the Warm Storage approval, and whether it can pay for a new upload. When it cannot, it returns a setup link with `approval=unlimited` and, when it needs funds, the `deposit` and the `balance` it leaves available |
 | `list_data_sets` | Every page | Read-only. Lists a wallet's data sets |
 | `list_pieces` | Every page | Read-only. Lists a data set's pieces, each with a retrieval URL |
 | `lookup_piece` | Every page | Read-only. Finds the data sets that hold a PieceCID v2 |

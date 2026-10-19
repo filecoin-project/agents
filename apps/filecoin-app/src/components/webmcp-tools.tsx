@@ -13,7 +13,7 @@ import {
 
 /** Description of `get_setup_status`, the same at every stage of the setup page. */
 export const SETUP_STATUS_DESCRIPTION =
-  'Report the state of the setup request on this page: whether a wallet is connected and on Filecoin, which requested session-key permissions are authorized and until when, whether Warm Storage is approved, and the Filecoin Pay balance. Amounts are USDFC decimal strings. Read-only: the user approves each step in their wallet.'
+  'Report the state of the setup request on this page: whether a wallet is connected and on the requested network, whether the link can be used, which requested session-key permissions are authorized and until when, the Warm Storage approval, the Filecoin Pay balance and what it still lacks, and whether every step is complete. Amounts are USDFC decimal strings. Read-only: the user approves each step in their wallet.'
 
 /**
  * WebMCP tools available on every page. `prepare_setup_request` fills the
@@ -29,14 +29,15 @@ export function WebMcpTools() {
   useWebMcpTool<unknown>({
     name: 'prepare_setup_request',
     description:
-      "Open filecoin-app's setup page prefilled for the wallet owner to review: authorize a session key that a tool printed, approve Warm Storage, and deposit USDFC into Filecoin Pay. Nothing is signed or sent. The user reviews the page and approves each step in their wallet. The setup page registers get_setup_status, so after calling this, ask the user to review the page, then call get_setup_status to check progress.",
+      "Open filecoin-app's setup page prefilled for the wallet owner to review: authorize a session key that a tool printed, approve Warm Storage, and fund Filecoin Pay. Nothing is signed or sent. The user reviews the page and approves each step in their wallet. The setup page registers get_setup_status, so after calling this, ask the user to review the page, then call get_setup_status to check progress.",
     inputSchema: {
       type: 'object',
       properties: {
         network: {
           type: 'string',
           enum: [...NETWORKS],
-          description: 'Network the request is for.',
+          description:
+            "Network the request is for. Default: the connected wallet's network.",
         },
         signer: {
           type: 'string',
@@ -63,20 +64,30 @@ export function WebMcpTools() {
         deposit: {
           type: 'string',
           description:
-            'USDFC to deposit into Filecoin Pay, as a decimal amount such as "1.5".',
+            'USDFC to add to Filecoin Pay on top of what it holds, as a decimal amount such as "1.5".',
+        },
+        balance: {
+          type: 'string',
+          description:
+            'USDFC the account needs available in Filecoin Pay, as a decimal amount. The funds step checks this target instead of watching for the deposit.',
+        },
+        unlimitedApproval: {
+          type: 'boolean',
+          description:
+            'Count Warm Storage as approved only without spending limits, as tools built on synapse-core need. The page offers to remove limits the account already has.',
         },
       },
     },
     execute: async (input) => {
-      const result = toSetupSearch(input)
-      if ('errors' in result) {
-        return { ok: false, errors: result.errors }
-      }
-      await navigate({ to: '/dashboard/setup', search: result.search })
       const network =
         connection.status === 'connected'
           ? networkForChainId(connection.chainId)
           : undefined
+      const result = toSetupSearch(input, network)
+      if ('errors' in result) {
+        return { ok: false, errors: result.errors }
+      }
+      await navigate({ to: '/dashboard/setup', search: result.search })
       return {
         ok: true,
         url: window.location.href,

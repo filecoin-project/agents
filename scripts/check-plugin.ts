@@ -7,10 +7,16 @@
  *   holds only the portable fields, with client fields under `extensions`,
  *   and its name follows the specification's rules.
  * - `.claude-plugin/plugin.json` repeats the portable metadata and declares
- *   the same MCP servers. Claude Code calls `streamable-http` `http`.
+ *   the same MCP servers. Claude Code calls `streamable-http` `http`. Its
+ *   `displayName` and policy links are the `extensions.com.openai` listing's.
  * - `.claude-plugin/marketplace.json`, which Claude Code and
  *   `npx skills add` read, and `.agents/plugins/marketplace.json`, which
- *   Codex reads, each list the plugin once, at its directory.
+ *   Codex reads, each list the plugin once, at its directory, in the
+ *   category of the manifest's `extensions.com.openai` listing. Claude Code's
+ *   directory names its categories in lowercase.
+ * - The Claude Code marketplace entry repeats the manifest's description and
+ *   keywords, which Claude Code shows before the plugin is installed. Its
+ *   `tags` are for labels such as `community-managed`, so the entry has none.
  * - The Claude Code marketplace entry declares every skill in the plugin's
  *   `skills/`. The `skills` CLI documents discovery only for declared skill
  *   paths; Claude Code scans `skills/` either way and loads each skill once.
@@ -71,6 +77,31 @@ const CLAUDE_TRANSPORTS: Record<string, string> = {
 }
 
 /**
+ * Claude Code's name for each Codex category the plugin may use, after the
+ * categories in Anthropic's and OpenAI's own marketplaces.
+ *
+ * @see https://github.com/anthropics/claude-plugins-official/blob/main/.claude-plugin/marketplace.json
+ * @see https://github.com/openai/plugins/blob/main/.agents/plugins/marketplace.json
+ */
+const CLAUDE_CATEGORIES: Record<string, string> = {
+  'Developer Tools': 'development',
+  Productivity: 'productivity',
+}
+
+/**
+ * Claude Code manifest fields that repeat a field of the `extensions.com.openai`
+ * listing, keyed by the Claude Code name. Anthropic's directory reads the
+ * policy links, and Claude Code shows `displayName`.
+ *
+ * @see https://code.claude.com/docs/en/plugins-reference#directory-listing-fields
+ */
+const CLAUDE_LISTING_FIELDS: Record<string, string> = {
+  displayName: 'displayName',
+  privacyPolicyUrl: 'privacyPolicyURL',
+  termsOfServiceUrl: 'termsOfServiceURL',
+}
+
+/**
  * Reads a JSON object from a file.
  *
  * @param path - File path, relative to the repository root.
@@ -119,6 +150,11 @@ for (const [id, server] of Object.entries(mcp.mcpServers as Json)) {
   claudeServers[id] = { ...(server as Json), type: claudeType }
 }
 
+/** The Codex listing, whose display name and category the others repeat. */
+const listing = ((manifest.extensions as Record<string, Json> | undefined)?.[
+  'com.openai'
+]?.interface ?? {}) as Json
+
 for (const field of SHARED_FIELDS) {
   if (!isDeepStrictEqual(claude[field], manifest[field])) {
     problems.push(
@@ -129,18 +165,44 @@ for (const field of SHARED_FIELDS) {
 if (!isDeepStrictEqual(claude.mcpServers, claudeServers)) {
   problems.push('.claude-plugin/plugin.json: mcpServers differs from mcp.json')
 }
+for (const [field, listingField] of Object.entries(CLAUDE_LISTING_FIELDS)) {
+  if (claude[field] !== listing[listingField]) {
+    problems.push(
+      `.claude-plugin/plugin.json: ${field} differs from the com.openai listing's ${listingField} in plugin.json`
+    )
+  }
+}
 
-const marketplaces: [string, (entry: Json) => unknown][] = [
-  ['.claude-plugin/marketplace.json', (entry) => entry.source],
-  ['.agents/plugins/marketplace.json', (entry) => (entry.source as Json).path],
+/** The Codex listing's category, which both marketplace entries repeat. */
+const category = String(listing.category)
+const marketplaces: [string, (entry: Json) => unknown, string | undefined][] = [
+  [
+    '.claude-plugin/marketplace.json',
+    (entry) => entry.source,
+    CLAUDE_CATEGORIES[category],
+  ],
+  [
+    '.agents/plugins/marketplace.json',
+    (entry) => (entry.source as Json).path,
+    category,
+  ],
 ]
-for (const [file, source] of marketplaces) {
+for (const [file, source, expected] of marketplaces) {
   const marketplace = await readJson(file)
   const entries = (marketplace.plugins as Json[]).filter(
     (entry) => entry.name === name
   )
   if (entries.length !== 1 || source(entries[0] as Json) !== `./${ROOT}`) {
     problems.push(`${file}: must list ${name} once, at ./${ROOT}`)
+  }
+  if (expected === undefined) {
+    problems.push(
+      `plugin.json: add a Claude Code name for "${category}" to CLAUDE_CATEGORIES`
+    )
+  } else if (entries[0]?.category !== expected) {
+    problems.push(
+      `${file}: category must be "${expected}", for "${category}" in plugin.json`
+    )
   }
 }
 
@@ -152,6 +214,16 @@ const claudeMarketplace = await readJson('.claude-plugin/marketplace.json')
 const claudeEntry = (claudeMarketplace.plugins as Json[]).find(
   (entry) => entry.name === name
 )
+for (const field of ['description', 'keywords']) {
+  if (
+    claudeEntry !== undefined &&
+    !isDeepStrictEqual(claudeEntry[field], manifest[field])
+  ) {
+    problems.push(
+      `.claude-plugin/marketplace.json: ${field} differs from plugin.json`
+    )
+  }
+}
 const declared = [...((claudeEntry?.skills as string[] | undefined) ?? [])]
 if (!isDeepStrictEqual(declared.sort(), skills)) {
   problems.push(

@@ -15,6 +15,7 @@ React hooks for Filecoin that [`@filoz/synapse-react`](https://github.com/FilOzo
 | `useSessionKeyExpirations` | `sessionKey.getExpirations` | |
 | `useAccountSummary` | `pay.getAccountSummary` | Funds, lockups, debt and runway |
 | `useDepositWithPermit` | `pay.depositWithPermitSync` | One transaction, no prior approve |
+| `useFund` | `pay.fundSync` | Approves Warm Storage without limits, deposits with a permit, or both in one transaction |
 | `useSetOperatorApproval` | `pay.setOperatorApprovalSync` | Allowances are mutation variables, so a form can set them when it submits |
 | `useRail` | `pay.getRail` | |
 | `useSettleRail` | `pay.settleRailSync` | |

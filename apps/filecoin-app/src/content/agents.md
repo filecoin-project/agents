@@ -79,8 +79,8 @@ It asks which agents to configure, and adds the server to the current project. A
 Claude Code and Codex also add it with their own commands:
 
 ```sh
-claude mcp add --transport http filecoin-api https://mcp.filecoin.io
-codex mcp add filecoin-api --url https://mcp.filecoin.io
+claude mcp add --transport http filecoin https://mcp.filecoin.io
+codex mcp add filecoin --url https://mcp.filecoin.io
 ```
 
 In the Claude and ChatGPT apps, add the URL as a custom connector. [API and MCP](/docs/api#mcp-server) lists the tools.

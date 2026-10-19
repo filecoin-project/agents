@@ -270,10 +270,18 @@ export function accountSummaryResult(
 ) {
   const { summary, costs } = state
   const usdfc = (value: bigint) => formatUnits(value, 18)
+  // The same link the `filecoin` CLI builds: `getUploadCosts` needs an
+  // unlimited approval, and `balance` is what the deposit leaves available,
+  // because a deposit pays off debt first.
   const setup = new URL('/dashboard/setup', links.app)
   setup.searchParams.set('network', network)
+  setup.searchParams.set('approval', 'unlimited')
   if (costs.depositNeeded > 0n) {
     setup.searchParams.set('deposit', usdfc(costs.depositNeeded))
+    setup.searchParams.set(
+      'balance',
+      usdfc(summary.availableFunds + costs.depositNeeded - summary.debt)
+    )
   }
   return {
     network,
