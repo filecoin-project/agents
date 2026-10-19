@@ -86,7 +86,7 @@ test('reads without a session ask the user to log in', async () => {
       by: 'user',
       command: 'filecoin login',
       description:
-        'Authorize a session key in the filecoin-app dashboard, then retry',
+        'Authorize a session key in the Filecoin Pay console, then retry',
     },
   ])
 })
@@ -174,9 +174,9 @@ test('a pending login is reported with the approval link', async () => {
   const session = status.data.session as Record<string, unknown>
   assert.equal(session.state, 'pending')
   const url = new URL(String(session.url))
-  assert.equal(url.pathname, '/dashboard/setup')
+  assert.equal(url.pathname, '/console/setup')
   assert.equal(
-    url.searchParams.get('signer'),
+    url.searchParams.get('authorize'),
     '0x2222222222222222222222222222222222222222'
   )
   assert.equal(url.searchParams.get('name'), 'filecoin on laptop')
@@ -190,6 +190,28 @@ test('a pending login is reported with the approval link', async () => {
 
   const logout = await run(['logout', '--network', network])
   assert.equal(logout.data.removed, true)
+  assert.equal(logout.data.revokeUrl, undefined)
+})
+
+test('logout of an approved key returns the console revoke link', async () => {
+  const network = 'mainnet'
+  openConfig().set(`sessions.${network}`, {
+    privateKey: SESSION_KEY,
+    address: '0x2222222222222222222222222222222222222222',
+    rootAddress: '0x1111111111111111111111111111111111111111',
+    scopes: ['addPieces'],
+    fromBlock: '1',
+    createdAt: new Date(0).toISOString(),
+  })
+  const { data } = await run(['logout', '--network', network])
+  assert.equal(data.removed, true)
+  const url = new URL(String(data.revokeUrl))
+  assert.equal(url.pathname, '/console/session-keys')
+  assert.equal(
+    url.searchParams.get('revoke'),
+    '0x2222222222222222222222222222222222222222'
+  )
+  assert.equal(url.searchParams.get('network'), network)
 })
 
 test('logout without a session is a no-op', async () => {

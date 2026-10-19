@@ -16,8 +16,8 @@ import {
 import { abortable } from './errors.ts'
 import { openDatabase, stateDir } from './state/db.ts'
 
-/** Default filecoin-app origin, whose dashboard approves keys and funds accounts. */
-const DEFAULT_CONSOLE_URL = 'https://poc.filecoin.cloud'
+/** Default Filecoin Pay console origin, which approves keys and funds accounts. */
+const DEFAULT_CONSOLE_URL = 'https://pay.filecoin.cloud'
 
 /** Default filecoin-api origin, whose `/get/{cid}` route redirects to providers. */
 const DEFAULT_API_URL = 'https://api.filecoin.io'
@@ -33,7 +33,7 @@ export type App = {
   config: Config
   /** Session key and owner given as input (`FILECOIN_SESSION_KEY`, `FILECOIN_ROOT_ADDRESS`). */
   credentials: { sessionKey?: string; rootAddress?: string }
-  /** filecoin-app origin for session-key approval and funding links. */
+  /** Filecoin Pay console origin for session-key approval and funding links. */
   consoleUrl: string
   /** filecoin-api origin for retrieval links. */
   apiUrl: string

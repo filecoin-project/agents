@@ -91,7 +91,7 @@ Server routes serve the files that agents use to discover the site:
 
 ## Setup links
 
-`filecoin login`, `filecoin status` and the `put` funding check send the wallet owner to `/dashboard/setup`. The page reads a request from its search params and lists what it asks for as steps, in a fixed order, each with its status read from the chain and polled every 15 seconds:
+Browser agents send the wallet owner to `/dashboard/setup`, through a link or the `prepare_setup_request` WebMCP tool. The page reads a request from its search params and lists what it asks for as steps, in a fixed order, each with its status read from the chain and polled every 15 seconds:
 
 1. **Authorize a session key**, when the link names one. The form starts from the link's name, scopes and days. The owner can change the name and expiry or drop scopes, but cannot add a scope the link did not ask for. Once every scope is live, the step shows when the grant expires.
 2. **Approve Warm Storage** without spending limits. When the funds step needs a deposit the wallet can cover, one transaction approves and deposits (synapse-core's `fund`). With `approval=unlimited`, an approval with limits reads "Approved with limits": the step shows each limit beside what the tool needs and offers a confirmed Remove spending limits step. An existing approval is never replaced otherwise.
@@ -99,7 +99,7 @@ Server routes serve the files that agents use to discover the site:
 
 When every step is done, the page says to go back to the tool. Reloading the link only shows what is already done. Each step is its own transaction, so nothing is signed until the owner clicks.
 
-The params follow the [Filecoin Pay console's `/console/setup` contract](https://github.com/FilOzone/filecoin-pay-explorer/blob/main/apps/explorer/src/utils/setupLink.ts), so the same link works on both pages:
+The params follow the [Filecoin Pay console's `/console/setup` contract](https://github.com/FilOzone/filecoin-pay-explorer/blob/main/apps/explorer/src/utils/setupLink.ts), the same one the `filecoin` CLI's links use ([architecture](../../docs/filecoin/architecture.md#login)), so a link works on both pages:
 
 | Param | Meaning |
 | --- | --- |
@@ -113,7 +113,7 @@ The params follow the [Filecoin Pay console's `/console/setup` contract](https:/
 | `operator` | `fwss`. With `approval` and no `deposit` or `balance`, the link asks only for the Warm Storage approval |
 | `approval` | `unlimited`: Warm Storage counts as approved only without spending limits, as tools built on synapse-core need |
 
-A value the page cannot read, such as a misspelled address, a missing network or a zero deposit, refuses the whole link: the page shows why and offers nothing. Only `name` and `days` fall back to their defaults. `src/lib/setup-request.ts` holds the parsing, `src/lib/setup-status.ts` decides what each step offers, and `packages/filecoin-cli/src/auth/login.ts` builds the CLI's links.
+A value the page cannot read, such as a misspelled address, a missing network or a zero deposit, refuses the whole link: the page shows why and offers nothing. Only `name` and `days` fall back to their defaults. `src/lib/setup-request.ts` holds the parsing, and `src/lib/setup-status.ts` decides what each step offers.
 
 ### WebMCP
 

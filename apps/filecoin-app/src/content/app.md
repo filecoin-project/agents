@@ -4,19 +4,19 @@
 
 - **Explorer** (`/mainnet`, `/calibration`): public pages for data sets, pieces, storage providers, Filecoin Pay rails and settlements, session keys, and each address. Search with `/` or ⌘K from any page.
 - **Dashboard** (`/dashboard`): connect a wallet to manage your Filecoin Pay account, the Warm Storage approval, data sets, uploads, rails, and session keys.
-- **Setup page** (`/dashboard/setup`): review and approve a request from `filecoin` or an agent.
+- **Setup page** (`/dashboard/setup`): review and approve a request from a browser agent.
 
 ## Session keys
 
-A session key lets a tool sign storage requests for your wallet. It can create data sets, add pieces, schedule piece removals, and end service, but it can never move funds. Keys you make in the dashboard stay in this browser. Keys made by `filecoin login` stay on the agent's machine, and the dashboard only approves them.
+A session key lets a tool sign storage requests for your wallet. It can create data sets, add pieces, schedule piece removals, and end service, but it can never move funds. Keys you make in the dashboard stay in this browser. Keys that a tool makes, such as `filecoin login`, stay on that tool's machine.
 
 The session keys page lists every key your wallet approved, with when each permission expires. Revoke a key there to stop the tool that holds it.
 
 ## Setup links
 
-`filecoin login`, `filecoin status`, and the `put` funding check send the wallet owner to `/dashboard/setup`. The page lists what the link asks for as steps, each with its status read from the chain: authorize a session key, approve Warm Storage, and fund Filecoin Pay. You review each step, change what you need, and approve it with your wallet. Each step is its own transaction, so nothing is signed until you click. When the wallet holds the USDFC still missing, one transaction approves Warm Storage and deposits it. When every step is done, go back to the tool.
+Browser agents send the wallet owner to `/dashboard/setup`, through a link or the `prepare_setup_request` tool. The page lists what the link asks for as steps, each with its status read from the chain: authorize a session key, approve Warm Storage, and fund Filecoin Pay. You review each step, change what you need, and approve it with your wallet. Each step is its own transaction, so nothing is signed until you click. When the wallet holds the USDFC still missing, one transaction approves Warm Storage and deposits it. When every step is done, go back to the tool.
 
-The parameters follow the Filecoin Pay console's setup links, so the same link works on both:
+The parameters follow the [Filecoin Pay console](https://pay.filecoin.cloud/console)'s setup links, which the `filecoin` CLI sends, so the same link works on both:
 
 | Parameter | Meaning |
 | --- | --- |

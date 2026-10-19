@@ -90,10 +90,10 @@ In the Claude and ChatGPT apps, add the URL as a custom connector. [API and MCP]
 The agent never holds the wallet key. It gets a session key instead, and the wallet owner approves it:
 
 1. The agent runs `filecoin login`. It gets a `login_pending` error with an approval link, and relays the link to you.
-2. You open the link, connect your wallet, and review the request on the filecoin-app setup page. Approve the session key, the Warm Storage approval, and a USDFC deposit if the page asks for them.
+2. You open the link, connect your wallet, and review the request on the [Filecoin Pay console](https://pay.filecoin.cloud/console)'s setup page. Approve each step it lists with your wallet: the session key, the Warm Storage approval, and a deposit.
 3. The agent runs `filecoin login --check` to confirm, then `filecoin put`. `--check` never makes a new key, so it can't replace the one you approved.
 
-When the account runs low, `filecoin status` and `filecoin put` return `insufficient_funds` with a prefilled funding link for you. To stop the agent, revoke its key on the filecoin-app [session keys page](https://poc.filecoin.cloud/dashboard/session-keys).
+When the account needs funds or the Warm Storage approval, `filecoin status` and `filecoin put` return `insufficient_funds` with a prefilled funding link for you. To stop the agent, revoke its key on the console's [session keys page](https://pay.filecoin.cloud/console/session-keys). `filecoin logout` returns a link that opens the revocation for its key.
 
 ## Discovery files
 

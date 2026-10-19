@@ -30,7 +30,7 @@ export type UploadQuote = {
   ratePerMonth: bigint
   /** Funds locked by this upload, in USDFC base units. */
   lockup: bigint
-  /** Console link that prefills the deposit and approval. */
+  /** Console link that prefills the Warm Storage approval and any deposit. */
   fundingUrl: string
 }
 

@@ -1,8 +1,14 @@
 import { defineHandler } from 'clipact'
+import type { Address } from 'viem'
+import { buildRevokeUrl } from '../auth/login.ts'
 import { logout } from '../commands/logout.ts'
 import { appFor } from './context.ts'
 
-/** Forget the saved session key for the network. */
+/**
+ * Forget the saved session key for the network. An approved key stays valid
+ * on chain until it expires, so the result carries the console link that
+ * revokes it.
+ */
 export default defineHandler(logout, (ctx) => {
   const app = appFor(ctx)
   const key = `sessions.${app.network}` as const
@@ -12,5 +18,14 @@ export default defineHandler(logout, (ctx) => {
     network: app.network,
     removed: session != null,
     ...(session ? { address: session.address } : {}),
+    ...(session?.rootAddress
+      ? {
+          revokeUrl: buildRevokeUrl({
+            consoleUrl: app.consoleUrl,
+            address: session.address as Address,
+            network: app.network,
+          }),
+        }
+      : {}),
   })
 })

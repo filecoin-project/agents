@@ -161,11 +161,11 @@ function sessionExpired(scopes: readonly ScopeId[]): CliError {
 }
 
 /**
- * Authorize a session key through the filecoin-app dashboard.
+ * Authorize a session key through the Filecoin Pay console.
  *
  * The key is generated and saved locally before anything is opened, so an
  * interrupted login resumes with the same key. Only its address leaves this
- * machine: the owner reviews a prefilled setup page and signs the approval
+ * machine: the owner reviews a prefilled console page and signs the approval
  * with their wallet. The CLI finds the approval on chain, so nothing is
  * copied back. Agents and pipes never wait or open a browser: they get the
  * approval link as a `login_pending` error and run `filecoin login --check` to
@@ -175,13 +175,13 @@ function sessionExpired(scopes: readonly ScopeId[]): CliError {
  * `filecoin login` again never changes the request. A new key replaces the saved
  * one only with `--fresh`, or when the saved key has expired.
  *
- * @see ../../../../apps/filecoin-app/src/routes/dashboard/setup.tsx
+ * @see https://github.com/FilOzone/filecoin-pay-explorer/blob/staging/apps/explorer/src/app/console/(console)/session-keys/page.tsx
  */
 export default defineHandler(login, async (ctx) => {
   const { input } = ctx
   if (input.sessionKey) {
     throw invalidInput(
-      'FILECOIN_SESSION_KEY is set; unset it to log in with filecoin-app.',
+      'FILECOIN_SESSION_KEY is set; unset it to log in with the Filecoin Pay console.',
       'sessionKey'
     )
   }

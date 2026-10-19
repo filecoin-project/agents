@@ -15,9 +15,11 @@ import {
 import {
   buildAuthorizeUrl,
   buildFundingUrl,
+  buildRevokeUrl,
   classifyScopes,
   findAuthorizer,
   LOG_WINDOW,
+  targetBalance,
 } from '../src/auth/login.ts'
 import { SCOPES } from '../src/auth/scopes.ts'
 import { loginCommand } from '../src/auth/session.ts'
@@ -26,10 +28,10 @@ const OWNER = '0x1111111111111111111111111111111111111111' as Address
 const SIGNER = '0x2222222222222222222222222222222222222222' as Address
 const OTHER = '0x3333333333333333333333333333333333333333' as Address
 
-test('buildAuthorizeUrl matches the filecoin-app setup link contract', () => {
+test('buildAuthorizeUrl matches the Filecoin Pay console setup link', () => {
   const url = new URL(
     buildAuthorizeUrl({
-      consoleUrl: 'https://filecoin-app.example',
+      consoleUrl: 'https://pay.example',
       address: '0xAbCdEf0000000000000000000000000000000001',
       scopes: ['createDataSet', 'addPieces'],
       network: 'calibration',
@@ -37,21 +39,22 @@ test('buildAuthorizeUrl matches the filecoin-app setup link contract', () => {
       days: 7,
     })
   )
-  assert.equal(url.pathname, '/dashboard/setup')
+  assert.equal(url.pathname, '/console/setup')
   assert.equal(url.searchParams.get('network'), 'calibration')
+  assert.equal(url.searchParams.get('approval'), 'unlimited')
   assert.equal(
-    url.searchParams.get('signer'),
+    url.searchParams.get('authorize'),
     '0xabcdef0000000000000000000000000000000001'
   )
-  assert.equal(url.searchParams.get('name'), 'filecoin on laptop')
   assert.equal(url.searchParams.get('scopes'), 'createDataSet,addPieces')
+  assert.equal(url.searchParams.get('name'), 'filecoin on laptop')
   assert.equal(url.searchParams.get('days'), '7')
 })
 
 test('buildAuthorizeUrl leaves out an unset name and expiry', () => {
   const url = new URL(
     buildAuthorizeUrl({
-      consoleUrl: 'https://filecoin-app.example',
+      consoleUrl: 'https://pay.example',
       address: SIGNER,
       scopes: ['addPieces'],
       network: 'mainnet',
@@ -61,24 +64,54 @@ test('buildAuthorizeUrl leaves out an unset name and expiry', () => {
   assert.equal(url.searchParams.has('days'), false)
 })
 
-test('buildFundingUrl prefills a decimal deposit only when positive', () => {
+test('buildRevokeUrl matches the Filecoin Pay console revoke link', () => {
+  assert.equal(
+    buildRevokeUrl({
+      consoleUrl: 'https://pay.example',
+      address: '0xAbCdEf0000000000000000000000000000000001',
+      network: 'mainnet',
+    }),
+    'https://pay.example/console/session-keys?revoke=0xabcdef0000000000000000000000000000000001&network=mainnet'
+  )
+})
+
+test('buildFundingUrl asks for the unlimited approval and the deposit', () => {
   const url = new URL(
     buildFundingUrl({
-      consoleUrl: 'https://filecoin-app.example',
+      consoleUrl: 'https://pay.example',
       network: 'mainnet',
       deposit: parseUnits('1.5', 18),
+      balance: parseUnits('4', 18),
     })
   )
-  assert.equal(url.pathname, '/dashboard/setup')
-  assert.equal(url.searchParams.get('deposit'), '1.5')
+  assert.equal(url.pathname, '/console/setup')
   assert.equal(url.searchParams.get('network'), 'mainnet')
+  assert.equal(url.searchParams.get('approval'), 'unlimited')
+  assert.equal(url.searchParams.get('deposit'), '1.5')
+  assert.equal(url.searchParams.get('balance'), '4')
+})
+
+test('buildFundingUrl without a deposit asks only for the approval', () => {
   assert.equal(
     buildFundingUrl({
-      consoleUrl: 'https://filecoin-app.example',
+      consoleUrl: 'https://pay.example',
       network: 'mainnet',
       deposit: 0n,
+      balance: parseUnits('4', 18),
     }),
-    'https://filecoin-app.example/dashboard/setup?network=mainnet'
+    'https://pay.example/console/setup?network=mainnet&approval=unlimited'
+  )
+})
+
+test('targetBalance takes the debt a deposit settles first', () => {
+  const unit = 10n ** 18n
+  assert.equal(
+    targetBalance({ availableFunds: 2n * unit, debt: 0n, depositNeeded: unit }),
+    3n * unit
+  )
+  assert.equal(
+    targetBalance({ availableFunds: 0n, debt: unit, depositNeeded: 3n * unit }),
+    2n * unit
   )
 })
 
