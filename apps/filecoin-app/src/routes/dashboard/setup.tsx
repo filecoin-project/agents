@@ -1,148 +1,64 @@
-import type { Expirations } from '@filoz/synapse-core/session-key'
-import {
-  useApproveOperator,
-  useERC20Balance,
-  useOperatorApprovals,
-} from '@filoz/synapse-react'
 import { createFileRoute } from '@tanstack/react-router'
 import {
   ArrowLeftRightIcon,
-  ShieldCheckIcon,
+  CircleCheckIcon,
   TriangleAlertIcon,
 } from 'lucide-react'
-import { type ReactNode, useState } from 'react'
-import { formatUnits, isAddressEqual } from 'viem'
+import { useEffect, useMemo, useState } from 'react'
+import { formatUnits } from 'viem'
 import { useSwitchChain } from 'wagmi'
-import { AmountForm } from '@/components/amount-form'
-import { CopyButton } from '@/components/copy-button'
 import { useDashboard } from '@/components/dashboard-context'
 import { NetworkDot } from '@/components/network-switcher'
 import { PageHeader } from '@/components/page-header'
-import { StatusBadge } from '@/components/status-badge'
-import { amountOrPending } from '@/components/token-amount'
-import { txToasts } from '@/components/tx-toast'
+import {
+  type AvailableFunds,
+  FundsStep,
+  useSetupFunds,
+} from '@/components/setup/funds-step'
+import {
+  SessionKeyStep,
+  useKeyGrant,
+} from '@/components/setup/session-key-step'
+import {
+  useWarmStorageApproval,
+  WarmStorageStep,
+} from '@/components/setup/warm-storage-step'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { SETUP_STATUS_DESCRIPTION } from '@/components/webmcp-tools'
 import { useWebMcpTool } from '@/hooks/use-webmcp-tool'
+import { shortHex } from '@/lib/format'
+import { CHAINS, NETWORK_LABELS, type Network } from '@/lib/networks'
 import {
-  useAccountSummary,
-  useDepositWithPermit,
-  useSessionKeyExpirations,
-  useSessionKeyLogin,
-} from '@/hooks-synapse'
-import { formatTimestamp, formatUnitsDisplay } from '@/lib/format'
-import { CHAINS, NETWORK_LABELS } from '@/lib/networks'
-import { permissionLabel } from '@/lib/permissions'
-import {
-  DEFAULT_DAYS,
-  DEFAULT_NAME,
-  expiryFromDays,
-  isValidDays,
-  MAX_DAYS,
-  MAX_NAME_LENGTH,
-  requestedScopes,
-  SCOPE_IDS,
-  SCOPE_PERMISSIONS,
-  type ScopeId,
-  type SetupSearch,
+  parseSetupLink,
+  SETUP_LINK_ERRORS,
+  type SetupRequest,
   setupSearchSchema,
 } from '@/lib/setup-request'
+import {
+  fundsOffer,
+  isSetupComplete,
+  readDepositBaseline,
+  type Shortfall,
+  shortfall,
+  writeDepositBaseline,
+} from '@/lib/setup-status'
 
 export const Route = createFileRoute('/dashboard/setup')({
   validateSearch: setupSearchSchema,
   component: SetupPage,
 })
 
-/** What each scope lets a session key do, shown under its checkbox. */
-const SCOPE_HELP: Record<ScopeId, string> = {
-  createDataSet: 'Create data sets paid by your wallet.',
-  addPieces: 'Add pieces to your data sets.',
-  schedulePieceRemovals: 'Remove pieces from your data sets.',
-  terminateService:
-    'End the storage service of your data sets. Few tools need this.',
-}
-
-/**
- * Per-scope authorization state of a session key.
- *
- * @param scopes - Scopes to check.
- * @param expirations - Expiries read from the registry.
- * @param now - Current Unix time in seconds.
- */
-function scopeStatus(
-  scopes: readonly ScopeId[],
-  expirations: Partial<Expirations> | undefined,
-  now: bigint
-) {
-  const granted: ScopeId[] = []
-  let expiresAt: bigint | undefined
-  for (const scope of scopes) {
-    const expiry = expirations?.[SCOPE_PERMISSIONS[scope]] ?? 0n
-    if (expiry > now) {
-      granted.push(scope)
-      if (expiresAt === undefined || expiry < expiresAt) expiresAt = expiry
-    }
-  }
-  return { granted, expiresAt, complete: granted.length === scopes.length }
-}
-
-/**
- * Numbered step card.
- *
- * @param props.step - Step number.
- * @param props.title - Step title.
- * @param props.description - What the step does.
- * @param props.status - Badge on the right.
- * @param props.children - Step body.
- */
-function Step(props: {
-  step: number
-  title: string
-  description: ReactNode
-  status: ReactNode
-  children?: ReactNode
-}) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <span className="flex size-6 items-center justify-center rounded-full bg-muted text-xs tabular-nums">
-            {props.step}
-          </span>
-          {props.title}
-        </CardTitle>
-        <CardDescription>{props.description}</CardDescription>
-        <CardAction>{props.status}</CardAction>
-      </CardHeader>
-      {props.children ? <CardContent>{props.children}</CardContent> : null}
-    </Card>
-  )
-}
+/** USDFC base units as a decimal string, for tool results. */
+const usdfc = (value: bigint) => formatUnits(value, 18)
 
 /**
  * Ask the user to switch the wallet to the network the request is for.
  *
  * @param props.network - Requested network.
  */
-function SwitchNetwork(props: { network: keyof typeof CHAINS }) {
+function SwitchNetwork(props: { network: Network }) {
   const { network } = useDashboard()
   const { mutate: switchChain, isPending } = useSwitchChain()
   return (
@@ -152,8 +68,9 @@ function SwitchNetwork(props: { network: keyof typeof CHAINS }) {
         This request is for {NETWORK_LABELS[props.network]}
       </AlertTitle>
       <AlertDescription className="flex flex-col items-start gap-3">
-        Your wallet is on {NETWORK_LABELS[network]}. Switch networks to review
-        it.
+        Your wallet is on {NETWORK_LABELS[network]}. Nothing here applies until
+        you switch: approving on the wrong network would set up a different
+        account.
         <Button
           disabled={isPending}
           onClick={() => switchChain({ chainId: CHAINS[props.network].id })}
@@ -168,335 +85,305 @@ function SwitchNetwork(props: { network: keyof typeof CHAINS }) {
 }
 
 /**
- * Review and authorize the requested session key. The form starts from the
- * link's values, and the user can change any of them before signing.
+ * `get_setup_status` while the page offers no steps: the link cannot be
+ * used, or the wallet is on the other network.
  *
- * @param props.search - Validated link values; `signer` is set.
- * @param props.expirations - Live expiries of the session key.
+ * @param props.status - What the tool reports.
  */
-function SessionKeyStep(props: {
-  search: SetupSearch & { signer: `0x${string}` }
-  expirations: ReturnType<typeof useSessionKeyExpirations>
-}) {
+function BlockedStatusTool(props: { status: Record<string, unknown> }) {
   const { address, network } = useDashboard()
-  const { search, expirations } = props
-  const [name, setName] = useState(search.name ?? DEFAULT_NAME)
-  const [scopes, setScopes] = useState<ScopeId[]>(
-    requestedScopes(search.scopes)
-  )
-  const [days, setDays] = useState(search.days ?? String(DEFAULT_DAYS))
-  const login = useSessionKeyLogin(txToasts(network, 'Authorize session key'))
-  const isWallet = isAddressEqual(search.signer, address)
-  const now = BigInt(Math.floor(Date.now() / 1000))
-  const status = scopeStatus(scopes, expirations.data, now)
-  const validName = name.trim().length > 0 && name.length <= MAX_NAME_LENGTH
-  const canSubmit =
-    !isWallet &&
-    validName &&
-    isValidDays(days) &&
-    scopes.length > 0 &&
-    !login.isPending
-
-  return (
-    <Step
-      description="This key can sign storage operations for your wallet until it expires. It cannot move funds."
-      status={
-        expirations.isPending ? (
-          <Spinner />
-        ) : status.complete && status.expiresAt ? (
-          <StatusBadge tone="success">
-            Authorized until {formatTimestamp(status.expiresAt)}
-          </StatusBadge>
-        ) : status.granted.length > 0 ? (
-          <StatusBadge tone="warning">Partly authorized</StatusBadge>
-        ) : (
-          <StatusBadge tone="warning">Not authorized</StatusBadge>
-        )
-      }
-      step={1}
-      title="Authorize a session key"
-    >
-      <FieldGroup>
-        <Field>
-          <FieldLabel>Session key address</FieldLabel>
-          <p className="flex items-center gap-1 font-mono text-sm break-all">
-            {search.signer}
-            <CopyButton value={search.signer} />
-          </p>
-          <FieldDescription>
-            Check that it matches the address your tool printed, for example the
-            link from <code>filecoin login</code>.
-          </FieldDescription>
-        </Field>
-        {isWallet ? (
-          <Alert variant="destructive">
-            <TriangleAlertIcon />
-            <AlertTitle>This is your wallet address</AlertTitle>
-            <AlertDescription>
-              A session key must be a separate address.
-            </AlertDescription>
-          </Alert>
-        ) : null}
-        <Field>
-          <FieldLabel htmlFor="setup-name">Name</FieldLabel>
-          <Input
-            aria-invalid={!validName}
-            id="setup-name"
-            maxLength={MAX_NAME_LENGTH}
-            onChange={(event) => setName(event.target.value)}
-            value={name}
-          />
-          <FieldDescription>
-            Recorded on chain with the authorization, so you can recognise the
-            key later.
-          </FieldDescription>
-        </Field>
-        <Field>
-          <FieldLabel>Permissions</FieldLabel>
-          <div className="flex flex-col gap-3">
-            {SCOPE_IDS.map((scope) => {
-              const expiry = expirations.data?.[SCOPE_PERMISSIONS[scope]] ?? 0n
-              return (
-                <Field key={scope} orientation="horizontal">
-                  <Checkbox
-                    checked={scopes.includes(scope)}
-                    id={`setup-scope-${scope}`}
-                    onCheckedChange={(checked) =>
-                      setScopes((prev) =>
-                        SCOPE_IDS.filter((id) =>
-                          id === scope ? checked : prev.includes(id)
-                        )
-                      )
-                    }
-                  />
-                  <div className="flex flex-col gap-0.5">
-                    <FieldLabel htmlFor={`setup-scope-${scope}`}>
-                      {permissionLabel(SCOPE_PERMISSIONS[scope])}
-                      {expiry > now ? (
-                        <StatusBadge tone="success">
-                          until {formatTimestamp(expiry)}
-                        </StatusBadge>
-                      ) : null}
-                    </FieldLabel>
-                    <FieldDescription>{SCOPE_HELP[scope]}</FieldDescription>
-                  </div>
-                </Field>
-              )
-            })}
-          </div>
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="setup-days">Expires in (days)</FieldLabel>
-          <Input
-            aria-invalid={!isValidDays(days)}
-            id="setup-days"
-            inputMode="numeric"
-            onChange={(event) => setDays(event.target.value)}
-            value={days}
-          />
-          <FieldDescription>From 1 to {MAX_DAYS} days.</FieldDescription>
-        </Field>
-        <Button
-          className="self-start"
-          disabled={!canSubmit}
-          onClick={() =>
-            login.mutate({
-              address: search.signer,
-              permissions: scopes.map((scope) => SCOPE_PERMISSIONS[scope]),
-              expiresAt: expiryFromDays(Number(days)),
-              origin: name.trim(),
-            })
-          }
-        >
-          {login.isPending ? <Spinner /> : <ShieldCheckIcon />}
-          {status.granted.length > 0 ? 'Authorize again' : 'Authorize'}
-        </Button>
-        {login.isSuccess ? (
-          <p className="text-sm text-muted-foreground">
-            Authorized. A waiting <code>filecoin login</code> finds the approval
-            on chain within a few seconds; otherwise run{' '}
-            <code>filecoin login</code> again.
-          </p>
-        ) : null}
-      </FieldGroup>
-    </Step>
-  )
-}
-
-/**
- * Approve Warm Storage (FWSS) as a Filecoin Pay operator, which every upload
- * needs.
- *
- * @param props.step - Step number.
- * @param props.approval - Operator approval query.
- */
-function ApprovalStep(props: {
-  step: number
-  approval: ReturnType<typeof useOperatorApprovals>
-}) {
-  const { network } = useDashboard()
-  const approve = useApproveOperator(txToasts(network, 'Approval'))
-  const approved = props.approval.data?.isApproved
-  return (
-    <Step
-      description="Lets Warm Storage create and manage the payment rails for your data sets."
-      status={
-        props.approval.isPending ? (
-          <Spinner />
-        ) : approved ? (
-          <StatusBadge tone="success">Approved</StatusBadge>
-        ) : (
-          <StatusBadge tone="warning">Not approved</StatusBadge>
-        )
-      }
-      step={props.step}
-      title="Approve Warm Storage"
-    >
-      {approved === false ? (
-        <Button disabled={approve.isPending} onClick={() => approve.mutate()}>
-          {approve.isPending ? <Spinner /> : <ShieldCheckIcon />}
-          Approve Warm Storage
-        </Button>
-      ) : null}
-    </Step>
-  )
-}
-
-/**
- * Deposit USDFC into Filecoin Pay, prefilled with the requested amount.
- *
- * @param props.step - Step number.
- * @param props.deposit - Requested decimal amount, if any.
- * @param props.summary - Pay account summary query.
- */
-function DepositStep(props: {
-  step: number
-  deposit: string | undefined
-  summary: ReturnType<typeof useAccountSummary>
-}) {
-  const { address, network } = useDashboard()
-  const usdfc = useERC20Balance({ address })
-  const deposit = useDepositWithPermit(txToasts(network, 'Deposit'))
-  const amount = amountOrPending(network)
-  return (
-    <Step
-      description={
-        props.deposit
-          ? `The request asks for ${props.deposit} USDFC to cover storage costs.`
-          : 'Optional. Storage is paid from your Filecoin Pay balance.'
-      }
-      status={
-        <StatusBadge tone="neutral">
-          Available {amount(props.summary.data?.availableFunds)}
-        </StatusBadge>
-      }
-      step={props.step}
-      title="Deposit USDFC"
-    >
-      <AmountForm
-        action="Deposit"
-        defaultValue={props.deposit}
-        description={
-          usdfc.data
-            ? `Wallet balance: ${formatUnitsDisplay(usdfc.data.value)} USDFC`
-            : undefined
-        }
-        label="Amount"
-        max={usdfc.data?.value}
-        onSubmit={(value) => deposit.mutateAsync({ amount: value })}
-        symbol="USDFC"
-      />
-    </Step>
-  )
-}
-
-/**
- * Review page for a setup request from a deep link or an agent: authorize a
- * session key, approve Warm Storage, and deposit USDFC. Each step is its own
- * wallet transaction, so the user approves exactly what they accept.
- */
-function SetupPage() {
-  const { address, network } = useDashboard()
-  const search = Route.useSearch()
-  const signer = search.signer as `0x${string}` | undefined
-  const wrongNetwork = search.network != null && search.network !== network
-  const expirations = useSessionKeyExpirations({
-    address,
-    sessionKeyAddress: wrongNetwork ? undefined : signer,
+  useWebMcpTool({
+    name: 'get_setup_status',
+    description: SETUP_STATUS_DESCRIPTION,
+    inputSchema: { type: 'object', properties: {} },
+    execute: () => ({
+      walletConnected: true,
+      wallet: address,
+      network,
+      complete: false,
+      ...props.status,
+    }),
+    annotations: { readOnlyHint: true },
   })
-  const approval = useOperatorApprovals({ address })
-  const summary = useAccountSummary({ address })
+  return null
+}
+
+/**
+ * For a request with a deposit but no balance: the account's funds when this
+ * tab first opened it, so the funds step can tell the deposit went in. Kept
+ * in session storage, so a reload in this tab keeps it, and scoped to the
+ * link's key and amount so a later request is not counted as done by an
+ * earlier deposit. `null` until known, or when the request needs none.
+ *
+ * @param request - The setup request.
+ * @param funds - {@link AvailableFunds}
+ */
+function useDepositBaseline(request: SetupRequest, funds: AvailableFunds) {
+  const { address, network } = useDashboard()
+  const wanted =
+    request.deposit !== null &&
+    request.balance === null &&
+    funds.state === 'ready'
+  const key = [
+    'filecoin-app-setup-deposit-baseline',
+    network,
+    address.toLowerCase(),
+    request.sessionKey?.address ?? 'no-key',
+    request.deposit,
+  ].join(':')
+  const current = funds.state === 'ready' ? funds.funds : null
+  const [baseline, setBaseline] = useState<bigint | null>(null)
+  useEffect(() => {
+    if (!wanted || baseline !== null || current === null) return
+    let stored: string | null = null
+    try {
+      stored = window.sessionStorage.getItem(key)
+    } catch {
+      // Storage can be blocked; the baseline then lasts until this page closes.
+    }
+    const kept = readDepositBaseline(stored, Date.now())
+    if (kept !== null) {
+      setBaseline(kept)
+      return
+    }
+    try {
+      window.sessionStorage.setItem(
+        key,
+        writeDepositBaseline(current, Date.now())
+      )
+    } catch {
+      // As above.
+    }
+    setBaseline(current)
+  }, [wanted, baseline, current, key])
+  return wanted ? baseline : null
+}
+
+/**
+ * The steps a request needs, in a fixed order (key, approval, funds), each
+ * with its live status from the chain. Only what each step offers changes as
+ * the reads come in.
+ *
+ * @param props.request - The setup request.
+ */
+function SetupSteps(props: { request: SetupRequest }) {
+  const { address, network } = useDashboard()
+  const { request } = props
+  const { grant, expirations } = useKeyGrant(request.sessionKey)
+  const approval = useWarmStorageApproval(request.unlimitedApproval)
+  // An approval-only request never shows funds, so it reads none.
+  const { funds, wallet } = useSetupFunds(!request.approvalOnly)
+  const baseline = useDepositBaseline(request, funds)
+  // A deposit is measured from the baseline, so nothing is offered until it is known:
+  // a deposit sent before the first read would otherwise be asked for again.
+  const awaitingBaseline =
+    request.deposit !== null && request.balance === null && baseline === null
+  const liveMissing =
+    funds.state === 'loading' || awaitingBaseline
+      ? null
+      : shortfall({
+          // An unreadable balance counts as empty, so the steps offered still work.
+          available: funds.state === 'ready' ? funds.available : 0n,
+          debt: funds.state === 'ready' ? funds.debt : 0n,
+          funds: funds.state === 'ready' ? funds.funds : 0n,
+          baseline,
+          deposit: request.deposit,
+          balance: request.balance,
+        })
+  // Once Filecoin Pay holds what the request asks for, the funds stay counted for this
+  // visit: lockup keeps drawing the balance down, and a step that reopened a cent short
+  // would take back "Setup complete" while the tool carries on. A reload checks again.
+  const [fundsReached, setFundsReached] = useState(false)
+  useEffect(() => {
+    if (funds.state === 'ready' && liveMissing?.kind === 'none') {
+      setFundsReached(true)
+    }
+  }, [funds.state, liveMissing?.kind])
+  const missing: Shortfall | null = fundsReached
+    ? { kind: 'none' }
+    : liveMissing
+  const offer = fundsOffer({
+    missing,
+    walletUsdfc: wallet,
+    approval: approval.state,
+  })
+  const complete = isSetupComplete({
+    keyRequested: request.sessionKey !== null,
+    grant,
+    approved: approval.state === 'approved',
+    fundsCovered: request.approvalOnly || missing?.kind === 'none',
+  })
+  const first = request.sessionKey ? 2 : 1
 
   useWebMcpTool({
     name: 'get_setup_status',
     description: SETUP_STATUS_DESCRIPTION,
     inputSchema: { type: 'object', properties: {} },
-    execute: () => {
-      const now = BigInt(Math.floor(Date.now() / 1000))
-      const scopes = requestedScopes(search.scopes)
-      const status = scopeStatus(scopes, expirations.data, now)
-      return {
-        walletConnected: true,
-        wallet: address,
-        network,
-        requestedNetwork: search.network ?? network,
-        wrongNetwork,
-        sessionKey: signer
-          ? {
-              signer,
-              requestedScopes: scopes,
-              grantedScopes: status.granted,
-              authorized: status.complete,
-              expiresAt: status.expiresAt
-                ? new Date(Number(status.expiresAt) * 1000).toISOString()
+    execute: () => ({
+      walletConnected: true,
+      wallet: address,
+      network,
+      requestedNetwork: request.network ?? network,
+      wrongNetwork: false,
+      complete,
+      sessionKey: request.sessionKey
+        ? {
+            signer: request.sessionKey.address,
+            requestedScopes: request.sessionKey.scopes,
+            state: grant.state,
+            grantedScopes:
+              grant.state === 'authorized'
+                ? request.sessionKey.scopes
+                : grant.state === 'partial'
+                  ? grant.granted
+                  : [],
+            authorized: grant.state === 'authorized',
+            expiresAt:
+              grant.state === 'authorized'
+                ? new Date(Number(grant.expiresAt) * 1000).toISOString()
                 : null,
-            }
-          : null,
-        warmStorageApproved: approval.data?.isApproved ?? null,
-        availableFunds: summary.data
-          ? formatUnits(summary.data.availableFunds, 18)
-          : null,
-        requestedDeposit: search.deposit ?? null,
-        nextStep:
-          'The user approves each step on this page in their wallet. Agents cannot sign for them.',
-      }
-    },
+          }
+        : null,
+      warmStorage: {
+        state: approval.state,
+        unlimitedRequired: request.unlimitedApproval,
+      },
+      warmStorageApproved: approval.state === 'approved',
+      funds: request.approvalOnly
+        ? null
+        : {
+            availableFunds:
+              funds.state === 'ready' ? usdfc(funds.available) : null,
+            debt: funds.state === 'ready' ? usdfc(funds.debt) : null,
+            walletUsdfc:
+              wallet.state === 'ready' ? usdfc(wallet.balance) : null,
+            requestedDeposit: request.deposit,
+            requestedBalance: request.balance,
+            missing:
+              missing === null
+                ? null
+                : missing.kind === 'amount'
+                  ? usdfc(missing.amount)
+                  : missing.kind,
+            offer,
+          },
+      nextStep: complete
+        ? 'Setup is complete. The tool that sent the link can carry on.'
+        : 'The user approves each step on this page in their wallet. Agents cannot sign for them.',
+    }),
     annotations: { readOnlyHint: true },
   })
 
   return (
     <>
+      <ol className="flex flex-col">
+        {request.sessionKey ? (
+          <SessionKeyStep
+            expiries={expirations.data}
+            grant={grant}
+            number={1}
+            request={request.sessionKey}
+          />
+        ) : null}
+        <WarmStorageStep
+          approval={approval}
+          // An approval-only request never deposits.
+          deposit={
+            !request.approvalOnly && offer === 'with-approval' ? missing : null
+          }
+          number={first}
+          walletUsdfc={wallet.state === 'ready' ? wallet.balance : undefined}
+        />
+        {request.approvalOnly ? null : (
+          <FundsStep
+            deposit={request.deposit}
+            funds={funds}
+            missing={missing}
+            number={first + 1}
+            offer={offer}
+            wallet={wallet}
+          />
+        )}
+      </ol>
+      {/* Mounted empty so screen readers announce the moment it fills. */}
+      <div aria-live="polite">
+        {complete ? (
+          <Alert className="border-success/40 bg-success/5 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500">
+            <CircleCheckIcon className="text-green-700 dark:text-success" />
+            <AlertTitle>Setup complete</AlertTitle>
+            <AlertDescription>
+              Go back to the tool that sent this link. A command that is still
+              waiting carries on by itself; otherwise run it again.
+            </AlertDescription>
+          </Alert>
+        ) : null}
+      </div>
+    </>
+  )
+}
+
+/**
+ * Review page for a setup request from a link or an agent: authorize a
+ * session key, approve Warm Storage, and fund Filecoin Pay. Each step is its
+ * own wallet transaction and shows its live status from the chain, so
+ * reloading the link only shows what is already done.
+ */
+function SetupPage() {
+  const { address, network } = useDashboard()
+  const search = Route.useSearch()
+  const request = useMemo(() => parseSetupLink(search), [search])
+  const requested = 'error' in request ? network : (request.network ?? network)
+
+  return (
+    <>
       <PageHeader
-        description="A tool or agent asked to set up your wallet. Review each step, change what you need, and approve it in your wallet."
+        description={`A tool or agent asked to set up ${shortHex(address)} on ${NETWORK_LABELS[requested]}. Each step is its own wallet transaction, and you can change what it asked for before you approve.`}
         title="Review setup request"
       />
-      {wrongNetwork && search.network ? (
-        <SwitchNetwork network={search.network} />
-      ) : (
+      {'error' in request ? (
+        <>
+          <BlockedStatusTool
+            status={{
+              linkError: SETUP_LINK_ERRORS[request.error],
+              nextStep:
+                'The setup link cannot be used. Ask the tool that made it for a new link, or call prepare_setup_request.',
+            }}
+          />
+          <Alert variant="destructive">
+            <TriangleAlertIcon />
+            <AlertTitle>This setup link cannot be used</AlertTitle>
+            <AlertDescription>
+              {SETUP_LINK_ERRORS[request.error]} Nothing was changed. Ask the
+              tool that sent it for a new link.
+            </AlertDescription>
+          </Alert>
+        </>
+      ) : requested === network ? (
         <>
           <Alert>
             <TriangleAlertIcon />
             <AlertTitle>Only approve requests you started</AlertTitle>
             <AlertDescription>
-              Authorize a session key only if you created it yourself, for
-              example with <code>filecoin login</code> on your own machine.
+              Authorize a session key only if you created it yourself, with a
+              tool on your own machine. This page cannot tell who sent the link.
             </AlertDescription>
           </Alert>
-          {signer ? (
-            <SessionKeyStep
-              expirations={expirations}
-              // Start a fresh form when the link or an agent changes the request.
-              key={`${signer}|${search.name}|${search.scopes}|${search.days}`}
-              search={{ ...search, signer }}
-            />
-          ) : null}
-          <ApprovalStep approval={approval} step={signer ? 2 : 1} />
-          <DepositStep
-            deposit={search.deposit}
-            key={search.deposit}
-            step={signer ? 3 : 2}
-            summary={summary}
+          <SetupSteps
+            // A new link or wallet must not keep the previous one's baseline or reached funds.
+            key={`${network}:${address}:${JSON.stringify(search)}`}
+            request={request}
           />
+        </>
+      ) : (
+        <>
+          <BlockedStatusTool
+            status={{
+              requestedNetwork: requested,
+              wrongNetwork: true,
+              nextStep: `Ask the user to switch their wallet to ${NETWORK_LABELS[requested]} on this page.`,
+            }}
+          />
+          <SwitchNetwork network={requested} />
         </>
       )}
     </>
