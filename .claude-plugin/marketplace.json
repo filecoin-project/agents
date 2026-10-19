@@ -1,17 +1,20 @@
 {
   "$schema": "https://www.schemastore.org/claude-code-marketplace.json",
   "name": "filecoin",
-  "description": "The Filecoin for Agents plugin, which stores files and folders on Filecoin.",
+  "description": "Filecoin for Agents: plugins that store, share, and verify files on Filecoin.",
   "owner": {
     "name": "Hugo Dias",
-    "email": "hugomrdias@gmail.com"
+    "email": "hugomrdias@gmail.com",
+    "url": "https://github.com/filecoin-project/agents"
   },
   "plugins": [
     {
       "name": "filecoin",
       "source": "./plugins/filecoin",
-      "skills": ["./skills/filecoin"],
-      "category": "storage"
+      "description": "Store files and folders on Filecoin with the filecoin CLI, share and verify them, and read Filecoin storage data through a read-only MCP server.",
+      "category": "productivity",
+      "tags": ["filecoin", "storage", "ipfs"],
+      "skills": ["./skills/filecoin"]
     }
   ]
 }

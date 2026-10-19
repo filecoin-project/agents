@@ -12,7 +12,7 @@ The plugin follows the [Agent Plugins](https://agent-plugins.org/specification) 
 | [`assets/logo.png`](assets/logo.png) | The Filecoin logo, rendered from filecoin-app's favicon | Codex and Anthropic's plugin directory |
 | [`skills/`](skills) | The agent skills. This is their only source: the filecoin-cli build copies them for `filecoin skills install`, and filecoin-app publishes them under `/.well-known/agent-skills/`. | Every client |
 
-The repository root is the marketplace for both clients. [`.claude-plugin/marketplace.json`](../../.claude-plugin/marketplace.json) lists the plugin for Claude Code. `npx skills add filecoin-project/agents` finds the skills through the entry's `skills` list, so a new skill must be added there too; `pnpm check:plugin` fails until it is. [`.agents/plugins/marketplace.json`](../../.agents/plugins/marketplace.json) lists it for Codex.
+The repository root is the marketplace for both clients. [`.claude-plugin/marketplace.json`](../../.claude-plugin/marketplace.json) lists the plugin for Claude Code, with the manifest's description so that `/plugin` shows it before install; `pnpm check:plugin` fails when the two differ. `npx skills add filecoin-project/agents` finds the skills through the entry's `skills` list, so a new skill must be added there too; `pnpm check:plugin` fails until it is. [`.agents/plugins/marketplace.json`](../../.agents/plugins/marketplace.json) lists it for Codex.
 
 ## Install
 

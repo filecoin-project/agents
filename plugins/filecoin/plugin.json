@@ -24,7 +24,7 @@
         "shortDescription": "Store and share files on Filecoin",
         "longDescription": "Store a file or folder on Filecoin with the filecoin CLI and get links to share it. Retrieve and verify stored content, and read providers, data sets, pieces, payment rails, and session keys through the read-only filecoin-api MCP server. The wallet owner approves the agent's session key, and the agent never holds the wallet key.",
         "developerName": "Hugo Dias",
-        "category": "Developer Tools",
+        "category": "Productivity",
         "capabilities": [
           "Read",
           "Write"
