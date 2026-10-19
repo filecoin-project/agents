@@ -1,12 +1,12 @@
 # API and MCP
 
-[filecoin-api](https://api.filecoin.cloud) serves read-only Filecoin data: storage providers, data sets, pieces, Filecoin Pay rails, and session keys. It reads from an indexer of the Filecoin chain, so its data trails the chain. `/health` reports the latest indexed block. It cannot store, delete, or sign anything.
+[filecoin-api](https://api.filecoin.io) serves read-only Filecoin data: storage providers, data sets, pieces, Filecoin Pay rails, and session keys. It reads from an indexer of the Filecoin chain, so its data trails the chain. `/health` reports the latest indexed block. It cannot store, delete, or sign anything.
 
-The interactive reference is at [`/docs`](https://api.filecoin.cloud/docs), and the OpenAPI 3.1 document is at [`/openapi.json`](https://api.filecoin.cloud/openapi.json).
+The interactive reference is at [`/docs`](https://api.filecoin.io/docs), and the OpenAPI 3.1 document is at [`/openapi.json`](https://api.filecoin.io/openapi.json).
 
 ## Routes
 
-`GET /openapi.json` lists every route and its filters, and `POST /mcp` is the MCP server, which also has its own host, `https://mcp.filecoin.cloud`. `GET /health` reports the latest indexed block per network, and [`GET /get/{cid}`](#retrieval) redirects to where content can be retrieved. Every data route starts with the network, `/calibration/...` or `/mainnet/...`, and reads one of: indexer status, storage providers, data sets and their pieces, pieces by owner or PieceCID, Filecoin Pay rails and their settlements, and session keys and their history.
+`GET /openapi.json` lists every route and its filters, and `POST /mcp` is the MCP server, which also has its own host, `https://mcp.filecoin.io`. `GET /health` reports the latest indexed block per network, and [`GET /get/{cid}`](#retrieval) redirects to where content can be retrieved. Every data route starts with the network, `/calibration/...` or `/mainnet/...`, and reads one of: indexer status, storage providers, data sets and their pieces, pieces by owner or PieceCID, Filecoin Pay rails and their settlements, and session keys and their history.
 
 Conventions:
 
@@ -33,7 +33,7 @@ Legacy v1 PieceCIDs (`baga…`) and strings that aren't CIDs return `400`. If no
 
 ## MCP server
 
-The MCP server at `https://mcp.filecoin.cloud` offers one read-only tool for each data route. Each tool requires a `network` argument.
+The MCP server at `https://mcp.filecoin.io` offers one read-only tool for each data route, plus `search_docs`. Each data tool requires a `network` argument.
 
 | Tool | Reads |
 | --- | --- |
@@ -43,6 +43,7 @@ The MCP server at `https://mcp.filecoin.cloud` offers one read-only tool for eac
 | `list_data_set_pieces`, `get_piece`, `list_pieces` | Pieces |
 | `list_rails`, `get_rail`, `list_rail_settlements` | Filecoin Pay rails and settlements |
 | `list_session_keys`, `list_session_key_events` | Session keys and their history |
+| `search_docs` | Page excerpts from the [Filecoin docs](https://docs.filecoin.io) that match a `query` |
 
 [Agents](/agents#mcp-server) shows how to add it to an agent.
 

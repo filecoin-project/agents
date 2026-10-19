@@ -34,7 +34,7 @@ describe('mcp', () => {
     expect(body.result.serverInfo.name).toBe('filecoin-api')
   })
 
-  it('lists every tool with a network argument', async () => {
+  it('lists every tool, with a network argument on data tools', async () => {
     const { request } = testApp()
     const res = await request('/mcp', rpc('tools/list'))
     const body = (await res.json()) as RpcResult<{
@@ -56,9 +56,11 @@ describe('mcp', () => {
         'list_rail_settlements',
         'list_session_keys',
         'list_session_key_events',
+        'search_docs',
       ].sort()
     )
     for (const tool of body.result.tools) {
+      if (tool.name === 'search_docs') continue
       expect(tool.inputSchema.required).toContain('network')
     }
   })

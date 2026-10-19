@@ -5,6 +5,10 @@ import { mkdir, open, readFile, symlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { CarIndexer } from '@ipld/car'
+import { type BufferImporter, importer } from 'ipfs-unixfs-importer'
+import { CID } from 'multiformats/cid'
+import * as raw from 'multiformats/codecs/raw'
+import { sha256 } from 'multiformats/hashes/sha2'
 import {
   extractCar,
   listEntries,
@@ -135,4 +139,44 @@ test('extractCar restores files larger than one read window', async () => {
   await packDirectory(dir, join(root, 'large.car'))
   await extractCar(join(root, 'large.car'), join(root, 'out'))
   assert.ok(bytes.equals(await readFile(join(root, 'out', 'blob.bin'))))
+})
+
+test('the importer encodes 2–4 GiB file sizes as full varints', async () => {
+  // protons-runtime wrote uint64 values in [2^31, 2^32) as one varint byte plus
+  // four bytes of stale Buffer pool memory (ipfs/protons#212). Fake three 1 GiB
+  // raw leaves so the importer builds a 3 GiB file root without reading data.
+  const gib = 2n ** 30n
+  const bufferImporter: BufferImporter = async function* () {
+    for (let i = 0; i < 3; i++) {
+      const digest = await sha256.digest(Uint8Array.of(i))
+      const cid = CID.createV1(raw.code, digest)
+      yield async () => ({ cid, size: gib, block: new Uint8Array() })
+    }
+  }
+  const blocks = new Map<string, Uint8Array>()
+  const blockstore = {
+    put(cid: CID, bytes: Uint8Array) {
+      blocks.set(cid.toString(), bytes)
+      return cid
+    },
+  }
+  // Leave non-zero bytes in the Buffer pool, as a long-running pack would.
+  for (let i = 0; i < 256; i++) Buffer.allocUnsafe(64).fill(0xa5)
+
+  let root: CID | undefined
+  for await (const entry of importer(
+    [{ path: 'big.bin', content: [Uint8Array.of(0)] }],
+    blockstore,
+    { profile: 'unixfs-v1-2025', bufferImporter }
+  )) {
+    root = entry.cid
+  }
+  assert.ok(root)
+  const block = blocks.get(root.toString())
+  assert.ok(block)
+  // dag-pb puts Data (field 1) after the links: type file, filesize 3 GiB,
+  // and three 1 GiB block sizes.
+  const data = '080218808080800c208080808004208080808004208080808004'
+  const hex = Buffer.from(block).toString('hex')
+  assert.equal(hex.slice(-4 - data.length), `0a1a${data}`)
 })

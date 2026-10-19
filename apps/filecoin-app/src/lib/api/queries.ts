@@ -1,7 +1,7 @@
+import type { paths } from '@filecoin-project/api-client'
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query'
 import type { Network } from '@/lib/networks'
 import { api, unwrap } from './client'
-import type { paths } from './schema'
 
 /** How long fetched filecoin-api data counts as fresh before a refetch. */
 const STALE_TIME = 15_000

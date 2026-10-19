@@ -1,0 +1,2563 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "filecoin-api",
+    "version": "0.0.0",
+    "description": "Read-only Filecoin data: storage providers, data sets, pieces, Filecoin Pay rails and session keys."
+  },
+  "servers": [
+    {
+      "url": "https://api.filecoin.io"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Status"
+    },
+    {
+      "name": "Providers"
+    },
+    {
+      "name": "Data sets"
+    },
+    {
+      "name": "Pieces"
+    },
+    {
+      "name": "Rails"
+    },
+    {
+      "name": "Session keys"
+    },
+    {
+      "name": "Retrieval"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "StatusResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Status"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "Status": {
+        "type": "object",
+        "properties": {
+          "network": {
+            "type": "string"
+          },
+          "chainId": {
+            "type": "integer"
+          },
+          "indexers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IndexerStatus"
+            }
+          }
+        },
+        "required": [
+          "network",
+          "chainId",
+          "indexers"
+        ]
+      },
+      "IndexerStatus": {
+        "type": "object",
+        "properties": {
+          "schema": {
+            "type": "string"
+          },
+          "chainName": {
+            "type": "string"
+          },
+          "chainId": {
+            "type": "integer"
+          },
+          "latest": {
+            "$ref": "#/components/schemas/Checkpoint"
+          },
+          "safe": {
+            "$ref": "#/components/schemas/Checkpoint"
+          },
+          "finalized": {
+            "$ref": "#/components/schemas/Checkpoint"
+          }
+        },
+        "required": [
+          "schema",
+          "chainName",
+          "chainId",
+          "latest",
+          "safe",
+          "finalized"
+        ]
+      },
+      "Checkpoint": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "blockNumber": {
+            "type": "integer"
+          },
+          "timestamp": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "blockNumber",
+          "timestamp"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "example": "not_found"
+              },
+              "message": {
+                "type": "string"
+              },
+              "issues": {
+                "type": "array",
+                "items": {}
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "ProviderPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Provider"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cursor for the next page, or null on the last page"
+          }
+        },
+        "required": [
+          "data",
+          "nextCursor"
+        ]
+      },
+      "Provider": {
+        "type": "object",
+        "properties": {
+          "providerId": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "address": {
+            "type": "string",
+            "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "serviceUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "active": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "pdpProductActive": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "approved": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "endorsed": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "createdAtBlock": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "updatedAtBlock": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          }
+        },
+        "required": [
+          "providerId",
+          "address",
+          "name",
+          "serviceUrl",
+          "active",
+          "pdpProductActive",
+          "approved",
+          "endorsed",
+          "createdAtBlock",
+          "updatedAtBlock"
+        ]
+      },
+      "ProviderResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Provider"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "DataSetPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DataSet"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cursor for the next page, or null on the last page"
+          }
+        },
+        "required": [
+          "data",
+          "nextCursor"
+        ]
+      },
+      "DataSet": {
+        "type": "object",
+        "properties": {
+          "dataSetId": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "providerId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "owner": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd",
+            "description": "Client address that pays for the data set"
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "metadata": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {},
+            "example": {
+              "source": "filecoin-pin"
+            }
+          },
+          "withCdn": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "withIpfsIndexing": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "pdpEndEpoch": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "deleted": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "createdAtBlock": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "updatedAtBlock": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          }
+        },
+        "required": [
+          "dataSetId",
+          "providerId",
+          "owner",
+          "source",
+          "metadata",
+          "withCdn",
+          "withIpfsIndexing",
+          "pdpEndEpoch",
+          "deleted",
+          "createdAtBlock",
+          "updatedAtBlock"
+        ]
+      },
+      "DataSetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DataSet"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "PiecePage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Piece"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cursor for the next page, or null on the last page"
+          }
+        },
+        "required": [
+          "data",
+          "nextCursor"
+        ]
+      },
+      "Piece": {
+        "type": "object",
+        "properties": {
+          "dataSetId": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "pieceId": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "cid": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "PieceCID (v2)"
+          },
+          "rawSize": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "metadata": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {},
+            "example": {
+              "source": "filecoin-pin"
+            }
+          },
+          "removed": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "addedAtBlock": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "removedAtBlock": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "updatedAtBlock": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          }
+        },
+        "required": [
+          "dataSetId",
+          "pieceId",
+          "cid",
+          "rawSize",
+          "metadata",
+          "removed",
+          "addedAtBlock",
+          "removedAtBlock",
+          "updatedAtBlock"
+        ]
+      },
+      "PieceResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Piece"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "PieceWithDataSetPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PieceWithDataSet"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cursor for the next page, or null on the last page"
+          }
+        },
+        "required": [
+          "data",
+          "nextCursor"
+        ]
+      },
+      "PieceWithDataSet": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Piece"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "owner": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd"
+              },
+              "providerId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Unsigned integer as a decimal string",
+                "example": "1"
+              }
+            },
+            "required": [
+              "owner",
+              "providerId"
+            ]
+          }
+        ]
+      },
+      "RailPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Rail"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cursor for the next page, or null on the last page"
+          }
+        },
+        "required": [
+          "data",
+          "nextCursor"
+        ]
+      },
+      "Rail": {
+        "type": "object",
+        "properties": {
+          "railId": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "active",
+              "terminated",
+              "finalized"
+            ],
+            "description": "Rail lifecycle state"
+          },
+          "payer": {
+            "type": "string",
+            "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd"
+          },
+          "payee": {
+            "type": "string",
+            "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd"
+          },
+          "token": {
+            "type": "string",
+            "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd"
+          },
+          "operator": {
+            "type": "string",
+            "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd"
+          },
+          "validator": {
+            "type": "string",
+            "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd"
+          },
+          "serviceFeeRecipient": {
+            "type": "string",
+            "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd"
+          },
+          "commissionRateBps": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "paymentRate": {
+            "type": "string",
+            "description": "Current payment rate in token base units per epoch",
+            "example": "1"
+          },
+          "lockupPeriod": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "lockupFixed": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "endEpoch": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "terminatedBy": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd"
+          },
+          "settledUpTo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "totalSettledAmount": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "totalNetPayeeAmount": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "createdAtBlock": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "createdAt": {
+            "type": "integer",
+            "description": "Unix timestamp"
+          },
+          "txHash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "railId",
+          "state",
+          "payer",
+          "payee",
+          "token",
+          "operator",
+          "validator",
+          "serviceFeeRecipient",
+          "commissionRateBps",
+          "paymentRate",
+          "lockupPeriod",
+          "lockupFixed",
+          "endEpoch",
+          "terminatedBy",
+          "settledUpTo",
+          "totalSettledAmount",
+          "totalNetPayeeAmount",
+          "createdAtBlock",
+          "createdAt",
+          "txHash"
+        ]
+      },
+      "RailResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Rail"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "SettlementPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Settlement"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cursor for the next page, or null on the last page"
+          }
+        },
+        "required": [
+          "data",
+          "nextCursor"
+        ]
+      },
+      "Settlement": {
+        "type": "object",
+        "properties": {
+          "railId": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "totalSettledAmount": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "totalNetPayeeAmount": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "operatorCommission": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "networkFee": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "settledUpTo": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "blockNumber": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "timestamp": {
+            "type": "integer"
+          },
+          "txHash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "railId",
+          "totalSettledAmount",
+          "totalNetPayeeAmount",
+          "operatorCommission",
+          "networkFee",
+          "settledUpTo",
+          "blockNumber",
+          "timestamp",
+          "txHash"
+        ]
+      },
+      "SessionKeyPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessionKey"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cursor for the next page, or null on the last page"
+          }
+        },
+        "required": [
+          "data",
+          "nextCursor"
+        ]
+      },
+      "SessionKey": {
+        "type": "object",
+        "properties": {
+          "identity": {
+            "type": "string",
+            "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd"
+          },
+          "signer": {
+            "type": "string",
+            "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd"
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Whether any permission is unexpired"
+          },
+          "expiry": {
+            "type": "string",
+            "description": "Latest permission expiry",
+            "example": "1"
+          },
+          "updatedAtBlock": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessionKeyPermission"
+            }
+          }
+        },
+        "required": [
+          "identity",
+          "signer",
+          "active",
+          "expiry",
+          "updatedAtBlock",
+          "permissions"
+        ]
+      },
+      "SessionKeyPermission": {
+        "type": "object",
+        "properties": {
+          "permission": {
+            "type": "string",
+            "description": "EIP-712 typehash the signer may sign for"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Known Warm Storage operation for the typehash",
+            "example": "CreateDataSet"
+          },
+          "expiry": {
+            "type": "string",
+            "description": "Unix timestamp; 0 when revoked",
+            "example": "1"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "origin": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "blockNumber": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "txHash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "permission",
+          "name",
+          "expiry",
+          "active",
+          "origin",
+          "blockNumber",
+          "txHash"
+        ]
+      },
+      "SessionKeyEventPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessionKeyEvent"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cursor for the next page, or null on the last page"
+          }
+        },
+        "required": [
+          "data",
+          "nextCursor"
+        ]
+      },
+      "SessionKeyEvent": {
+        "type": "object",
+        "properties": {
+          "identity": {
+            "type": "string",
+            "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd"
+          },
+          "signer": {
+            "type": "string",
+            "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd"
+          },
+          "expiry": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "origin": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "blockNumber": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "timestamp": {
+            "type": "integer"
+          },
+          "txHash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "identity",
+          "signer",
+          "expiry",
+          "permissions",
+          "origin",
+          "blockNumber",
+          "timestamp",
+          "txHash"
+        ]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/{network}/status": {
+      "get": {
+        "operationId": "status",
+        "tags": [
+          "Status"
+        ],
+        "summary": "Indexer status",
+        "description": "Chain id and latest, safe and finalized indexed blocks.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "calibration",
+                "mainnet"
+              ],
+              "description": "Filecoin network",
+              "example": "calibration"
+            },
+            "required": true,
+            "description": "Filecoin network",
+            "name": "network",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Network status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{network}/providers": {
+      "get": {
+        "operationId": "listProviders",
+        "tags": [
+          "Providers"
+        ],
+        "summary": "List storage providers",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "calibration",
+                "mainnet"
+              ],
+              "description": "Filecoin network",
+              "example": "calibration"
+            },
+            "required": true,
+            "description": "Filecoin network",
+            "name": "network",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "description": "Page size (1-200)",
+              "default": 50,
+              "example": 50
+            },
+            "required": false,
+            "description": "Page size (1-200)",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "description": "Opaque cursor from a previous response `nextCursor`"
+            },
+            "required": false,
+            "description": "Opaque cursor from a previous response `nextCursor`",
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "Approved for Warm Storage"
+            },
+            "required": false,
+            "description": "Approved for Warm Storage",
+            "name": "approved",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "Active in the provider registry"
+            },
+            "required": false,
+            "description": "Active in the provider registry",
+            "name": "active",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "Endorsed provider"
+            },
+            "required": false,
+            "description": "Endorsed provider",
+            "name": "endorsed",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Providers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{network}/providers/{providerId}": {
+      "get": {
+        "operationId": "getProvider",
+        "tags": [
+          "Providers"
+        ],
+        "summary": "Get a storage provider",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "calibration",
+                "mainnet"
+              ],
+              "description": "Filecoin network",
+              "example": "calibration"
+            },
+            "required": true,
+            "description": "Filecoin network",
+            "name": "network",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "1"
+            },
+            "required": true,
+            "name": "providerId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Provider",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{network}/data-sets": {
+      "get": {
+        "operationId": "listDataSets",
+        "tags": [
+          "Data sets"
+        ],
+        "summary": "List data sets",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "calibration",
+                "mainnet"
+              ],
+              "description": "Filecoin network",
+              "example": "calibration"
+            },
+            "required": true,
+            "description": "Filecoin network",
+            "name": "network",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "description": "Page size (1-200)",
+              "default": 50,
+              "example": 50
+            },
+            "required": false,
+            "description": "Page size (1-200)",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "description": "Opaque cursor from a previous response `nextCursor`"
+            },
+            "required": false,
+            "description": "Opaque cursor from a previous response `nextCursor`",
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd",
+              "description": "Client address that owns the data set"
+            },
+            "required": false,
+            "description": "Client address that owns the data set",
+            "name": "owner",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "1",
+              "description": "Storage provider id"
+            },
+            "required": false,
+            "description": "Storage provider id",
+            "name": "provider_id",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "Deleted data sets"
+            },
+            "required": false,
+            "description": "Deleted data sets",
+            "name": "deleted",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "Data sets with CDN enabled"
+            },
+            "required": false,
+            "description": "Data sets with CDN enabled",
+            "name": "with_cdn",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Data sets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataSetPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{network}/data-sets/{dataSetId}": {
+      "get": {
+        "operationId": "getDataSet",
+        "tags": [
+          "Data sets"
+        ],
+        "summary": "Get a data set",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "calibration",
+                "mainnet"
+              ],
+              "description": "Filecoin network",
+              "example": "calibration"
+            },
+            "required": true,
+            "description": "Filecoin network",
+            "name": "network",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "1"
+            },
+            "required": true,
+            "name": "dataSetId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Data set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataSetResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{network}/data-sets/{dataSetId}/pieces": {
+      "get": {
+        "operationId": "listDataSetPieces",
+        "tags": [
+          "Pieces"
+        ],
+        "summary": "List pieces in a data set",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "calibration",
+                "mainnet"
+              ],
+              "description": "Filecoin network",
+              "example": "calibration"
+            },
+            "required": true,
+            "description": "Filecoin network",
+            "name": "network",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "1"
+            },
+            "required": true,
+            "name": "dataSetId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "description": "Page size (1-200)",
+              "default": 50,
+              "example": 50
+            },
+            "required": false,
+            "description": "Page size (1-200)",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "description": "Opaque cursor from a previous response `nextCursor`"
+            },
+            "required": false,
+            "description": "Opaque cursor from a previous response `nextCursor`",
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "Removed pieces"
+            },
+            "required": false,
+            "description": "Removed pieces",
+            "name": "removed",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pieces",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PiecePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{network}/data-sets/{dataSetId}/pieces/{pieceId}": {
+      "get": {
+        "operationId": "getPiece",
+        "tags": [
+          "Pieces"
+        ],
+        "summary": "Get a piece",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "calibration",
+                "mainnet"
+              ],
+              "description": "Filecoin network",
+              "example": "calibration"
+            },
+            "required": true,
+            "description": "Filecoin network",
+            "name": "network",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "1"
+            },
+            "required": true,
+            "name": "dataSetId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "1"
+            },
+            "required": true,
+            "name": "pieceId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Piece",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PieceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{network}/pieces": {
+      "get": {
+        "operationId": "listPieces",
+        "tags": [
+          "Pieces"
+        ],
+        "summary": "Find pieces by owner, PieceCID or provider",
+        "description": "Requires at least one of owner, cid or provider_id.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "calibration",
+                "mainnet"
+              ],
+              "description": "Filecoin network",
+              "example": "calibration"
+            },
+            "required": true,
+            "description": "Filecoin network",
+            "name": "network",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "description": "Page size (1-200)",
+              "default": 50,
+              "example": 50
+            },
+            "required": false,
+            "description": "Page size (1-200)",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "description": "Opaque cursor from a previous response `nextCursor`"
+            },
+            "required": false,
+            "description": "Opaque cursor from a previous response `nextCursor`",
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd",
+              "description": "Client address that owns the data set"
+            },
+            "required": false,
+            "description": "Client address that owns the data set",
+            "name": "owner",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "bafkzcibfq263oaytvzyzerkprzkwx5l3ek3dwyngge4sim2o3ahsk7shfendo7jvdm7a",
+              "description": "PieceCID v2"
+            },
+            "required": false,
+            "description": "PieceCID v2",
+            "name": "cid",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "1",
+              "description": "Storage provider id"
+            },
+            "required": false,
+            "description": "Storage provider id",
+            "name": "provider_id",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "Removed pieces"
+            },
+            "required": false,
+            "description": "Removed pieces",
+            "name": "removed",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pieces with data set owner and provider",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PieceWithDataSetPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{network}/rails": {
+      "get": {
+        "operationId": "listRails",
+        "tags": [
+          "Rails"
+        ],
+        "summary": "List payment rails",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "calibration",
+                "mainnet"
+              ],
+              "description": "Filecoin network",
+              "example": "calibration"
+            },
+            "required": true,
+            "description": "Filecoin network",
+            "name": "network",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "description": "Page size (1-200)",
+              "default": 50,
+              "example": 50
+            },
+            "required": false,
+            "description": "Page size (1-200)",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "description": "Opaque cursor from a previous response `nextCursor`"
+            },
+            "required": false,
+            "description": "Opaque cursor from a previous response `nextCursor`",
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd",
+              "description": "Payer address"
+            },
+            "required": false,
+            "description": "Payer address",
+            "name": "payer",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd",
+              "description": "Payee address"
+            },
+            "required": false,
+            "description": "Payee address",
+            "name": "payee",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd",
+              "description": "Operator contract address"
+            },
+            "required": false,
+            "description": "Operator contract address",
+            "name": "operator",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd",
+              "description": "Payment token address"
+            },
+            "required": false,
+            "description": "Payment token address",
+            "name": "token",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "terminated",
+                "finalized"
+              ],
+              "description": "Rail lifecycle state"
+            },
+            "required": false,
+            "description": "Rail lifecycle state",
+            "name": "state",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rails",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RailPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{network}/rails/{railId}": {
+      "get": {
+        "operationId": "getRail",
+        "tags": [
+          "Rails"
+        ],
+        "summary": "Get a payment rail",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "calibration",
+                "mainnet"
+              ],
+              "description": "Filecoin network",
+              "example": "calibration"
+            },
+            "required": true,
+            "description": "Filecoin network",
+            "name": "network",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "1"
+            },
+            "required": true,
+            "name": "railId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{network}/rails/{railId}/settlements": {
+      "get": {
+        "operationId": "listRailSettlements",
+        "tags": [
+          "Rails"
+        ],
+        "summary": "List rail settlements",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "calibration",
+                "mainnet"
+              ],
+              "description": "Filecoin network",
+              "example": "calibration"
+            },
+            "required": true,
+            "description": "Filecoin network",
+            "name": "network",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "1"
+            },
+            "required": true,
+            "name": "railId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "description": "Page size (1-200)",
+              "default": 50,
+              "example": 50
+            },
+            "required": false,
+            "description": "Page size (1-200)",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "description": "Opaque cursor from a previous response `nextCursor`"
+            },
+            "required": false,
+            "description": "Opaque cursor from a previous response `nextCursor`",
+            "name": "cursor",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Settlements",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettlementPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{network}/session-keys": {
+      "get": {
+        "operationId": "listSessionKeys",
+        "tags": [
+          "Session keys"
+        ],
+        "summary": "List session keys",
+        "description": "Latest expiry per permission for each (identity, signer) pair.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "calibration",
+                "mainnet"
+              ],
+              "description": "Filecoin network",
+              "example": "calibration"
+            },
+            "required": true,
+            "description": "Filecoin network",
+            "name": "network",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "description": "Page size (1-200)",
+              "default": 50,
+              "example": 50
+            },
+            "required": false,
+            "description": "Page size (1-200)",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "description": "Opaque cursor from a previous response `nextCursor`"
+            },
+            "required": false,
+            "description": "Opaque cursor from a previous response `nextCursor`",
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd",
+              "description": "Identity that authorized the key"
+            },
+            "required": false,
+            "description": "Identity that authorized the key",
+            "name": "identity",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd",
+              "description": "Session key signer address"
+            },
+            "required": false,
+            "description": "Session key signer address",
+            "name": "signer",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "Keys with any unexpired permission"
+            },
+            "required": false,
+            "description": "Keys with any unexpired permission",
+            "name": "active",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session keys",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionKeyPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{network}/session-keys/history": {
+      "get": {
+        "operationId": "listSessionKeyEvents",
+        "tags": [
+          "Session keys"
+        ],
+        "summary": "List session key authorization events",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "calibration",
+                "mainnet"
+              ],
+              "description": "Filecoin network",
+              "example": "calibration"
+            },
+            "required": true,
+            "description": "Filecoin network",
+            "name": "network",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "description": "Page size (1-200)",
+              "default": 50,
+              "example": 50
+            },
+            "required": false,
+            "description": "Page size (1-200)",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "description": "Opaque cursor from a previous response `nextCursor`"
+            },
+            "required": false,
+            "description": "Opaque cursor from a previous response `nextCursor`",
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd",
+              "description": "Identity that authorized the key"
+            },
+            "required": false,
+            "description": "Identity that authorized the key",
+            "name": "identity",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd",
+              "description": "Session key signer address"
+            },
+            "required": false,
+            "description": "Session key signer address",
+            "name": "signer",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session key events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionKeyEventPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get/{cid}": {
+      "get": {
+        "operationId": "retrieve",
+        "tags": [
+          "Retrieval"
+        ],
+        "summary": "Redirect to where content can be retrieved",
+        "description": "Redirects a PieceCID to `/piece/{cid}` on a storage provider serving it, or with `browser=true` to inbrowser.link when the piece has `ipfsRootCID` metadata in an IPFS-indexed data set. Redirects an IPFS root CID to `/ipfs/{cid}` on a provider with a piece whose `ipfsRootCID` metadata matches, or to inbrowser.link with `browser=true`. When no indexed copy exists, `provider` names the provider to redirect to instead. Other query parameters are forwarded.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "PieceCID v2 or IPFS root CID",
+              "example": "bafkzcibfq263oaytvzyzerkprzkwx5l3ek3dwyngge4sim2o3ahsk7shfendo7jvdm7a"
+            },
+            "required": true,
+            "description": "PieceCID v2 or IPFS root CID",
+            "name": "cid",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "calibration",
+                "mainnet"
+              ],
+              "default": "mainnet",
+              "description": "Filecoin network",
+              "example": "calibration"
+            },
+            "required": false,
+            "description": "Filecoin network",
+            "name": "network",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "Open IPFS content, or a piece with an IPFS root, in the browser through inbrowser.link"
+            },
+            "required": false,
+            "description": "Open IPFS content, or a piece with an IPFS root, in the browser through inbrowser.link",
+            "name": "browser",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "1",
+              "description": "Provider ID to redirect to when no indexed copy exists yet, such as a piece the provider has but has not committed on chain"
+            },
+            "required": false,
+            "description": "Provider ID to redirect to when no indexed copy exists yet, such as a piece the provider has but has not committed on chain",
+            "name": "provider",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to the retrieval URL",
+            "headers": {
+              "Location": {
+                "description": "Retrieval URL",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Cache": {
+                "description": "Provider cache status: hit, stale, miss or none",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Network not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}

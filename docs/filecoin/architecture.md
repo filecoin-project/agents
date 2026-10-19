@@ -179,7 +179,7 @@ Before the commit confirms, `put` reports early links as `link` progress, with `
 
 A folder's browser URL carries no hint, because filecoin-api never looks it up. inbrowser.link finds the blocks through IPNI. Curio sets `needs_indexing` when it receives the add-pieces request, not when the transaction confirms ([`handlers_add.go`](https://github.com/filecoin-project/curio/blob/e00c24bdbb347dcec7ea0bf289d06985f0738023/pdp/handlers_add.go#L432-L470)). Its indexing task runs about every 3 seconds, and its IPNI task about every 30 seconds. A folder's browser URL therefore starts working shortly after the commit is sent, before it confirms, and `put` reports a folder's early link at that point. Curio's `/ipfs` endpoint also answers only after indexing.
 
-`<api>` is `https://api.filecoin.cloud` unless `FILECOIN_API_URL` sets another origin. `ls` and `inspect` rebuild the URLs from the resource, so they follow `FILECOIN_API_URL`.
+`<api>` is `https://api.filecoin.io` unless `FILECOIN_API_URL` sets another origin. `ls` and `inspect` rebuild the URLs from the resource, so they follow `FILECOIN_API_URL`.
 
 ### Phases and checkpoints
 
@@ -218,6 +218,8 @@ The phase is separate from the operation's execution status, which is `pending`,
 ### Folder packing
 
 `pack.ts` packs folders with `ipfs-unixfs-importer` and the IPIP-499 `unixfs-v1-2025` profile: CIDv1, raw leaves, and 1 MiB chunks. Filecoin Pin uses the same profile. Packing walks entries in sorted order, skips dotfiles, and rejects symlinks, so packing the same folder twice gives the same root CID.
+
+protons-runtime 5.0.4 through 8.0.1 encodes a uint64 between 2^31 and 2^32 as one varint byte followed by four bytes of stale Buffer pool memory ([ipfs/protons#212](https://github.com/ipfs/protons/pull/212)). `ipfs-unixfs` uses protons-runtime for the `filesize` and `blocksizes` fields. So a file of 2–4 GiB got a corrupt file-root node: its root CID changed between runs, and extraction failed with `invalid wire type`. A file over 1 TiB hit the same bug when its last 1 TiB subtree was 2–4 GiB. No fixed protons-runtime is on npm yet, so `patches/` applies the upstream one-line fix, `>>> 0` instead of `| 0` in `LongBits`, to protons-runtime 8.0.1. The CLI uses `ipfs-unixfs-importer` 17, so the importer and the exporter share `ipfs-unixfs` 13 and that one protons-runtime. Importer 17.1.1 gives the same root CIDs as 16.1.5 for ordinary folders. With the patch, the file-root node is byte-identical to the one `@ipld/unixfs` writes. The CLI bundles its dependencies, so only `filecoin` releases after 0.5.0 carry the fix. Folders stored with 0.5.0 or earlier that hold such a file must be stored again.
 
 The importer derives parent directories from file paths. `pack.ts` passes only empty directories to the importer explicitly, because an explicit parent makes the importer emit an empty-directory block that nothing references. Blocks stream to disk under a placeholder root, and `pack.ts` then writes the real root into the CAR header.
 
@@ -338,7 +340,7 @@ The tests use the Node test runner and need no network. `pnpm --filter filecoin 
 | `state.test.ts` | Migrations, including `rm` → `delete` and `artifact` → `folder`, account-scoped queries, cursor paging, checkpoint merging, the lock against a live child process, a second caller in the same process, and a reused PID |
 | `login.test.ts` | The console link formats, scope classification, and the windowed event scan against a fake viem transport |
 | `login-flow.test.ts` | `filecoin login` in process against a fake JSON-RPC registry. It covers confirming a custom-scope key with bare `filecoin login` and `--check`, saving an approval found before a conflicting request, `session_conflict` for pending and approved keys, subsets, `--fresh` and expired-key renewal keeping the saved request, and partial grants |
-| `pack.test.ts` | A deterministic root CID, byte-exact extraction, no unreferenced blocks, empty directories, rejection of a tampered block, and the dotfile and symlink rules |
+| `pack.test.ts` | A deterministic root CID, byte-exact extraction, no unreferenced blocks, empty directories, rejection of a tampered block, the dotfile and symlink rules, and the canonical encoding of a 3 GiB file root built from fake leaves |
 | `jobs.test.ts` | A fake `StorageBackend` that simulates FWSS nonces. It covers new and existing data sets, a lost commit response, a commit that never landed, a rejected commit, a resume of a completed job, insufficient funds, an approval-only funding error, a reverted removal, interruption, dry-run estimates, and the operation ID and resume step on every job error |
 | `urls.test.ts` | The filecoin-api piece and browser URLs for files and folders, an API base path, an unknown chain ID, and the provider URL for `get` |
 | `cli.test.ts` | The whole CLI in process through `clipact/testing` in strict mode. It covers definitions, schemas and aliases, auth and pending-login errors, the logout revoke link, confirmation, a dry run without a session, and secrets kept out of flags and output |

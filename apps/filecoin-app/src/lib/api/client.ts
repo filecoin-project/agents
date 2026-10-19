@@ -1,81 +1,23 @@
-import createClient from 'openapi-fetch'
+import { createApiClient } from '@filecoin-project/api-client'
 import { env } from '@/config/env'
-import type { components, paths } from './schema'
 
-/** filecoin-api component schemas. */
-export type Schemas = components['schemas']
-/** Storage provider. */
-export type Provider = Schemas['Provider']
-/** Warm Storage data set. */
-export type DataSet = Schemas['DataSet']
-/** Piece in a data set. */
-export type Piece = Schemas['Piece']
-/** Piece with its data set owner and provider. */
-export type PieceWithDataSet = Schemas['PieceWithDataSet']
-/** Filecoin Pay rail. */
-export type Rail = Schemas['Rail']
-/** Rail settlement event. */
-export type Settlement = Schemas['Settlement']
-/** Session key authorization. */
-export type SessionKey = Schemas['SessionKey']
-/** Session key authorization event. */
-export type SessionKeyEvent = Schemas['SessionKeyEvent']
+export {
+  ApiError,
+  type DataSet,
+  type Piece,
+  type PieceWithDataSet,
+  type Provider,
+  type Rail,
+  type Schemas,
+  type SessionKey,
+  type SessionKeyEvent,
+  type Settlement,
+  unwrap,
+} from '@filecoin-project/api-client'
 
 /**
- * Typed filecoin-api REST client.
+ * Typed filecoin-api REST client for the configured API origin.
  *
  * @see https://openapi-ts.dev/openapi-fetch/
  */
-export const api = createClient<paths>({ baseUrl: env.filApiUrl })
-
-/** Error returned by filecoin-api (`{ error: { code, message } }`). */
-export class ApiError extends Error {
-  /** HTTP status code. */
-  status: number
-  /** filecoin-api error code, e.g. `not_found`. */
-  code: string
-
-  /**
-   * @param status - HTTP status code.
-   * @param code - filecoin-api error code.
-   * @param message - Error message.
-   */
-  constructor(status: number, code: string, message: string) {
-    super(message)
-    this.name = 'ApiError'
-    this.status = status
-    this.code = code
-  }
-
-  /**
-   * Check whether an error is a filecoin-api 404.
-   *
-   * @param error - Any thrown value.
-   */
-  static isNotFound(error: unknown) {
-    return error instanceof ApiError && error.status === 404
-  }
-}
-
-/**
- * Return response data or throw an {@link ApiError}.
- *
- * @param result - openapi-fetch result.
- */
-export function unwrap<T>(result: {
-  data?: T
-  error?: unknown
-  response: Response
-}): T {
-  if (result.data !== undefined) {
-    return result.data
-  }
-  const body = result.error as
-    | { error?: { code?: string; message?: string } }
-    | undefined
-  throw new ApiError(
-    result.response.status,
-    body?.error?.code ?? 'http_error',
-    body?.error?.message ?? result.response.statusText
-  )
-}
+export const api = createApiClient({ baseUrl: env.filApiUrl })

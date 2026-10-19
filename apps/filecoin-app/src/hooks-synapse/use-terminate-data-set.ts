@@ -1,13 +1,16 @@
 import * as SP from '@filoz/synapse-core/sp'
 import type { PdpDataSet } from '@filoz/synapse-core/warm-storage'
 import {
+  getSignerClient,
+  type SessionKeySignerOptions,
+} from '@filoz/synapse-react'
+import {
   type MutateOptions,
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query'
 import { useChainId, useConfig, useConnection } from 'wagmi'
 import { synapseKeys } from './keys'
-import { getSignerClient, type SessionKeySignerOptions } from './utils'
 
 /** Variables for {@link useTerminateDataSet}. */
 export interface UseTerminateDataSetVariables {
@@ -65,7 +68,6 @@ export function useTerminateDataSet(props?: UseTerminateDataSetProps) {
       })
       // Termination also sets an end epoch on the data set's rails.
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: synapseKeys.pdpDataSets }),
         queryClient.invalidateQueries({ queryKey: synapseKeys.pdpDataSet }),
         queryClient.invalidateQueries({ queryKey: synapseKeys.dataSets }),
         queryClient.invalidateQueries({ queryKey: synapseKeys.storageSize }),

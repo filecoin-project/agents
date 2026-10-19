@@ -1,7 +1,7 @@
 {
   "name": "filecoin-api",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "description": "Cloudflare Worker REST API and MCP server for Filecoin onchain data",
   "scripts": {
@@ -11,11 +11,12 @@
     "cf-typegen": "CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false wrangler types",
     "typecheck": "CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false wrangler types --check && tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
+    "gen:openapi": "vitest run test/openapi.test.ts -u",
     "lint": "biome check .",
     "check": "pnpm typecheck && pnpm test && pnpm lint"
   },
   "dependencies": {
-    "@filoz/synapse-core": "0.10.1",
+    "@filoz/synapse-core": "catalog:",
     "@hono/mcp": "0.3.2",
     "@hono/zod-openapi": "1.6.3",
     "@modelcontextprotocol/sdk": "1.31.0",

@@ -16,7 +16,7 @@ Built with [Hono](https://hono.dev), [`@hono/zod-openapi`](https://github.com/ho
 
 Every data route is namespaced by network: `/calibration/...` or `/mainnet/...`.
 
-`https://mcp.filecoin.cloud` serves only the MCP server, at `POST /`. [`src/mcp-host.ts`](src/mcp-host.ts) rewrites `/` to `/mcp` for the hostnames in the `MCP_HOSTS` variable, so the MCP host shares the `/mcp` handler, rate limit and CORS, and returns `404` for every other path. `https://api.filecoin.cloud/mcp` keeps working. See [MCP domains](../../docs/filecoin/mcp-domains.md).
+`https://mcp.filecoin.io` and `https://mcp.filecoin.cloud` serve only the MCP server, at `POST /`. [`src/mcp-host.ts`](src/mcp-host.ts) rewrites `/` to `/mcp` for the hostnames in the `MCP_HOSTS` variable, so the MCP host shares the `/mcp` handler, rate limit and CORS, and returns `404` for every other path. `/mcp` keeps working on the API hosts. See [API and MCP domains](../../docs/filecoin/mcp-domains.md).
 
 | Route | Filters |
 | --- | --- |
@@ -60,9 +60,11 @@ Resolved providers are cached per network and CID in the [Workers Cache API](htt
 - An entry is fresh for 10 minutes.
 - After that, it is still served immediately for up to 24 hours, and refreshed in the background after the response.
 - The `X-Cache` response header reports `hit`, `stale`, `miss` or `none`.
-- The cache is per datacenter, and it does nothing on `workers.dev` preview URLs.
+- The cache is per datacenter. It also works on `workers.dev` preview URLs; only the dashboard editor and the Playground ignore Cache API calls.
 
-The MCP server offers one tool per data route: `get_status`, `list_providers`, `get_provider`, `list_data_sets`, `get_data_set`, `list_data_set_pieces`, `get_piece`, `list_pieces`, `list_rails`, `get_rail`, `list_rail_settlements`, `list_session_keys` and `list_session_key_events`. Each tool requires a `network` argument.
+The MCP server offers one tool per data route: `get_status`, `list_providers`, `get_provider`, `list_data_sets`, `get_data_set`, `list_data_set_pieces`, `get_piece`, `list_pieces`, `list_rails`, `get_rail`, `list_rail_settlements`, `list_session_keys` and `list_session_key_events`. Each of these requires a `network` argument.
+
+`search_docs` searches the Filecoin docs at [docs.filecoin.io](https://docs.filecoin.io). It forwards the `query` to the `searchDocumentation` tool of GitBook's [hosted MCP server](https://gitbook.com/docs/ai-for-your-readers/mcp-servers-for-published-docs) for the site, `https://docs.filecoin.io/~gitbook/mcp`, with one stateless `tools/call`, and returns GitBook's page excerpts unchanged. [`src/mcp/docs-search.ts`](src/mcp/docs-search.ts) caches results in `caches.default`, keyed by the query trimmed, with whitespace collapsed and lowercased. A result is fresh for an hour and served stale for up to 24 hours while it is refreshed in the background. Failed searches are not cached and return a `docs_unavailable` tool error. The root span gets a `filecoin.docs_search.cache` attribute: `hit`, `stale` or `miss`.
 
 ## Development
 
@@ -79,7 +81,8 @@ pnpm --filter filecoin-api dev
 ```
 
 Scripts:
-- `pnpm test`: vitest in workerd via `@cloudflare/vitest-plugin`, with a fake database
+- `pnpm test`: vitest in workerd via `@cloudflare/vitest-plugin`, with a fake database. It fails when `openapi.json` differs from the document the Worker serves.
+- `pnpm gen:openapi`: rewrites `openapi.json` from the routes. Run it after changing a route or schema, then `pnpm --filter @filecoin-project/api-client gen` to update the [client](../../packages/filecoin-api-client/README.md) types.
 - `pnpm typecheck`: checks that the generated worker types are current and runs `tsc`
 - `pnpm cf-typegen`: regenerates `worker-configuration.d.ts` after changing `wrangler.jsonc`
 
@@ -89,7 +92,7 @@ Scripts:
 
 | Trigger | Result |
 | --- | --- |
-| Push to `main` | Runs typecheck, tests and lint, then `wrangler deploy` to https://api.filecoin.cloud and https://mcp.filecoin.cloud, probes `/health`, and sends an MCP `initialize` to the MCP host |
+| Push to `main` | Runs typecheck, tests and lint, then `wrangler deploy` to https://api.filecoin.io and https://mcp.filecoin.io, and to their `filecoin.cloud` twins. Probes `/health` on https://api.filecoin.io, and sends an MCP `initialize` to https://mcp.filecoin.io |
 | Pull request opened or updated | `wrangler preview --name pr-<number>` creates a [Worker Preview](https://developers.cloudflare.com/workers/previews/) on `workers.dev`, probes `/health` and comments its URL on the PR |
 | Pull request closed | `wrangler preview delete` removes the preview |
 
@@ -111,6 +114,7 @@ Both Workers deploy to the FilOz Cloudflare account, which `account_id` in `wran
    wrangler hyperdrive create fil-api-calibration --connection-string="postgresql://user:password@host:5432/indexers" --max-age 5 --swr 0 --origin-connection-limit 60
    ```
    Hyperdrive caches read queries for 60 seconds by default and never invalidates them, which would make the indexer status, and every read after a write, up to 75 seconds stale. Both configs cache for 5 seconds with no stale-while-revalidate. To change an existing config, run `wrangler hyperdrive update <id> --caching-disabled=false --max-age 5 --swr 0`.
+4. Connect `api.filecoin.io` and `mcp.filecoin.io`, whose DNS is on DNSimple, as Cloudflare for SaaS custom hostnames on the `filecoin.cloud` zone. These are one-time dashboard steps, described in [API and MCP domains](../../docs/filecoin/mcp-domains.md#a-domain-on-another-dns-provider). The deploy token can create the Worker routes but not the custom hostnames.
 
 To deploy manually, run `pnpm --filter filecoin-api deploy`.
 
@@ -155,4 +159,4 @@ If the databases move, measure again. A database a few milliseconds from Frankfu
 - **Response headers:** `X-Request-Id`, and `Server-Timing` with `db` and `total` metrics.
 - **Unknown paths:** only `/calibration/...` and `/mainnet/...` reach the network middleware and API rate limiter. Other paths, such as crawler requests for `/sitemap.xml`, get a plain `404 not_found`. A valid route under an unsupported network, such as `/filecoin/providers`, gets `404 unknown_network`.
 - **Rate limits:** [Workers Rate Limiting](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/) per client IP, at 120 requests/min for the REST API and `/health`, and 60 requests/min for MCP. Over the limit, requests get a `429` with `Retry-After`.
-- **Caching:** data responses carry no `max-age`, so browsers and proxies never serve a stored copy and every request reaches the Worker; `/health` sends `no-store`. Indexed data changes every 30-second epoch, and a cached response would show a write as missing after the indexer had it. Data reads are only cached by Hyperdrive's 5-second query cache (see the setup steps). Responses that do not depend on fresh indexer data keep a `max-age`: `/openapi.json` (`300`) only changes on deploy, a `/get/{cid}` redirect to inbrowser.link (`86400`) is built from the request alone, and a redirect to a provider (`60`) is already served from the provider cache.
+- **Caching:** data responses carry no `max-age`, so browsers and proxies never serve a stored copy and every request reaches the Worker; `/health` sends `no-store`. Indexed data changes every 30-second epoch, and a cached response would show a write as missing after the indexer had it. Data reads are only cached by Hyperdrive's 5-second query cache (see the setup steps). Responses that do not depend on fresh indexer data keep a `max-age`: `/openapi.json` (`300`) only changes on deploy, a `/get/{cid}` redirect to inbrowser.link (`86400`) is built from the request alone, and a redirect to a provider (`60`) is already served from the provider cache. MCP `search_docs` results are cached for an hour, because the docs do not depend on the chain.

@@ -2,16 +2,67 @@
 
 Tools that let AI agents, and the people who run them, store and retrieve data on [Filecoin](https://docs.filecoin.cloud/). The `filecoin` CLI uploads files and folders to a storage provider and returns retrieval URLs. An agent plugin brings its skills to Claude Code, Codex, and other clients. A read-only REST API and MCP server expose providers, data sets, pieces, and payment rails. A web app pairs an explorer for that data with a wallet dashboard for Filecoin Pay.
 
-This is a pnpm and Turborepo monorepo. The CLI publishes to npm, and the apps stay private.
+This is a pnpm and Turborepo monorepo. The CLI and the API client publish to npm, the plugin installs from this repository, and the apps stay private.
 
-## Packages and apps
+## Packages
+
+Packages under `packages/` publish to npm.
 
 | Directory | npm | Contents |
 | --- | --- | --- |
-| [`packages/filecoin-cli`](packages/filecoin-cli/README.md) | `filecoin` | `filecoin`, a prototype CLI that stores files and folders on one Curio provider and returns retrieval URLs. People and agents both run it. |
-| [`apps/filecoin-api`](apps/filecoin-api/README.md) | Private | A Cloudflare Worker that serves a REST API and an MCP server for providers, data sets, pieces, Filecoin Pay rails, and session keys. |
-| [`apps/filecoin-app`](apps/filecoin-app/README.md) | Private | A React explorer for filecoin-api data, and a wallet dashboard for Filecoin Pay, Warm Storage approval, data sets, and session keys. |
-| [`plugins/filecoin`](plugins/filecoin/README.md) | | The filecoin agent plugin for Claude Code, Codex, and other [Agent Plugins](https://agent-plugins.org) clients. It bundles the agent skills and the MCP server. Its `skills/` directory is the only source of the skills, which `filecoin skills install`, filecoin-app's `/.well-known/agent-skills/`, and `npx skills add filecoin-project/agents` also read. |
+| [`packages/filecoin-cli`](packages/filecoin-cli/README.md) | [`filecoin`](https://www.npmjs.com/package/filecoin) | `filecoin`, a prototype CLI that stores files and folders on one Curio provider and returns retrieval URLs. People and agents both run it. |
+| [`packages/filecoin-api-client`](packages/filecoin-api-client/README.md) | [`@filecoin-project/api-client`](https://www.npmjs.com/package/@filecoin-project/api-client) | A typed filecoin-api client generated from the API's OpenAPI document. filecoin-app uses it, and the CLI will use it for its reads. |
+
+## Apps
+
+Apps under `apps/` are private Cloudflare Workers.
+
+| Directory | Hosts | Contents |
+| --- | --- | --- |
+| [`apps/filecoin-api`](apps/filecoin-api/README.md) | `api.filecoin.io`, `mcp.filecoin.io` | A REST API and an MCP server for providers, data sets, pieces, Filecoin Pay rails, and session keys. |
+| [`apps/filecoin-app`](apps/filecoin-app/README.md) | `poc.filecoin.cloud` | A React explorer for filecoin-api data, and a wallet dashboard for Filecoin Pay, Warm Storage approval, data sets, and session keys. |
+
+[API and MCP domains](docs/filecoin/mcp-domains.md) lists every hostname, including the `filecoin.cloud` ones kept for older links.
+
+## Plugins
+
+Each plugin under `plugins/` carries two manifests: `plugin.json` in the [Agent Plugins](https://agent-plugins.org) format, which Codex and other clients read, and `.claude-plugin/plugin.json` in the [Claude Code plugin](https://code.claude.com/docs/en/plugins) format. The repository root is their marketplace for both, through [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) for Claude Code and [`.agents/plugins/marketplace.json`](.agents/plugins/marketplace.json) for Codex.
+
+| Directory | Contents |
+| --- | --- |
+| [`plugins/filecoin`](plugins/filecoin/README.md) | The filecoin agent plugin. It bundles the agent skills and connects filecoin-api's MCP server. |
+
+In Claude Code:
+
+```sh
+claude plugin marketplace add filecoin-project/agents
+claude plugin install filecoin@filecoin
+```
+
+In Codex:
+
+```sh
+codex plugin marketplace add filecoin-project/agents
+codex plugin add filecoin@filecoin
+```
+
+## Skills
+
+The agent skills live in [`plugins/filecoin/skills`](plugins/filecoin/skills). That directory is their only source, and every install path reads it.
+
+| Skill | Contents |
+| --- | --- |
+| [`filecoin`](plugins/filecoin/skills/filecoin/SKILL.md) | Store files and folders on Filecoin with the `filecoin` CLI, share links to them, and retrieve and verify them later. |
+
+Install the skills without the plugin in any of these ways:
+
+| Command or URL | Source |
+| --- | --- |
+| `npx skills add filecoin-project/agents` | This repository, through the plugin's entry in [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) |
+| `filecoin skills install` | The copy bundled with the CLI at build time |
+| `/.well-known/agent-skills/` on filecoin-app | The [agent skills discovery](https://github.com/cloudflare/agent-skills-discovery-rfc) index that filecoin-app publishes |
+
+A new skill must also be listed in the marketplace entry's `skills`; `pnpm check:plugin` fails until it is.
 
 ## Documentation
 
@@ -20,6 +71,8 @@ This is a pnpm and Turborepo monorepo. The CLI publishes to npm, and the apps st
 | [Filecoin for Agents overview](docs/filecoin/README.md) | The CLI, REST API, MCP server, and app, with the assumptions, compromises, open questions, and follow-up work of the proof of concept |
 | [CLI architecture](docs/filecoin/architecture.md) | Modules, login, put, get, and delete flows, state, recovery, and verification |
 | [CLI interface research](docs/filecoin/interface-research.md) | The historical design research behind the CLI: commands, resources, operations, and local state |
+| [API and MCP domains](docs/filecoin/mcp-domains.md) | The hostnames that serve filecoin-api and its MCP server |
+| [Agent support on docs.filecoin.io](docs/filecoin/filecoin-docs-agent-support.md) | Research for the Filecoin docs team on what docs.filecoin.io gives agents |
 
 ## Build and check
 
@@ -31,14 +84,8 @@ pnpm build
 pnpm check
 ```
 
-`pnpm check` runs TypeScript, tests, and Biome in every workspace through Turborepo, then lints the root configuration and checks the published agent skills and the plugin manifests. `pnpm check:fix` applies Biome fixes. Each app's README covers its own development commands.
+`pnpm check` runs TypeScript, tests, and Biome in every workspace through Turborepo, then lints the root configuration and checks the published agent skills and the plugin manifests. `pnpm check:fix` applies Biome fixes. Each package's and app's README covers its own development commands.
 
-## Release
+## Contributing and releases
 
-[release-please](https://github.com/googleapis/release-please) versions the CLI, the two apps, and the plugin from [Conventional Commits](https://www.conventionalcommits.org/). [`.github/release-please-config.json`](.github/release-please-config.json) lists them, and [`.github/.release-please-manifest.json`](.github/.release-please-manifest.json) holds their current versions.
-
-1. On each push to `main`, the [Release workflow](.github/workflows/release.yml) opens or updates one release pull request for each package, app, or plugin that a commit touched since its last release. Each pull request bumps that component's version and updates its `CHANGELOG.md`. `always-update` rebuilds every open release pull request from `main` on each push, even when its changelog is unchanged, so its checks and previews always test the current code. The first release of each was 0.1.0, because `initial-version` overrides release-please's default of 1.0.0. Below 1.0.0, `feat` bumps the minor version and `fix` the patch version.
-2. Merging a release pull request tags that release as `<component>-v<version>`, such as `filecoin-cli-v0.1.0`, and creates its GitHub release. A change that spans components, such as a rename, is released once each of their pull requests merges.
-3. The same workflow then publishes each released package with `pnpm publish`, which replaces `workspace:` and `catalog:` specifiers, and adds provenance. The apps get a version, a changelog, and a GitHub release, but are never published. Their own workflows deploy them. The plugin's version goes into both of its manifests, and the marketplaces serve it from `main`.
-
-The workflow publishes through [npm trusted publishing](https://docs.npmjs.com/trusted-publishers), so the repository holds no npm token. `filecoin` has a trusted publisher on npmjs.com for the `filecoin-project/agents` repository and the `release.yml` workflow. The publish job runs in the `npm` GitHub environment, which GitHub creates on the first run. Naming `npm` as the trusted publisher's optional environment limits publishing to that job, and the environment's protection rules can later require a reviewer or the `main` branch. npm configures it only for a package that exists, so publish each package once by hand before its first release. Pull requests that `GITHUB_TOKEN` opens do not trigger CI, so set a `RELEASE_PLEASE_TOKEN` secret with a token that can open pull requests to run CI on the release pull requests.
+[CONTRIBUTING.md](.github/CONTRIBUTING.md) covers making a change, commit messages, pull requests, and how [release-please](https://github.com/googleapis/release-please) versions and releases the CLI, the two apps, and the plugin.

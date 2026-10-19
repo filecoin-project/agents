@@ -9,7 +9,6 @@ export const synapseKeys = {
   accountSummary: ['synapse-payments-account-summary'],
   rail: ['synapse-payments-rail'],
   dataSets: ['synapse-warm-storage-data-sets'],
-  pdpDataSets: ['synapse-warm-storage-pdp-data-sets'],
   pdpDataSet: ['synapse-warm-storage-pdp-data-set'],
   storageSize: ['synapse-warm-storage-storage-size'],
   uploadCosts: ['synapse-warm-storage-upload-costs'],

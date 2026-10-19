@@ -130,12 +130,12 @@ function Transcript() {
           <JsonLine depth={6}>
             <Key>browser</Key>:{' '}
             <span className="text-brand-500">
-              "https://api.filecoin.cloud/get/bafybei…?browser=true"
+              "https://api.filecoin.io/get/bafybei…?browser=true"
             </span>
             ,
           </JsonLine>
           <JsonLine depth={6}>
-            <Key>piece</Key>: "https://api.filecoin.cloud/get/bafkzcib…"
+            <Key>piece</Key>: "https://api.filecoin.io/get/bafkzcib…"
           </JsonLine>
           <JsonLine depth={4}>{'}'}</JsonLine>
           <JsonLine depth={2}>{'}'}</JsonLine>
@@ -166,7 +166,7 @@ function WaysIn() {
     {
       name: 'MCP server',
       text: 'Read-only tools for providers, data sets, pieces, payment rails, and session keys, with no sign-up.',
-      code: 'https://mcp.filecoin.cloud',
+      code: 'https://mcp.filecoin.io',
       link: (
         <Link
           className="text-primary underline-offset-4 hover:underline"

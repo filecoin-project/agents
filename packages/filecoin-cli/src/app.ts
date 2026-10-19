@@ -20,7 +20,7 @@ import { openDatabase, stateDir } from './state/db.ts'
 const DEFAULT_CONSOLE_URL = 'https://pay.filecoin.cloud'
 
 /** Default filecoin-api origin, whose `/get/{cid}` route redirects to providers. */
-const DEFAULT_API_URL = 'https://api.filecoin.cloud'
+const DEFAULT_API_URL = 'https://api.filecoin.io'
 
 /**
  * Shared per-invocation context: resolved network, chain client, config, and

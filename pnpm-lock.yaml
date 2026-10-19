@@ -6,12 +6,18 @@ settings:
 
 catalogs:
   default:
+    '@filoz/synapse-core':
+      specifier: 0.10.2
+      version: 0.10.2
     '@types/node':
       specifier: 26.5.1
       version: 26.5.1
     typescript:
       specifier: 7.0.2
       version: 7.0.2
+
+patchedDependencies:
+  protons-runtime@8.0.1: a968848c0c28551a1154da0398488ace0f8297737df23cb673157b8b317ae680
 
 importers:
 
@@ -42,8 +48,8 @@ importers:
   apps/filecoin-api:
     dependencies:
       '@filoz/synapse-core':
-        specifier: 0.10.1
-        version: 0.10.1(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))
+        specifier: 'catalog:'
+        version: 0.10.2(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))
       '@hono/mcp':
         specifier: 0.3.2
         version: 0.3.2(@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.5))(hono-rate-limiter@0.5.4(hono@4.13.12))(hono@4.13.12)(zod@4.6.5)
@@ -93,12 +99,15 @@ importers:
       '@base-ui/react':
         specifier: 1.8.0
         version: 1.8.0(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@filecoin-project/api-client':
+        specifier: workspace:*
+        version: link:../../packages/filecoin-api-client
       '@filoz/synapse-core':
-        specifier: 0.10.1
-        version: 0.10.1(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))
+        specifier: 'catalog:'
+        version: 0.10.2(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))
       '@filoz/synapse-react':
-        specifier: 0.5.0
-        version: 0.5.0(@tanstack/react-query@5.104.0(react@19.3.0))(@wagmi/core@3.6.5(@tanstack/query-core@5.104.0)(@types/react@19.3.0)(react@19.3.0)(typescript@7.0.2)(use-sync-external-store@1.7.0(react@19.3.0))(viem@2.57.2(typescript@7.0.2)(zod@4.6.5)))(iso-filecoin@7.4.7(typescript@7.0.2))(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))(wagmi@3.7.7(@tanstack/query-core@5.104.0)(@tanstack/react-query@5.104.0(react@19.3.0))(@types/react@19.3.0)(react@19.3.0)(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5)))
+        specifier: 0.5.1
+        version: 0.5.1(@tanstack/react-query@5.104.0(react@19.3.0))(@wagmi/core@3.6.5(@tanstack/query-core@5.104.0)(@types/react@19.3.0)(react@19.3.0)(typescript@7.0.2)(use-sync-external-store@1.7.0(react@19.3.0))(viem@2.57.2(typescript@7.0.2)(zod@4.6.5)))(iso-filecoin@7.4.7(typescript@7.0.2))(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))(wagmi@3.7.7(@tanstack/query-core@5.104.0)(@tanstack/react-query@5.104.0(react@19.3.0))(@types/react@19.3.0)(react@19.3.0)(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5)))
       '@fontsource-variable/inter':
         specifier: 5.3.0
         version: 5.3.0
@@ -141,9 +150,6 @@ importers:
       marked:
         specifier: 18.1.0
         version: 18.1.0
-      openapi-fetch:
-        specifier: 0.17.0
-        version: 0.17.0
       react:
         specifier: 19.3.0
         version: 19.3.0
@@ -206,11 +212,24 @@ importers:
         specifier: 4.147.0
         version: 4.147.0(@types/node@26.5.1)
 
+  packages/filecoin-api-client:
+    dependencies:
+      openapi-fetch:
+        specifier: 0.17.0
+        version: 0.17.0
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.5.1
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+
   packages/filecoin-cli:
     devDependencies:
       '@filoz/synapse-core':
-        specifier: ^0.10.1
-        version: 0.10.1(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))
+        specifier: 'catalog:'
+        version: 0.10.2(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))
       '@ipld/car':
         specifier: ^5.4.7
         version: 5.4.7
@@ -230,8 +249,8 @@ importers:
         specifier: ^16.2.3
         version: 16.2.3
       ipfs-unixfs-importer:
-        specifier: ^16.1.5
-        version: 16.1.5(supports-color@10.2.2)
+        specifier: ^17.1.1
+        version: 17.1.1(supports-color@10.2.2)
       iso-conf:
         specifier: ^0.4.2
         version: 0.4.2
@@ -868,13 +887,13 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@filoz/synapse-core@0.10.1':
-    resolution: {integrity: sha512-ILb5+iTOOu6wALZt9B3jSggVk4+RUp+bqiiH+AObBKDhIU4nGt5ha0US42wJJczU7GuTj23G3Nynh9POKuQ5zw==}
+  '@filoz/synapse-core@0.10.2':
+    resolution: {integrity: sha512-NnQBsZrahxxIuQ2m0pFpD6gCFHRm3VPPveQ0r66cmN6uiTaFyZR1AneIZJf+tAgK9Jq7kYGIryhW/8nGAGlD7w==}
     peerDependencies:
       viem: 2.x
 
-  '@filoz/synapse-react@0.5.0':
-    resolution: {integrity: sha512-MJiQ3Po0+E9lHNidbLw2ySlzn8Z9SIRbPrHqovmL3YSaUT9sVY8mFdcxVu996WiUTEkvULuaYa5yHHFbH79EwA==}
+  '@filoz/synapse-react@0.5.1':
+    resolution: {integrity: sha512-e60n8OZKD+5b4d0FvgV4PoyuS9AIy0fqiD0uMxGbb8ezvSFkZ67lJN/E9S2vp+IRI0IggllOKGJbfpQ658Ixwg==}
     peerDependencies:
       '@tanstack/react-query': 5.x
       '@wagmi/core': 3.x
@@ -930,6 +949,9 @@ packages:
     peerDependencies:
       hono: '>=4.11.2'
       zod: ^3.25.0 || ^4.0.0
+
+  '@hugomrdias/commp-wasm@0.1.4':
+    resolution: {integrity: sha512-e2oiHAmjtFZ3cxalwqJQgxW8FHlFqj0cXN6PM4NPEhEH/Mf5wjLBzlslA11hUsyOMmMK9+WtWPPNycg5RdiBKg==}
 
   '@hugomrdias/configs@1.1.3':
     resolution: {integrity: sha512-w/X4+IIEB8s3io6NBh0Wsshh7ipNkYZjKuGd3f1SCYnQvvoVZ8b+mYU7pg7ylQF1u6frM9jvgdozoLTh9dFXEA==}
@@ -2230,8 +2252,8 @@ packages:
   blake3-wasm@2.1.5:
     resolution: {integrity: sha512-F1+K8EbfOZE49dtoPtmxUQrpXaBIl3ICvasLh+nJta0xkz+9kF/7uet9fLnwKqhDrmj6g+6K3Tw9yQPUg2ka5g==}
 
-  blockstore-core@6.1.3:
-    resolution: {integrity: sha512-GLb6XpvbWOlrz1Liz8lTH8iZoXfJ7otY02i26Ok1q6lDkr9uN3jcZq8GzhNq76jJ7CkFG/EGP8J75F3MFo7v6A==}
+  blockstore-core@7.0.1:
+    resolution: {integrity: sha512-HgLzdH8oL6DrMC6J7snxmV0TXzJ/BMPSbskH4v7BBuUO9foDBOMEKUfoMX9yoBpxbH+r3Z9afXHDgXlTifMxHQ==}
 
   body-parser@2.3.0:
     resolution: {integrity: sha512-2cGmJupaNgg+QUwVLAucDuWuoMZ6EX9iHDRswZ5lsNYEmwPaRknMPCLZz07yTzVq/83p4o/wzbDZbBrTvGGTIw==}
@@ -2793,17 +2815,11 @@ packages:
   inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
 
-  interface-blockstore@6.0.2:
-    resolution: {integrity: sha512-Z8LscLfuNWYatKVgaEXK8su+wY6iEEcCXYQiwXf20XVuMvR/zyFa6A0s36epfw8CvUrIv+bXT+FZ2hMEfUCmJw==}
-
   interface-blockstore@7.0.1:
     resolution: {integrity: sha512-a3NsgRXpRppVWtQnJjmZ9jxvjcttY1+WNWqHFWwgKhRcNMMGwWGtFNYpQmcZ+mEnIt5NTJVYzNwLCcALMWPNsA==}
 
   interface-datastore@10.0.1:
     resolution: {integrity: sha512-DYMj/Og5Cz1Qwkx6/x5KRvR8SYEX7rVAv3KKCm2NzTwWSfpNAC4PahjcYbHyoZBP6zPWrhQv5n5wE+vaDdgSAg==}
-
-  interface-store@7.0.2:
-    resolution: {integrity: sha512-KYOPcDH+1peaPhSeoZujR5nwkVeola1EdrnrlHTIM0HRNUs9B0aTsUQMH5kTmIjaQq1BOowoUyoCamgL8IMyww==}
 
   interface-store@8.0.0:
     resolution: {integrity: sha512-e2+s3EEROzM+Wlas4hU3zveTUscvVMf1BOvdsJfpzFm19SoEXLVadpACjWOnM491HqGpvtfFnevyiaN8W+I6Eg==}
@@ -2819,11 +2835,8 @@ packages:
   ipfs-unixfs-exporter@16.2.3:
     resolution: {integrity: sha512-U+YXqw9TnWpx8F+/qLZ/1E/hFsDTs4BSQ9i+ifdctwmLZ5wH65X/zVHSUBkpLvbUedCWbXGIH2om6sgWOH7nsg==}
 
-  ipfs-unixfs-importer@16.1.5:
-    resolution: {integrity: sha512-w/voTDW5gt5RlZlJ/EljU4q4s+4any2LZ+10UJR7i24+xWWv1+ReyaC9dz46U6HB5YqztAKCzBB123OOsDsNFg==}
-
-  ipfs-unixfs@12.0.2:
-    resolution: {integrity: sha512-uZ3rutVVZZ+tw52P+sgDSgOSK6ztExJVlfCjKvSD+NIEVlWQPDeKgdSFm+Kxchmgp7t6g1h+dzir+NgY+VsQXg==}
+  ipfs-unixfs-importer@17.1.1:
+    resolution: {integrity: sha512-Yw91sINTxlImpXc7/D6S9SZ/SwDr/kCiy4vE6VIdbOhnbS9EsXeLnJl8TDywFP/U0bwKfWC6LuJwP8dKDQ//OA==}
 
   ipfs-unixfs@13.1.2:
     resolution: {integrity: sha512-N8LDphmWAEQbRXu35l4iOXrFbBGmYl0o1PKw9kxsp1dcOHG+CCLdF68gt6jREObFsC48VXm4fbgNXIfoNUIcuA==}
@@ -3524,8 +3537,8 @@ packages:
     resolution: {integrity: sha512-weP+BZ8MVNnlCm8c0Qdc1WSWq4Qn7I+9CJGm7Qali6g44e/PUzbjNqJX5NJ9ljlNMosfJvg1fKEGILklK9cwnw==}
     engines: {node: '>=18'}
 
-  ox@0.14.29:
-    resolution: {integrity: sha512-M5j87Ec4V99MQdRct/g09eWXW60g6zhHTUs1lr4deUtrPDnezBdCJTgKd7pxqTpSZBFveV0ALi9jMMuT1qKyNg==}
+  ox@0.14.34:
+    resolution: {integrity: sha512-12seOIk7dv8eAoGQhcWaeKZxNz304IVcDvb9U5Y7JZAEVe21Nm1YMxLjhWah+su5BD4Omx4Zz0z5x3ij9M4GYQ==}
     peerDependencies:
       typescript: '>=5.4.0'
     peerDependenciesMeta:
@@ -3678,9 +3691,6 @@ packages:
   prompts@2.4.2:
     resolution: {integrity: sha512-NxNv/kLguCA7p3jE8oL2aEBsrJWgAakBpgmgK6lpPWV+WuOmY6r2/zbAVnP+T8bQlA0nzHXSJSJW0Hq7ylaD2Q==}
     engines: {node: '>= 6'}
-
-  protons-runtime@6.0.2:
-    resolution: {integrity: sha512-hiyjyANwGcgmzc+tXc1/ZcSZhKnl5MDjaVNWkISHBgadaU0sjTgKIKZMZ62d9J9zlSTyKHCs/osPkQ/3Z+7yeA==}
 
   protons-runtime@8.0.1:
     resolution: {integrity: sha512-du8V7RuI8QLmRVXJWmZKc2xRngbbeedtP5Hf6+m1YKRKLMyld+ITIkqXyocyBpkzUUkeh/l6mN3zcP2z5RsT9Q==}
@@ -4073,9 +4083,6 @@ packages:
   ufo@1.6.4:
     resolution: {integrity: sha512-JFNbkD1Svwe0KvGi8GOeLcP4kAWQ609twvCdcHxq1oSL8svv39ZuSvajcD8B+5D0eL4+s1Is2D/O6KN3qcTeRA==}
 
-  uint8-varint@2.0.5:
-    resolution: {integrity: sha512-jeFLbL/x30wBRnWjKE1qVBXeumG46r7XmYkpis955lTQ+blccGKFrOsSMHlxePwYB1pI7L8YPHz1t4jLxEs3nA==}
-
   uint8-varint@3.0.0:
     resolution: {integrity: sha512-S4DdpXBaLwKcFo7f0bWzWfHjbZ/i3QhM842qn+ZvHjxqFCfUcEB9SQNcmI69S+zMlcmIcKxsk9Iyw77S2Kxv6Q==}
 
@@ -4083,14 +4090,8 @@ packages:
     resolution: {integrity: sha512-8iAasVS4wUx0gPLjH8Xtz2PeDzTSiy8QiLGu2DT3X5GU+egFEQhpnbtkehbAwjvDcxIERmCYcysiODFmE3Ud0Q==}
     engines: {node: '>=18'}
 
-  uint8arraylist@2.4.9:
-    resolution: {integrity: sha512-KxWjyEFzchzik3aoQlK66oaoxIReoMo5bQRm1fcjBUZvE8xv/tyR3CTKhjh6K/faV8VaF6hd5pjr45CzbwuwkA==}
-
   uint8arraylist@3.0.2:
     resolution: {integrity: sha512-LDVoq9BQaGJzGDUovEnoX6rpKCvnY/Jbtws4ikwnBzjRbq5qBAFpBZevUEbSmMM87aO0Sp+wOZy2ZXf5yODmXQ==}
-
-  uint8arrays@5.1.1:
-    resolution: {integrity: sha512-9muQwa4wZG4dKi9gMAIBtnk2Pw87SRpvWTH6lOGm19V2Uqxr4uomUf2PGqPnWc+qs06sN8owUU4jfcoWOcfwVQ==}
 
   uint8arrays@6.1.1:
     resolution: {integrity: sha512-iz7JN0XCSZYA111lhFG2Ui9EhFvTNekqSRHw3lvMHq+dzwWy1OQftxFQREEh4rffU0oSoXdQHsk2TiHKVm4fsA==}
@@ -4950,12 +4951,13 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
-  '@filoz/synapse-core@0.10.1(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))':
+  '@filoz/synapse-core@0.10.2(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))':
     dependencies:
+      '@hugomrdias/commp-wasm': 0.1.4
       dnum: 2.17.0
       iso-web: 3.1.2
       multiformats: 14.0.5
-      ox: 0.14.29(typescript@7.0.2)(zod@4.4.3)
+      ox: 0.14.34(typescript@7.0.2)(zod@4.4.3)
       p-locate: 7.0.0
       p-some: 7.0.0
       sync-multihash-sha2: 1.0.0
@@ -4964,9 +4966,9 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@filoz/synapse-react@0.5.0(@tanstack/react-query@5.104.0(react@19.3.0))(@wagmi/core@3.6.5(@tanstack/query-core@5.104.0)(@types/react@19.3.0)(react@19.3.0)(typescript@7.0.2)(use-sync-external-store@1.7.0(react@19.3.0))(viem@2.57.2(typescript@7.0.2)(zod@4.6.5)))(iso-filecoin@7.4.7(typescript@7.0.2))(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))(wagmi@3.7.7(@tanstack/query-core@5.104.0)(@tanstack/react-query@5.104.0(react@19.3.0))(@types/react@19.3.0)(react@19.3.0)(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5)))':
+  '@filoz/synapse-react@0.5.1(@tanstack/react-query@5.104.0(react@19.3.0))(@wagmi/core@3.6.5(@tanstack/query-core@5.104.0)(@types/react@19.3.0)(react@19.3.0)(typescript@7.0.2)(use-sync-external-store@1.7.0(react@19.3.0))(viem@2.57.2(typescript@7.0.2)(zod@4.6.5)))(iso-filecoin@7.4.7(typescript@7.0.2))(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))(wagmi@3.7.7(@tanstack/query-core@5.104.0)(@tanstack/react-query@5.104.0(react@19.3.0))(@types/react@19.3.0)(react@19.3.0)(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5)))':
     dependencies:
-      '@filoz/synapse-core': 0.10.1(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))
+      '@filoz/synapse-core': 0.10.2(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))
       '@filoz/synapse-sdk': 2.0.2(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))
       '@hugomrdias/filsnap-adapter': 3.3.9(iso-filecoin@7.4.7(typescript@7.0.2))
       '@tanstack/react-query': 5.104.0(react@19.3.0)
@@ -4979,7 +4981,7 @@ snapshots:
 
   '@filoz/synapse-sdk@2.0.2(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))':
     dependencies:
-      '@filoz/synapse-core': 0.10.1(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))
+      '@filoz/synapse-core': 0.10.2(typescript@7.0.2)(viem@2.57.2(typescript@7.0.2)(zod@4.6.5))
       multiformats: 14.0.5
       viem: 2.57.2(typescript@7.0.2)(zod@4.6.5)
     transitivePeerDependencies:
@@ -5028,6 +5030,8 @@ snapshots:
     dependencies:
       hono: 4.13.12
       zod: 4.6.5
+
+  '@hugomrdias/commp-wasm@0.1.4': {}
 
   '@hugomrdias/configs@1.1.3(@biomejs/biome@2.5.13)':
     dependencies:
@@ -6236,15 +6240,16 @@ snapshots:
 
   blake3-wasm@2.1.5: {}
 
-  blockstore-core@6.1.3:
+  blockstore-core@7.0.1:
     dependencies:
       '@libp2p/logger': 6.2.13
-      interface-blockstore: 6.0.2
-      interface-store: 7.0.2
+      abort-error: 1.0.2
+      interface-blockstore: 7.0.1
+      interface-store: 8.0.0
       it-all: 3.0.11
       it-filter: 3.1.6
       it-merge: 3.0.15
-      multiformats: 13.4.2
+      multiformats: 14.0.5
 
   body-parser@2.3.0(supports-color@10.2.2):
     dependencies:
@@ -6832,11 +6837,6 @@ snapshots:
 
   inherits@2.0.4: {}
 
-  interface-blockstore@6.0.2:
-    dependencies:
-      interface-store: 7.0.2
-      multiformats: 13.4.2
-
   interface-blockstore@7.0.1:
     dependencies:
       interface-store: 8.0.0
@@ -6847,8 +6847,6 @@ snapshots:
       abort-error: 1.0.2
       interface-store: 8.0.0
       uint8arrays: 6.1.1
-
-  interface-store@7.0.2: {}
 
   interface-store@8.0.0:
     dependencies:
@@ -6877,36 +6875,30 @@ snapshots:
       p-queue: 9.3.3
       progress-events: 1.1.0
 
-  ipfs-unixfs-importer@16.1.5(supports-color@10.2.2):
+  ipfs-unixfs-importer@17.1.1(supports-color@10.2.2):
     dependencies:
       '@ipld/dag-pb': 4.2.0
       '@multiformats/murmur3': 2.2.8
-      blockstore-core: 6.1.3
+      blockstore-core: 7.0.1
       hamt-sharding: 3.0.8
-      interface-blockstore: 6.0.2
-      interface-store: 7.0.2
-      ipfs-unixfs: 12.0.2
+      interface-blockstore: 7.0.1
+      ipfs-unixfs: 13.1.2
       it-all: 3.0.11
       it-batch: 3.0.11
       it-first: 3.0.11
       it-parallel-batch: 3.0.11
-      multiformats: 13.4.2
+      multiformats: 14.0.5
       progress-events: 1.1.0
       rabin-wasm: 0.1.5(supports-color@10.2.2)
-      uint8arraylist: 2.4.9
-      uint8arrays: 5.1.1
+      uint8arraylist: 3.0.2
+      uint8arrays: 6.1.1
     transitivePeerDependencies:
       - encoding
       - supports-color
 
-  ipfs-unixfs@12.0.2:
-    dependencies:
-      protons-runtime: 6.0.2
-      uint8arraylist: 2.4.9
-
   ipfs-unixfs@13.1.2:
     dependencies:
-      protons-runtime: 8.0.1
+      protons-runtime: 8.0.1(patch_hash=a968848c0c28551a1154da0398488ace0f8297737df23cb673157b8b317ae680)
       uint8arraylist: 3.0.2
       uint8arrays: 6.1.1
 
@@ -7380,7 +7372,7 @@ snapshots:
       string-width: 7.2.0
       strip-ansi: 7.2.0
 
-  ox@0.14.29(typescript@7.0.2)(zod@4.4.3):
+  ox@0.14.34(typescript@7.0.2)(zod@4.4.3):
     dependencies:
       '@adraffy/ens-normalize': 1.11.1
       '@noble/ciphers': 1.3.0
@@ -7521,13 +7513,7 @@ snapshots:
       kleur: 3.0.3
       sisteransi: 1.0.5
 
-  protons-runtime@6.0.2:
-    dependencies:
-      uint8-varint: 2.0.5
-      uint8arraylist: 2.4.9
-      uint8arrays: 5.1.1
-
-  protons-runtime@8.0.1:
+  protons-runtime@8.0.1(patch_hash=a968848c0c28551a1154da0398488ace0f8297737df23cb673157b8b317ae680):
     dependencies:
       uint8-varint: 3.0.0
       uint8arraylist: 3.0.2
@@ -7996,11 +7982,6 @@ snapshots:
 
   ufo@1.6.4: {}
 
-  uint8-varint@2.0.5:
-    dependencies:
-      uint8arraylist: 2.4.9
-      uint8arrays: 5.1.1
-
   uint8-varint@3.0.0:
     dependencies:
       uint8arraylist: 3.0.2
@@ -8008,17 +7989,9 @@ snapshots:
 
   uint8array-extras@1.6.0: {}
 
-  uint8arraylist@2.4.9:
-    dependencies:
-      uint8arrays: 5.1.1
-
   uint8arraylist@3.0.2:
     dependencies:
       uint8arrays: 6.1.1
-
-  uint8arrays@5.1.1:
-    dependencies:
-      multiformats: 13.4.2
 
   uint8arrays@6.1.1:
     dependencies:

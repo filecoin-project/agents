@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.2](https://github.com/filecoin-project/agents/compare/filecoin-cli-v0.5.1...filecoin-cli-v0.5.2) (2026-10-16)
+
+
+### Performance Improvements
+
+* update filecoin-cli and filecoin-api to synapse-core 0.10.2 ([#43](https://github.com/filecoin-project/agents/issues/43)) ([041a490](https://github.com/filecoin-project/agents/commit/041a4909a66e3487c6aefbd41f1e0bd802516873))
+
+## [0.5.1](https://github.com/filecoin-project/agents/compare/filecoin-cli-v0.5.0...filecoin-cli-v0.5.1) (2026-10-15)
+
+
+### Bug Fixes
+
+* **filecoin-cli:** patch protons-runtime uint64 encoding for 2–4 GiB files ([842fcd1](https://github.com/filecoin-project/agents/commit/842fcd1abf0223961a888ed991addd3ab9bcfd6a))
+
 ## [0.5.0](https://github.com/filecoin-project/agents/compare/filecoin-cli-v0.4.0...filecoin-cli-v0.5.0) (2026-10-14)
 
 
