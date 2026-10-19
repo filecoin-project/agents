@@ -34,7 +34,7 @@ describe('mcp', () => {
     }>
     expect(body.result.serverInfo).toEqual({
       name: 'filecoin-api',
-      title: 'Filecoin API',
+      title: 'Filecoin',
       version: VERSION,
     })
   })

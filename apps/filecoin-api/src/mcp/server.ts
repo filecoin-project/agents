@@ -219,7 +219,7 @@ const TOOLS: ToolDef[] = [
  */
 export function buildMcpServer(ctx: McpContext): McpHandle {
   const server = new McpServer(
-    { name: 'filecoin-api', title: 'Filecoin API', version: ctx.version },
+    { name: 'filecoin-api', title: 'Filecoin', version: ctx.version },
     {
       instructions:
         'Read-only Filecoin data: storage providers, data sets, pieces, Filecoin Pay rails and session keys. Every data tool takes a `network` (calibration or mainnet). Large integers are decimal strings. Paginate with `cursor` from `nextCursor`. `search_docs` searches the Filecoin docs at docs.filecoin.io.',
