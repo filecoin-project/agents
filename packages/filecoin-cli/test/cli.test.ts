@@ -7,7 +7,7 @@
 import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { before, test } from 'node:test'
+import { after, before, test } from 'node:test'
 import {
   assertContract,
   assertDefinitions,
@@ -20,6 +20,10 @@ import { tempDir } from './helpers.ts'
 
 const SESSION_KEY = `0x${'11'.repeat(32)}`
 const ROOT = '0x1111111111111111111111111111111111111111'
+
+/** Variables that drop the console link tags, cleared while the tests run. */
+const OPT_OUTS = ['DO_NOT_TRACK', 'FILECOIN_TELEMETRY_DISABLED'] as const
+const inherited = new Map<string, string | undefined>()
 
 /** Runs the CLI in process and returns the asserted result and its `data`. */
 async function run(
@@ -50,6 +54,18 @@ before(async () => {
   const dir = await tempDir()
   process.env.FILECOIN_CONFIG_DIR = join(dir, 'config')
   process.env.FILECOIN_STATE_DIR = join(dir, 'state')
+  // Console links are tagged unless the user opted out; start from no opt-out.
+  for (const name of OPT_OUTS) {
+    inherited.set(name, process.env[name])
+    delete process.env[name]
+  }
+})
+
+after(() => {
+  for (const [name, value] of inherited) {
+    if (value === undefined) delete process.env[name]
+    else process.env[name] = value
+  }
 })
 
 test('definitions are valid', () => assertDefinitions(cli))
