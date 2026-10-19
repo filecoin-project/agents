@@ -223,7 +223,7 @@ describe('results', () => {
     assert.equal(result.depositNeeded, '0.5')
     assert.equal(
       result.setupUrl,
-      'https://filecoin-app.example/dashboard/setup?network=calibration&deposit=0.5'
+      'https://filecoin-app.example/dashboard/setup?network=calibration&approval=unlimited&deposit=0.5&balance=1.5'
     )
   })
 
