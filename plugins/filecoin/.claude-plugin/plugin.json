@@ -1,13 +1,15 @@
 {
   "$schema": "https://www.schemastore.org/claude-code-plugin-manifest.json",
   "name": "filecoin",
+  "displayName": "Filecoin for Agents",
   "version": "0.2.0",
   "description": "Store files and folders on Filecoin with the filecoin CLI, share and verify them, and read Filecoin storage data through a read-only MCP server.",
   "author": {
     "name": "Hugo Dias",
-    "email": "hugomrdias@gmail.com"
+    "email": "hugomrdias@gmail.com",
+    "url": "https://github.com/filecoin-project/agents"
   },
-  "homepage": "https://poc.filecoin.cloud/agents",
+  "homepage": "https://www.filecoin.io/products/agents",
   "repository": "https://github.com/filecoin-project/agents",
   "license": "MIT",
   "keywords": [
@@ -18,8 +20,12 @@
     "mcp"
   ],
   "icon": "./assets/logo.png",
+  "documentationUrl": "https://docs.filecoin.io/core-concepts/filecoin-for-agents",
+  "supportUrl": "https://github.com/filecoin-project/agents/issues",
+  "privacyPolicyUrl": "https://fil.org/privacy-policy",
+  "termsOfServiceUrl": "https://fil.org/terms-of-use",
   "mcpServers": {
-    "filecoin-api": {
+    "filecoin": {
       "type": "http",
       "url": "https://mcp.filecoin.io"
     }
