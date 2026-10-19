@@ -8,7 +8,7 @@
  *   and its name follows the specification's rules.
  * - `.claude-plugin/plugin.json` repeats the portable metadata and declares
  *   the same MCP servers. Claude Code calls `streamable-http` `http`. Its
- *   `displayName` is the `extensions.com.openai` listing's.
+ *   `displayName` and policy links are the `extensions.com.openai` listing's.
  * - `.claude-plugin/marketplace.json`, which Claude Code and
  *   `npx skills add` read, and `.agents/plugins/marketplace.json`, which
  *   Codex reads, each list the plugin once, at its directory, in the
@@ -89,6 +89,19 @@ const CLAUDE_CATEGORIES: Record<string, string> = {
 }
 
 /**
+ * Claude Code manifest fields that repeat a field of the `extensions.com.openai`
+ * listing, keyed by the Claude Code name. Anthropic's directory reads the
+ * policy links, and Claude Code shows `displayName`.
+ *
+ * @see https://code.claude.com/docs/en/plugins-reference#directory-listing-fields
+ */
+const CLAUDE_LISTING_FIELDS: Record<string, string> = {
+  displayName: 'displayName',
+  privacyPolicyUrl: 'privacyPolicyURL',
+  termsOfServiceUrl: 'termsOfServiceURL',
+}
+
+/**
  * Reads a JSON object from a file.
  *
  * @param path - File path, relative to the repository root.
@@ -152,10 +165,12 @@ for (const field of SHARED_FIELDS) {
 if (!isDeepStrictEqual(claude.mcpServers, claudeServers)) {
   problems.push('.claude-plugin/plugin.json: mcpServers differs from mcp.json')
 }
-if (claude.displayName !== listing.displayName) {
-  problems.push(
-    '.claude-plugin/plugin.json: displayName differs from the com.openai listing in plugin.json'
-  )
+for (const [field, listingField] of Object.entries(CLAUDE_LISTING_FIELDS)) {
+  if (claude[field] !== listing[listingField]) {
+    problems.push(
+      `.claude-plugin/plugin.json: ${field} differs from the com.openai listing's ${listingField} in plugin.json`
+    )
+  }
 }
 
 /** The Codex listing's category, which both marketplace entries repeat. */

@@ -22,6 +22,8 @@
   "icon": "./assets/logo.png",
   "documentationUrl": "https://docs.filecoin.io/core-concepts/filecoin-for-agents",
   "supportUrl": "https://github.com/filecoin-project/agents/issues",
+  "privacyPolicyUrl": "https://fil.org/privacy-policy",
+  "termsOfServiceUrl": "https://fil.org/terms-of-use",
   "mcpServers": {
     "filecoin-api": {
       "type": "http",
