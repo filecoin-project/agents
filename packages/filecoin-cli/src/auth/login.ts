@@ -29,7 +29,12 @@ const SETUP_PATH = '/console/setup'
 /** Filecoin Pay console page that lists and revokes session keys. */
 const SESSION_KEYS_PATH = '/console/session-keys'
 
-/** Start a setup link that requires the unlimited Warm Storage approval. */
+/**
+ * Start a setup link that requires the unlimited Warm Storage approval.
+ *
+ * @see https://github.com/FilOzone/filecoin-pay-explorer/blob/staging/apps/explorer/src/utils/setupLink.ts
+ * @see https://github.com/FilOzone/synapse-sdk/blob/master/packages/synapse-core/src/pay/is-fwss-max-approved.ts
+ */
 function setupUrl(consoleUrl: string, network: Network): URL {
   const url = new URL(SETUP_PATH, consoleUrl)
   url.searchParams.set('network', network)
@@ -124,8 +129,12 @@ export function buildFundingUrl(options: FundingUrlOptions): string {
 }
 
 /**
- * The available USDFC an account reaches after depositing `depositNeeded`.
- * A deposit settles debt first, so the debt comes off the target.
+ * The available USDFC an account reaches after depositing `depositNeeded`,
+ * sent as the setup link's `balance`. A deposit settles debt first, so the
+ * debt comes off the target.
+ *
+ * @see https://github.com/FilOzone/synapse-sdk/blob/master/packages/synapse-core/src/pay/get-account-summary.ts
+ * @see https://github.com/FilOzone/filecoin-pay-explorer/blob/staging/apps/explorer/src/utils/setupLink.ts
  */
 export function targetBalance(account: {
   availableFunds: bigint
