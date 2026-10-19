@@ -9,7 +9,7 @@
     "email": "hugomrdias@gmail.com",
     "url": "https://github.com/filecoin-project/agents"
   },
-  "homepage": "https://poc.filecoin.cloud/agents",
+  "homepage": "https://www.filecoin.io/products/agents",
   "repository": "https://github.com/filecoin-project/agents",
   "license": "MIT",
   "keywords": [
@@ -20,7 +20,7 @@
     "mcp"
   ],
   "icon": "./assets/logo.png",
-  "documentationUrl": "https://poc.filecoin.cloud/docs",
+  "documentationUrl": "https://docs.filecoin.io/core-concepts/filecoin-for-agents",
   "supportUrl": "https://github.com/filecoin-project/agents/issues",
   "mcpServers": {
     "filecoin-api": {
