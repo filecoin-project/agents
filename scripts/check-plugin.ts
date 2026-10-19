@@ -13,8 +13,9 @@
  *   Codex reads, each list the plugin once, at its directory, in the
  *   category of the manifest's `extensions.com.openai` listing. Claude Code's
  *   directory names its categories in lowercase.
- * - The Claude Code marketplace entry repeats the manifest's description,
- *   which Claude Code shows before the plugin is installed.
+ * - The Claude Code marketplace entry repeats the manifest's description and
+ *   keywords, which Claude Code shows before the plugin is installed. Its
+ *   `tags` are for labels such as `community-managed`, so the entry has none.
  * - The Claude Code marketplace entry declares every skill in the plugin's
  *   `skills/`. The `skills` CLI documents discovery only for declared skill
  *   paths; Claude Code scans `skills/` either way and loads each skill once.
@@ -192,13 +193,15 @@ const claudeMarketplace = await readJson('.claude-plugin/marketplace.json')
 const claudeEntry = (claudeMarketplace.plugins as Json[]).find(
   (entry) => entry.name === name
 )
-if (
-  claudeEntry !== undefined &&
-  claudeEntry.description !== manifest.description
-) {
-  problems.push(
-    '.claude-plugin/marketplace.json: description differs from plugin.json'
-  )
+for (const field of ['description', 'keywords']) {
+  if (
+    claudeEntry !== undefined &&
+    !isDeepStrictEqual(claudeEntry[field], manifest[field])
+  ) {
+    problems.push(
+      `.claude-plugin/marketplace.json: ${field} differs from plugin.json`
+    )
+  }
 }
 const declared = [...((claudeEntry?.skills as string[] | undefined) ?? [])]
 if (!isDeepStrictEqual(declared.sort(), skills)) {

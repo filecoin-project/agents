@@ -13,7 +13,7 @@
       "source": "./plugins/filecoin",
       "description": "Store files and folders on Filecoin with the filecoin CLI, share and verify them, and read Filecoin storage data through a read-only MCP server.",
       "category": "productivity",
-      "tags": ["filecoin", "storage", "ipfs"],
+      "keywords": ["filecoin", "storage", "ipfs", "cli", "mcp"],
       "skills": ["./skills/filecoin"]
     }
   ]
