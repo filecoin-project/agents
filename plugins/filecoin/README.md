@@ -8,7 +8,7 @@ The plugin follows the [Agent Plugins](https://agent-plugins.org/specification) 
 | --- | --- | --- |
 | [`plugin.json`](plugin.json) | The portable manifest. `extensions.com.openai` holds the Codex and ChatGPT listing. | Agent Plugins clients, such as Codex |
 | [`mcp.json`](mcp.json) | filecoin-api's MCP server, over Streamable HTTP | Agent Plugins clients |
-| [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json) | The same metadata and MCP server in Claude Code's format, which names the transport `http` | Claude Code |
+| [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json) | The same metadata and MCP server in Claude Code's format, which names the transport `http`, with the Codex listing's `displayName` and the documentation and support links for Anthropic's plugin directory | Claude Code |
 | [`assets/logo.png`](assets/logo.png) | The Filecoin logo, rendered from filecoin-app's favicon | Codex and Anthropic's plugin directory |
 | [`skills/`](skills) | The agent skills. This is their only source: the filecoin-cli build copies them for `filecoin skills install`, and filecoin-app publishes them under `/.well-known/agent-skills/`. | Every client |
 

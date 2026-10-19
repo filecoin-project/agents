@@ -7,7 +7,8 @@
  *   holds only the portable fields, with client fields under `extensions`,
  *   and its name follows the specification's rules.
  * - `.claude-plugin/plugin.json` repeats the portable metadata and declares
- *   the same MCP servers. Claude Code calls `streamable-http` `http`.
+ *   the same MCP servers. Claude Code calls `streamable-http` `http`. Its
+ *   `displayName` is the `extensions.com.openai` listing's.
  * - `.claude-plugin/marketplace.json`, which Claude Code and
  *   `npx skills add` read, and `.agents/plugins/marketplace.json`, which
  *   Codex reads, each list the plugin once, at its directory, in the
@@ -136,6 +137,11 @@ for (const [id, server] of Object.entries(mcp.mcpServers as Json)) {
   claudeServers[id] = { ...(server as Json), type: claudeType }
 }
 
+/** The Codex listing, whose display name and category the others repeat. */
+const listing = ((manifest.extensions as Record<string, Json> | undefined)?.[
+  'com.openai'
+]?.interface ?? {}) as Json
+
 for (const field of SHARED_FIELDS) {
   if (!isDeepStrictEqual(claude[field], manifest[field])) {
     problems.push(
@@ -146,14 +152,14 @@ for (const field of SHARED_FIELDS) {
 if (!isDeepStrictEqual(claude.mcpServers, claudeServers)) {
   problems.push('.claude-plugin/plugin.json: mcpServers differs from mcp.json')
 }
+if (claude.displayName !== listing.displayName) {
+  problems.push(
+    '.claude-plugin/plugin.json: displayName differs from the com.openai listing in plugin.json'
+  )
+}
 
 /** The Codex listing's category, which both marketplace entries repeat. */
-const category = String(
-  (
-    (manifest.extensions as Record<string, Record<string, Json>>)['com.openai']
-      ?.interface as Json | undefined
-  )?.category
-)
+const category = String(listing.category)
 const marketplaces: [string, (entry: Json) => unknown, string | undefined][] = [
   [
     '.claude-plugin/marketplace.json',

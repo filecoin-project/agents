@@ -5,7 +5,8 @@
   "description": "Store files and folders on Filecoin with the filecoin CLI, share and verify them, and read Filecoin storage data through a read-only MCP server.",
   "author": {
     "name": "Hugo Dias",
-    "email": "hugomrdias@gmail.com"
+    "email": "hugomrdias@gmail.com",
+    "url": "https://github.com/filecoin-project/agents"
   },
   "homepage": "https://poc.filecoin.cloud/agents",
   "repository": "https://github.com/filecoin-project/agents",
