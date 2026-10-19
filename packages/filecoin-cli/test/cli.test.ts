@@ -234,6 +234,9 @@ test('console links name the agent and drop their tags on opt-out', async () => 
   const tagged = await approvalLink({ AI_AGENT: 'claude-code' })
   assert.equal(tagged.searchParams.get('utm_term'), 'login')
   assert.equal(tagged.searchParams.get('utm_content'), 'claude-code')
+  // FILECOIN_AGENT forces agent mode when no agent is detected.
+  const forced = await approvalLink({ FILECOIN_AGENT: '1' })
+  assert.equal(forced.searchParams.get('utm_content'), 'unknown')
 
   // Process settings come from the real environment, like the console URL.
   process.env.DO_NOT_TRACK = '1'

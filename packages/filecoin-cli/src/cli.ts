@@ -15,7 +15,7 @@ export const cli = defineCli({
   name: 'filecoin',
   version: pkg.version,
   description: 'Store files and folders on Filecoin and get retrieval links',
-  envPrefix: 'FIL',
+  envPrefix: 'FILECOIN',
   commands,
   aliases: { publish: 'put', rm: 'delete' },
   skills: new URL('../skills/', import.meta.url),
