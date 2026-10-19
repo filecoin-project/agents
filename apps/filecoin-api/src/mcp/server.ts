@@ -56,6 +56,8 @@ type ToolSchema = z.ZodObject<{ network: typeof NetworkSchema }>
 /** A read-only tool, defined once and registered on each request's server. */
 interface ToolDef {
   name: string
+  /** Display name for clients, such as "List storage providers". */
+  title: string
   description: string
   inputSchema: ToolSchema
   run: (
@@ -76,6 +78,7 @@ function input<S extends z.ZodRawShape>(shape: S) {
 /** Define a tool; `run` receives the parsed input without `network`. */
 function defineTool<S extends ToolSchema>(
   name: string,
+  title: string,
   description: string,
   inputSchema: S,
   run: (
@@ -84,28 +87,43 @@ function defineTool<S extends ToolSchema>(
     args: Omit<z.output<S>, 'network'>
   ) => Promise<unknown>
 ): ToolDef {
-  return { name, description, inputSchema, run: run as ToolDef['run'] }
+  return { name, title, description, inputSchema, run: run as ToolDef['run'] }
 }
 
 const page = PageQuery.shape
 const bool = z.boolean()
 
+/**
+ * Tool annotations shared by every tool: each reads indexed chain data or the
+ * docs, so it changes nothing, and repeating a call has no extra effect.
+ *
+ * @see https://modelcontextprotocol.io/specification/2025-06-18/schema#toolannotations
+ */
+const ANNOTATIONS = {
+  readOnlyHint: true,
+  idempotentHint: true,
+  openWorldHint: true,
+} as const
+
 /** Tool definitions, built once per isolate. */
 const TOOLS: ToolDef[] = [
   defineTool(
     'get_status',
+    'Get indexer status',
     'Indexer status: chain id and latest, safe and finalized indexed blocks.',
     input({}),
     async (db, network) => ({ data: await getStatus(db, network) })
   ),
   defineTool(
     'list_providers',
+    'List storage providers',
     'List storage providers registered in the ServiceProviderRegistry.',
     input({ ...filters.providers(bool), ...page }),
     (db, network, q) => listProviders(db, network.schemas, q)
   ),
   defineTool(
     'get_provider',
+    'Get storage provider',
     'Get one storage provider by id.',
     input({ providerId: UintInput }),
     async (db, network, q) => ({
@@ -114,12 +132,14 @@ const TOOLS: ToolDef[] = [
   ),
   defineTool(
     'list_data_sets',
+    'List data sets',
     'List Warm Storage data sets, filtered by owner (paying client), provider, deleted or CDN.',
     input({ ...filters.dataSets(bool), ...page }),
     (db, network, q) => listDataSets(db, network.schemas, q)
   ),
   defineTool(
     'get_data_set',
+    'Get data set',
     'Get one data set by id.',
     input({ dataSetId: UintInput }),
     async (db, network, q) => ({
@@ -128,12 +148,14 @@ const TOOLS: ToolDef[] = [
   ),
   defineTool(
     'list_data_set_pieces',
+    'List data set pieces',
     'List pieces in one data set, newest first.',
     input({ dataSetId: UintInput, ...filters.dataSetPieces(bool), ...page }),
     (db, network, q) => listDataSetPieces(db, network.schemas, q)
   ),
   defineTool(
     'get_piece',
+    'Get piece',
     'Get one piece by data set id and piece id.',
     input({ dataSetId: UintInput, pieceId: UintInput }),
     async (db, network, q) => ({
@@ -142,6 +164,7 @@ const TOOLS: ToolDef[] = [
   ),
   defineTool(
     'list_pieces',
+    'Find pieces',
     'Find pieces across data sets by owner (paying client), PieceCID or provider. Requires at least one of owner, cid or provider_id.',
     input({ ...filters.pieces(bool), ...page }).refine(hasPieceSelector, {
       message: PIECE_SELECTOR_MESSAGE,
@@ -150,12 +173,14 @@ const TOOLS: ToolDef[] = [
   ),
   defineTool(
     'list_rails',
+    'List payment rails',
     'List Filecoin Pay payment rails with current rate, lockup, state and settlement totals.',
     input({ ...filters.rails, ...page }),
     (db, network, q) => listRails(db, network.schemas, q)
   ),
   defineTool(
     'get_rail',
+    'Get payment rail',
     'Get one payment rail by id with its current state.',
     input({ railId: UintInput }),
     async (db, network, q) => ({
@@ -164,18 +189,21 @@ const TOOLS: ToolDef[] = [
   ),
   defineTool(
     'list_rail_settlements',
+    'List rail settlements',
     'List settlements of one payment rail, newest first.',
     input({ railId: UintInput, ...page }),
     (db, network, q) => listRailSettlements(db, network.schemas, q)
   ),
   defineTool(
     'list_session_keys',
+    'List session keys',
     'List session keys with the latest expiry of each permission per (identity, signer).',
     input({ ...filters.sessionKeys(bool), ...page }),
     (db, network, q) => listSessionKeys(db, network.schemas, q)
   ),
   defineTool(
     'list_session_key_events',
+    'List session key events',
     'List raw session key authorization events, newest first.',
     input({ ...filters.sessionKeyEvents, ...page }),
     (db, network, q) => listSessionKeyEvents(db, network.schemas, q)
@@ -191,7 +219,7 @@ const TOOLS: ToolDef[] = [
  */
 export function buildMcpServer(ctx: McpContext): McpHandle {
   const server = new McpServer(
-    { name: 'filecoin-api', version: ctx.version },
+    { name: 'filecoin-api', title: 'Filecoin API', version: ctx.version },
     {
       instructions:
         'Read-only Filecoin data: storage providers, data sets, pieces, Filecoin Pay rails and session keys. Every data tool takes a `network` (calibration or mainnet). Large integers are decimal strings. Paginate with `cursor` from `nextCursor`. `search_docs` searches the Filecoin docs at docs.filecoin.io.',
@@ -214,9 +242,10 @@ export function buildMcpServer(ctx: McpContext): McpHandle {
     server.registerTool(
       tool.name,
       {
+        title: tool.title,
         description: tool.description,
         inputSchema: tool.inputSchema,
-        annotations: { readOnlyHint: true, openWorldHint: true },
+        annotations: ANNOTATIONS,
       },
       // biome-ignore lint/suspicious/noExplicitAny: SDK infers args from the schema
       (async ({ network, ...args }: any): Promise<CallToolResult> => {
@@ -237,12 +266,13 @@ export function buildMcpServer(ctx: McpContext): McpHandle {
   server.registerTool(
     'search_docs',
     {
+      title: 'Search Filecoin docs',
       description:
         'Search the Filecoin docs at docs.filecoin.io for concepts, guides and API references. Returns matching page excerpts with titles and links; append `.md` to a link to read the full page as Markdown.',
       inputSchema: z.object({
         query: z.string().trim().min(1).max(500).describe('Search terms'),
       }),
-      annotations: { readOnlyHint: true, openWorldHint: true },
+      annotations: ANNOTATIONS,
     },
     async ({ query }): Promise<CallToolResult> => {
       try {

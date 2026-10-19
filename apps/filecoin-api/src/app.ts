@@ -18,8 +18,13 @@ import { retrievalRoutes } from './routes/retrieval.ts'
 import { activeSpan, recordError } from './tracing.ts'
 import type { AppEnv } from './types.ts'
 
-/** API version reported in OpenAPI and MCP server info. */
-export const VERSION = '0.0.0'
+/**
+ * API version reported in OpenAPI and MCP server info. release-please writes
+ * the release version here and into `openapi.json`.
+ *
+ * @see https://github.com/googleapis/release-please/blob/main/docs/customizing.md#updating-arbitrary-files
+ */
+export const VERSION = '0.4.0' // x-release-please-version
 
 /**
  * OpenAPI document settings for a server origin. `/openapi.json` serves the
