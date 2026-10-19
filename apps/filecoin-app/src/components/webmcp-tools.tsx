@@ -29,7 +29,7 @@ export function WebMcpTools() {
   useWebMcpTool<unknown>({
     name: 'prepare_setup_request',
     description:
-      "Open filecoin-app's setup page prefilled for the wallet owner to review: authorize a session key (for example the address that `filecoin login` printed), approve Warm Storage, and deposit USDFC into Filecoin Pay. Nothing is signed or sent. The user reviews the page and approves each step in their wallet. The setup page registers get_setup_status, so after calling this, ask the user to review the page, then call get_setup_status to check progress.",
+      "Open filecoin-app's setup page prefilled for the wallet owner to review: authorize a session key that a tool printed, approve Warm Storage, and deposit USDFC into Filecoin Pay. Nothing is signed or sent. The user reviews the page and approves each step in their wallet. The setup page registers get_setup_status, so after calling this, ask the user to review the page, then call get_setup_status to check progress.",
     inputSchema: {
       type: 'object',
       properties: {

@@ -43,7 +43,7 @@ type Grant = {
 /** The fake chain: its height and the approvals the owner signed. */
 const chain = { block: 100n, grants: [] as Grant[] }
 
-/** Approve `signer` for `scopes`, as filecoin-app's setup page would. */
+/** Approve `signer` for `scopes`, as the Filecoin Pay console would. */
 function approve(signer: string, scopes: ScopeId[], expiry = LATER): void {
   chain.block += 1n
   chain.grants.push({

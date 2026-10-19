@@ -33,6 +33,8 @@ type FakeOptions = {
   stored?: boolean
   /** The payer cannot afford the upload. */
   unfunded?: boolean
+  /** The payer has funds but has not approved Warm Storage. */
+  unapproved?: boolean
   /** The first commit wait fails, as if the connection dropped. */
   failWaitOnce?: boolean
   /** The first submission lands on chain but its response is lost. */
@@ -76,13 +78,13 @@ function fakeBackend(options: FakeOptions = {}) {
     },
     quote: () =>
       Promise.resolve({
-        ready: !options.unfunded,
+        ready: !(options.unfunded || options.unapproved),
         depositNeeded: options.unfunded ? 10n ** 18n : 0n,
-        needsApproval: false,
+        needsApproval: options.unapproved ?? false,
         ratePerMonth: 123n,
         lockup: 456n,
         fundingUrl:
-          'https://filecoin-app.example/dashboard/setup?network=calibration',
+          'https://pay.example/console/setup?network=calibration&approval=unlimited',
       }),
     hasPiece: () => Promise.resolve(options.stored ?? false),
     upload() {
@@ -216,9 +218,9 @@ test('put stores a file in a new data set and records the resource', async () =>
   assert.equal(result.resource.url, result.urls.browser)
   assert.deepEqual(calls.select, [FILE_DATA_SET_METADATA])
   // On-chain namespace: changing it orphans existing data sets.
-  assert.deepEqual(FILE_DATA_SET_METADATA, { source: 'filecoin' })
+  assert.deepEqual(FILE_DATA_SET_METADATA, { source: 'filecoin-cli' })
   assert.deepEqual(FOLDER_DATA_SET_METADATA, {
-    source: 'filecoin',
+    source: 'filecoin-cli',
     withIPFSIndexing: '',
   })
   assert.equal(calls.submitted.length, 1)
@@ -441,6 +443,23 @@ test('put stops with insufficient_funds, a funding step, and the operation', asy
     onlyOperation(ctx).id
   )
   assert.equal(calls.upload, 0)
+})
+
+test('put asks only for the approval when no deposit is needed', async () => {
+  const { backend } = fakeBackend({ unapproved: true })
+  const ctx = await context(backend)
+  const path = await file(ctx, 'data.bin', 1024)
+  const error = await startPut(ctx, { path }).catch((e: unknown) => e)
+  assert.ok(error instanceof CliError)
+  assert.equal(error.code, 'insufficient_funds')
+  assert.equal(
+    error.message,
+    'The payer must approve Warm Storage before uploading.'
+  )
+  assert.match(
+    String(error.next?.[0]?.description),
+    /^Approve Warm Storage at /
+  )
 })
 
 test('put skips the upload when the provider already has the piece', async () => {

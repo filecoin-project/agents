@@ -224,8 +224,7 @@ function SessionKeyStep(props: {
             <CopyButton value={search.signer} />
           </p>
           <FieldDescription>
-            Check that it matches the address your tool printed, for example the
-            link from <code>filecoin login</code>.
+            Check that it matches the address your tool printed.
           </FieldDescription>
         </Field>
         {isWallet ? (
@@ -313,9 +312,7 @@ function SessionKeyStep(props: {
         </Button>
         {login.isSuccess ? (
           <p className="text-sm text-muted-foreground">
-            Authorized. A waiting <code>filecoin login</code> finds the approval
-            on chain within a few seconds; otherwise run{' '}
-            <code>filecoin login</code> again.
+            Authorized. The tool that made the key finds the approval on chain.
           </p>
         ) : null}
       </FieldGroup>
@@ -478,8 +475,8 @@ function SetupPage() {
             <TriangleAlertIcon />
             <AlertTitle>Only approve requests you started</AlertTitle>
             <AlertDescription>
-              Authorize a session key only if you created it yourself, for
-              example with <code>filecoin login</code> on your own machine.
+              Authorize a session key only if you created it yourself, with a
+              tool on your own machine.
             </AlertDescription>
           </Alert>
           {signer ? (

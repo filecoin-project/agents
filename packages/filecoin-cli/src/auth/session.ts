@@ -76,7 +76,8 @@ export function resolveCredentials(app: App): SessionCredentials | undefined {
 export function loginPending(url: string): CliError {
   return new CliError({
     code: ErrorCodes.loginPending,
-    message: 'The session key is waiting for approval in filecoin-app.',
+    message:
+      'The session key is waiting for approval in the Filecoin Pay console.',
     details: { url },
     next: [
       {
@@ -122,7 +123,7 @@ export function notLoggedIn(): CliError {
         by: 'user',
         command: 'filecoin login',
         description:
-          'Authorize a session key in the filecoin-app dashboard, then retry',
+          'Authorize a session key in the Filecoin Pay console, then retry',
       },
     ],
   })

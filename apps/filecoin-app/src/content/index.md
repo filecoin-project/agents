@@ -12,7 +12,7 @@ This is a prototype. It runs on the calibration test network unless you choose m
 
 ## How an agent gets access
 
-The agent never holds the wallet key. It gets a session key, which the wallet owner approves in filecoin-app and which cannot move funds. [Agents](/agents) shows the way in for each kind of agent: local, cloud, browser, or chat app.
+The agent never holds the wallet key. It gets a session key, which the wallet owner approves in the Filecoin Pay console and which cannot move funds. [Agents](/agents) shows the way in for each kind of agent: local, cloud, browser, or chat app.
 
 ## Start
 

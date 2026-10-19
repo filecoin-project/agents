@@ -12,7 +12,7 @@ The table lists the four parts, the agent skill, and the agent plugin.
 | Agent skill | Teaches an agent to use `filecoin` | [`plugins/filecoin/skills/filecoin/SKILL.md`](../../plugins/filecoin/skills/filecoin/SKILL.md) | In the agent, after installing the plugin, or after `npx skills add https://poc.filecoin.cloud`, `npx skills add filecoin-project/agents`, or `filecoin skills install`. The site serves it at https://poc.filecoin.cloud/.well-known/agent-skills/index.json |
 | REST API | Serves read-only data on providers, data sets, pieces, Filecoin Pay rails, and session keys. `/get/{cid}` redirects to where a CID can be retrieved. | [`apps/filecoin-api`](../../apps/filecoin-api/README.md) | https://api.filecoin.cloud, with a reference at [`/docs`](https://api.filecoin.cloud/docs) |
 | MCP server | Offers one read-only tool for each REST API data route, over stateless Streamable HTTP | [`apps/filecoin-api/src/mcp`](../../apps/filecoin-api/src/mcp/server.ts) | `POST https://mcp.filecoin.cloud`, also at `https://api.filecoin.cloud/mcp` |
-| Web app | Serves the landing page, the docs, and the Agents page. Every page also has a Markdown version, and `llms.txt`, a sitemap, and well-known paths describe the API, the MCP server, and the skill to agents. It shows the REST API's data in an explorer, which a Worker renders on the server. Its wallet dashboard manages Filecoin Pay, the Warm Storage approval, data sets, uploads, rails, and session keys. Its setup page approves `filecoin login` keys and funding requests. Browser agents can fill it and read the account, data sets, pieces, and session keys through WebMCP. | [`apps/filecoin-app`](../../apps/filecoin-app/README.md) | https://poc.filecoin.cloud |
+| Web app | Serves the landing page, the docs, and the Agents page. Every page also has a Markdown version, and `llms.txt`, a sitemap, and well-known paths describe the API, the MCP server, and the skill to agents. It shows the REST API's data in an explorer, which a Worker renders on the server. Its wallet dashboard manages Filecoin Pay, the Warm Storage approval, data sets, uploads, rails, and session keys. Its setup page approves session keys and funding requests from browser agents. Browser agents can fill it and read the account, data sets, pieces, and session keys through WebMCP. | [`apps/filecoin-app`](../../apps/filecoin-app/README.md) | https://poc.filecoin.cloud |
 | Agent plugin | Bundles the agent skill and the MCP server, in the portable [Agent Plugins](https://agent-plugins.org/specification) format with a Claude Code manifest. The skill runs the CLI from npm. | [`plugins/filecoin`](../../plugins/filecoin/README.md) | Claude Code and Codex, from this repository's marketplaces, and other Agent Plugins clients |
 
 ## How the parts connect
@@ -39,7 +39,7 @@ All parts use the same chain and the same providers, but each part keeps its own
 
 - **The CLI does not read from filecoin-api yet.** It reads the chain through synapse-core. It keeps its resources and operations in a local SQLite database. Its retrieval links point to filecoin-api's `/get/{cid}` route, which redirects to a provider or to inbrowser.link.
 - **The app reads through filecoin-api.** It writes with the connected wallet or with a session key made in the dashboard. The app stores those session keys in the browser's `localStorage`.
-- **`filecoin login` sends the owner to filecoin-app.** The CLI keeps its session key on the machine and sends only the key's address, name, scopes, and expiry in a [setup link](../../apps/filecoin-app/README.md#setup-links). The owner reviews the prefilled page and signs the approval with their wallet. `filecoin status` and `put` send funding requests to the same page.
+- **`filecoin login` sends the owner to the Filecoin Pay console.** The CLI keeps its session key on the machine and sends only the key's address, name, scopes, and expiry in a link to the [pay.filecoin.cloud](https://pay.filecoin.cloud/console) setup page. The owner reviews the prefilled request and signs the approval with their wallet. `filecoin status` and `put` send the Warm Storage approval and deposit requests to the same page, and `logout` returns the console's revoke link.
 
 ## How agents find and use Filecoin for Agents
 
@@ -57,7 +57,7 @@ Each kind of agent has one way in, and each step of discovery shows only enough 
 | --- | --- | --- |
 | Local, such as Claude Code or Codex | Run a shell, keep files, and open pages for the user | The agent plugin, or the agent skill alone, and the CLI |
 | Cloud, such as a coding agent in a hosted sandbox | Run a shell, but its files are gone when the session ends | The agent skill and the CLI, with a session key from the environment's secrets |
-| Browser | Use web pages in the browser that holds the wallet | filecoin-app's WebMCP tools, setup links, and the upload page |
+| Browser | Use web pages in the browser that holds the wallet | filecoin-app's WebMCP tools and upload page, and the Filecoin Pay console links |
 | Chat app with connectors | Call remote tools | The read-only MCP server |
 
 Each fact has one owner, and the others link to it. The skill owns the agent's workflow and rules. The CLI owns its flags, outputs, and error codes. The Agents page owns the ways in and the approval flow. The [Retrieve and verify](https://poc.filecoin.cloud/docs/retrieve) page owns what each retrieval link checks. The skill stays one file: it links to those two site pages for the cloud and retrieval details, so it carries no copies of them. filecoin-app's tests check that every link from the docs pages and the skill to a docs page and heading resolves.
@@ -75,7 +75,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 
 ## Assumptions behind the proof of concept
 
-- **We test with our own app and website.** For testing, the CLI uses filecoin-app instead of pay.filecoin.cloud. For the same reason, filecoin-app's landing page and docs take the place of filecoin.cloud and filecoin.io. The results of this prototype will inform improvements to pay.filecoin.cloud, filecoin.cloud, and filecoin.io.
+- **The CLI uses the Filecoin Pay console, and we test with our own website.** The CLI sends its approval, funding, and revoke links to pay.filecoin.cloud, whose console accepts them. filecoin-app's landing page and docs take the place of filecoin.cloud and filecoin.io. The results of this prototype will inform improvements to pay.filecoin.cloud, filecoin.cloud, and filecoin.io.
 - **Two kinds of user.** An agent runs `filecoin` in a shell, uses filecoin-app in a browser, or calls the MCP server. A human owns the wallet, approves the agent's session key, and funds the account. The agent never holds the wallet key.
 - **Claude and ChatGPT first.** The [agent plugin](../../plugins/filecoin/README.md) is the main way to add `filecoin` to Claude Code and Codex. It uses the portable Agent Plugins format, so other clients that support it can load it too. Other agents get a manual fallback. The user runs `filecoin skills install` to copy the skill into `.agents/skills` and `.claude/skills`, or installs it with the [`skills` CLI](https://github.com/vercel-labs/skills) from the repository or the site. The user can also add the MCP server URL to the agent's settings.
 - **A session key is enough for storage.** A key with the `createDataSet`, `addPieces`, and `schedulePieceRemovals` scopes can store and delete data. Only the owner can deposit, approve operators, or terminate service.
@@ -92,7 +92,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 
 - **Flat commands.** The research proposed separate `files` and `artifacts` groups. Instead, `put`, `get`, `ls`, `inspect`, and `delete` handle both and pick the handling from the input.
 - **Plain-text session key.** `filecoin` stores the key in `config.json` with mode `0600`, not in an OS keychain.
-- **`logout` leaves the key valid on chain.** It deletes the key on this machine but does not revoke it.
+- **`logout` leaves the key valid on chain.** It deletes the key on this machine and returns the console's revoke link, but the owner must sign the revocation.
 - **Local view only.** `filecoin ls` lists only the resources in this machine's state database. It cannot see content stored from another machine, from a cloud sandbox that was reset, or from the app. [Retrieve and verify](https://poc.filecoin.cloud/docs/retrieve#find-stored-content) shows how to find that content by wallet.
 - **Piece removal stops at `removal_pending`.** Nothing tracks when the provider removes the piece.
 - **Slow hashing.** PieceCID hashing takes about 70 seconds per GiB. `put`, `operations resume`, and `get` each hash the whole content ([#5](https://github.com/filecoin-project/agents/issues/5)).
@@ -152,7 +152,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **Two copies.** Store two copies by default in the CLI and the app's upload, as synapse-sdk does.
 - **CLI reads.** Move most CLI reads to filecoin-api. Keep synapse-core chain reads as the fallback.
 - **CLI performance.** Hash PieceCIDs with `@hugomrdias/commp-wasm` ([#5](https://github.com/filecoin-project/agents/issues/5)).
-- **CLI keys.** Store the session key in the OS keychain. Revoke the key on chain from `logout`.
+- **CLI keys.** Store the session key in the OS keychain.
 - **CLI cancellation.** Pass the abort signal to viem once its actions and `fallback` transport accept one. Then remove `withSignal()` and `abortable()` ([#12](https://github.com/filecoin-project/agents/issues/12)).
 - **CLI state.** Track a removal until the provider deletes the piece. Check every file of a folder in `inspect --check`.
 - **Old hosts.** Delete the `fil-api` and `fil-app` Workers and their `hugomrdias.dev` domains from the personal Cloudflare account. Released CLIs and plugins point at `filecoin.cloud` since `filecoin` 0.5.0 and the plugin 0.2.0; only earlier releases still call the old hosts.

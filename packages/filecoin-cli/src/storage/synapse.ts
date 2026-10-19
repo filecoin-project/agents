@@ -5,6 +5,7 @@ import {
   WaitForAddPiecesRejectedError,
   WaitForCreateDataSetRejectedError,
 } from '@filoz/synapse-core/errors'
+import * as Pay from '@filoz/synapse-core/pay'
 import * as PDPVerifier from '@filoz/synapse-core/pdp-verifier'
 import * as Piece from '@filoz/synapse-core/piece'
 import * as SP from '@filoz/synapse-core/sp'
@@ -22,7 +23,7 @@ import * as WarmStorage from '@filoz/synapse-core/warm-storage'
 import { CliError } from 'clipact'
 import { readContract, waitForTransactionReceipt } from 'viem/actions'
 import type { App } from '../app.ts'
-import { buildFundingUrl } from '../auth/login.ts'
+import { buildFundingUrl, targetBalance } from '../auth/login.ts'
 import type { SessionKey } from '../auth/session.ts'
 import { abortable, ErrorCodes, notFound } from '../errors.ts'
 import type { Placement, StorageBackend } from './types.ts'
@@ -138,6 +139,11 @@ export function createSynapseBackend(
         isNewDataSet: existing == null,
         ...existing,
       })
+      // The balance target needs the account's funds, read only for a deposit.
+      const summary =
+        costs.depositNeeded > 0n
+          ? await Pay.getAccountSummary(client, { address: payer })
+          : undefined
       return {
         ready: costs.ready,
         depositNeeded: costs.depositNeeded,
@@ -148,6 +154,14 @@ export function createSynapseBackend(
           consoleUrl: app.consoleUrl,
           network: app.network,
           deposit: costs.depositNeeded,
+          ...(summary
+            ? {
+                balance: targetBalance({
+                  ...summary,
+                  depositNeeded: costs.depositNeeded,
+                }),
+              }
+            : {}),
         }),
       }
     },

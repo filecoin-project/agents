@@ -11,6 +11,7 @@ import {
   notFound,
   operationError,
 } from '../errors.ts'
+import { APPLICATION_SOURCE } from '../source.ts'
 import { transaction } from '../state/db.ts'
 import { createId } from '../state/ids.ts'
 import {
@@ -33,14 +34,14 @@ import type {
 import { type RetrievalUrls, resourceUrls, retrievalUrls } from './urls.ts'
 
 /** Data-set metadata namespacing CLI uploads of raw files. */
-export const FILE_DATA_SET_METADATA = { source: 'filecoin' }
+export const FILE_DATA_SET_METADATA = { source: APPLICATION_SOURCE }
 
 /**
  * Data-set metadata for folders. `withIPFSIndexing` asks Curio to index
  * the CAR so `/ipfs/<rootCid>` retrieval works.
  */
 export const FOLDER_DATA_SET_METADATA = {
-  source: 'filecoin',
+  source: APPLICATION_SOURCE,
   withIPFSIndexing: '',
 }
 
@@ -594,9 +595,12 @@ async function commit(
 function insufficientFunds(quote: UploadQuote): CliError {
   return new CliError({
     code: ErrorCodes.insufficientFunds,
-    message: quote.needsApproval
-      ? 'The payer must deposit USDFC and approve Warm Storage before uploading.'
-      : 'The payer must deposit more USDFC before uploading.',
+    message:
+      quote.depositNeeded === 0n
+        ? 'The payer must approve Warm Storage before uploading.'
+        : quote.needsApproval
+          ? 'The payer must deposit USDFC and approve Warm Storage before uploading.'
+          : 'The payer must deposit more USDFC before uploading.',
     details: {
       fundingUrl: quote.fundingUrl,
       depositNeeded: quote.depositNeeded.toString(),
@@ -605,7 +609,10 @@ function insufficientFunds(quote: UploadQuote): CliError {
     next: [
       {
         by: 'user',
-        description: `Fund the account at ${quote.fundingUrl}`,
+        description:
+          quote.depositNeeded === 0n
+            ? `Approve Warm Storage at ${quote.fundingUrl}`
+            : `Fund the account at ${quote.fundingUrl}`,
       },
     ],
   })

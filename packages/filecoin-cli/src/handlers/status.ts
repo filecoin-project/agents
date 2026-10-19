@@ -4,7 +4,7 @@ import * as WarmStorage from '@filoz/synapse-core/warm-storage'
 import { defineHandler, isCliError } from 'clipact'
 import type { Hex } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
-import { buildFundingUrl } from '../auth/login.ts'
+import { buildFundingUrl, targetBalance } from '../auth/login.ts'
 import { SCOPES } from '../auth/scopes.ts'
 import { resolveCredentials } from '../auth/session.ts'
 import { status } from '../commands/status.ts'
@@ -95,6 +95,10 @@ export default defineHandler(status, async (ctx) => {
               consoleUrl: app.consoleUrl,
               network: app.network,
               deposit: costs.depositNeeded,
+              balance: targetBalance({
+                ...summary,
+                depositNeeded: costs.depositNeeded,
+              }),
             }),
           }),
     },

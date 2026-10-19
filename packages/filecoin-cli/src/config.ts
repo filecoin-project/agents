@@ -9,7 +9,7 @@ export type { Network } from './network.ts'
 
 /**
  * A session key saved by `filecoin login`. `rootAddress` is absent while the
- * login is pending approval in filecoin-app.
+ * login is pending approval in the Filecoin Pay console.
  */
 export const SessionSchema = z.object({
   privateKey: z.string(),

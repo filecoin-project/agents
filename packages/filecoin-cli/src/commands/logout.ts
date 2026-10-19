@@ -14,11 +14,16 @@ export const logout = defineCommand({
     network: z.string(),
     removed: z.boolean(),
     address: z.string().optional().describe('Forgotten session key address'),
+    revokeUrl: z
+      .string()
+      .optional()
+      .describe('Console link that revokes the approved key on chain'),
   }),
   idempotent: true,
-  human: (data) =>
-    data.removed
-      ? `Forgot session key ${data.address} on ${data.network}.`
-      : `No session key on ${data.network}.`,
+  human: (data) => {
+    if (!data.removed) return `No session key on ${data.network}.`
+    const forgot = `Forgot session key ${data.address} on ${data.network}.`
+    return data.revokeUrl ? `${forgot}\nrevoke at: ${data.revokeUrl}` : forgot
+  },
   handler: () => import('../handlers/logout.ts'),
 })

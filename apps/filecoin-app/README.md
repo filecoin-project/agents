@@ -92,18 +92,18 @@ Server routes serve the files that agents use to discover the site:
 
 ## Setup links
 
-`filecoin login`, `filecoin status` and the `put` funding check send the wallet owner to `/dashboard/setup`. The page prefills a request from its search params, and the owner reviews it, changes what they need, and approves each step with their wallet. Each step is its own transaction, so nothing is signed until the owner clicks.
+Browser agents send the wallet owner to `/dashboard/setup`, through a link or the `prepare_setup_request` WebMCP tool. The `filecoin` CLI uses the Filecoin Pay console's setup page, as [its architecture](../../docs/filecoin/architecture.md#login) describes. The page prefills a request from its search params, and the owner reviews it, changes what they need, and approves each step with their wallet. Each step is its own transaction, so nothing is signed until the owner clicks.
 
 | Param | Meaning |
 | --- | --- |
 | `network` | `mainnet` or `calibration`. The page asks to switch the wallet when it is on the other network |
-| `signer` | Session key address to authorize. The private key stays with the tool that made it, such as `filecoin`; the app never sees it |
+| `signer` | Session key address to authorize. The private key stays with the tool that made it; the app never sees it |
 | `name` | Session key name, up to 64 characters, recorded on chain as the authorization's `origin`. Default: `filecoin-app` |
 | `scopes` | Comma-separated scope IDs: `createDataSet`, `addPieces`, `schedulePieceRemovals`, `terminateService`. Default: the first three |
 | `days` | Days until the authorization expires, from 1 to 365. Default: 30 |
 | `deposit` | USDFC to deposit, as a decimal amount |
 
-Every param is optional, and the page drops an invalid value instead of failing. The Warm Storage step appears whenever the wallet has not approved it. `src/lib/setup-request.ts` holds the parsing, and `packages/filecoin-cli/src/auth/login.ts` builds the links.
+Every param is optional, and the page drops an invalid value instead of failing. The Warm Storage step appears whenever the wallet has not approved it. `src/lib/setup-request.ts` holds the parsing.
 
 ### WebMCP
 

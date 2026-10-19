@@ -9,7 +9,7 @@ This document describes how the `filecoin` prototype in [`packages/filecoin-cli`
 - **One command for files and folders.** `filecoin put <path>` stores a file as a raw piece. It packs a folder into a UnixFS CAR.
 - **One copy.** Each upload has one copy on one provider.
 - **synapse-core only.** The CLI calls [synapse-core](https://github.com/FilOzone/synapse-sdk/tree/master/packages/synapse-core) directly and does not use synapse-sdk.
-- **Delegated signing.** A session key signs uploads and removals. The wallet owner approves the key on the [filecoin-app setup page](../../apps/filecoin-app/README.md#setup-links), and the owner's wallet pays for storage.
+- **Delegated signing.** A session key signs uploads and removals. The wallet owner approves the key in the [Filecoin Pay console](https://pay.filecoin.cloud/console), and the owner's wallet pays for storage.
 - **Recoverable operations.** `filecoin` saves each `put` and `delete` as an operation in SQLite before it changes anything outside the machine. `filecoin operations resume` never commits an interrupted operation twice.
 - **Machine contract.** [clipact](https://github.com/hugomrdias/agents/blob/main/packages/clipact/README.md) implements the [CLI guidelines for agents](https://github.com/hugomrdias/agents/blob/main/docs/agent-cli/guidelines.md). It gives `filecoin` one JSON result on stdout, exit codes `0` and `1`, and errors with `retryable` and `next` steps marked `by: "agent"` or `by: "user"`. It also provides an offline `schema` command, confirmation prompts, signal handling, and lazily loaded handlers.
 
@@ -19,7 +19,7 @@ flowchart LR
   cli -- session key signs EIP-712 --> curio[Curio provider<br/>PDP API]
   cli -- reads --> chain[(Filecoin chain<br/>FWSS, PDP, Pay,<br/>SessionKeyRegistry)]
   curio -- submits and pays gas --> chain
-  owner([Wallet owner]) -- approves key, funds account --> app[filecoin-app<br/>/dashboard/setup]
+  owner([Wallet owner]) -- approves key, funds account --> app[Filecoin Pay console<br/>/console]
   app -- login tx --> chain
   cli -- get downloads /piece --> curio
   cli -. returns /get links, inspect --check .-> api[filecoin-api<br/>/get/cid]
@@ -27,7 +27,7 @@ flowchart LR
   cli --- local[(config.json<br/>state.db<br/>staging/)]
 ```
 
-The CLI never sends a chain transaction itself. It signs typed data and reads chain state. Curio submits the data set and piece transactions, and the owner's wallet submits the session key approval from filecoin-app.
+The CLI never sends a chain transaction itself. It signs typed data and reads chain state. Curio submits the data set and piece transactions, and the owner's wallet submits the session key approval from the Filecoin Pay console.
 
 ## Modules
 
@@ -57,7 +57,7 @@ packages/filecoin-cli/
     ├── auth/
     │   ├── scope-ids.ts  scope IDs and the default key name, free of imports
     │   ├── scopes.ts     scope IDs ↔ FWSS permission typehashes
-    │   ├── login.ts      filecoin-app setup links, on-chain approval discovery and polling
+    │   ├── login.ts      Filecoin Pay console links, on-chain approval discovery and polling
     │   ├── session.ts    credentials from input or config; permission check before mutations
     │   └── open-browser.ts
     ├── storage/
@@ -99,7 +99,7 @@ We measured startup on Node 26 as the median of 20 runs after 5 warmups, with a 
       "rootAddress": "0x…",       // owner; absent while approval is pending
       "scopes": ["createDataSet", "addPieces", "schedulePieceRemovals"],
       "name": "filecoin-cli",          // key name requested as the on-chain origin
-      "days": 30,                 // requested expiry; absent means filecoin-app's default
+      "days": 30,                 // requested expiry; absent means the console's default
       "fromBlock": "4112865",     // block when the key was created
       "expiresAt": "1793304656",  // earliest granted scope expiry
       "createdAt": "…"
@@ -110,7 +110,7 @@ We measured startup on Node 26 as the median of 20 runs after 5 warmups, with a 
 
 `filecoin` resolves the network from `--network`, then `FILECOIN_NETWORK`, then the config file, then `calibration`. clipact has no global flags, so `network` is a field of every command's input, in the `account` fragment of `commands/shared.ts`. The field has `FILECOIN_NETWORK` as its environment fallback and no schema default, so the config file still applies when neither is set. Each network has its own session.
 
-`filecoin` takes credentials from `FILECOIN_SESSION_KEY` with `FILECOIN_ROOT_ADDRESS` first, then from the saved session. Both variables are also command input fields. `sessionKey` is a clipact secret. clipact reads it only from the environment, rejects it as a flag, and redacts it in `--debug` and `schema`. `filecoin` reports a pending session as `login_pending`, not as logged out. CI and cloud agents, whose disk does not outlive the session, use the variables with a key exported from filecoin-app's session keys page ([cloud agents](https://poc.filecoin.cloud/agents#cloud-agents)).
+`filecoin` takes credentials from `FILECOIN_SESSION_KEY` with `FILECOIN_ROOT_ADDRESS` first, then from the saved session. Both variables are also command input fields. `sessionKey` is a clipact secret. clipact reads it only from the environment, rejects it as a flag, and redacts it in `--debug` and `schema`. `filecoin` reports a pending session as `login_pending`, not as logged out. CI and cloud agents, whose disk does not outlive the session, use the variables with a key exported from the Filecoin Pay console's session keys page ([cloud agents](https://poc.filecoin.cloud/agents#cloud-agents)).
 
 `FILECOIN_CONFIG_DIR`, `FILECOIN_STATE_DIR`, `FILECOIN_RPC_URL`, `FILECOIN_CONSOLE_URL`, and `FILECOIN_API_URL` are process settings, not command input. `filecoin doctor` shows each resolved value and its source.
 
@@ -122,13 +122,13 @@ We measured startup on Node 26 as the median of 20 runs after 5 warmups, with a 
 sequenceDiagram
   participant CLI as filecoin login
   participant Cfg as config.json
-  participant App as filecoin-app /dashboard/setup
+  participant App as Filecoin Pay /console/setup
   participant Reg as SessionKeyRegistry
 
   CLI->>CLI: generatePrivateKey()
   CLI->>Reg: eth_blockNumber → fromBlock
   CLI->>Cfg: save {privateKey, address, scopes, name, days, fromBlock}
-  CLI->>App: open ?network=&signer=&name=&scopes=&days=
+  CLI->>App: open ?network=&approval=&authorize=&scopes=&name=&days=
   Note over App: owner connects wallet, reviews, and approves
   App->>Reg: login(signer, expiry, typehashes, origin = name)
   loop every 3 s until approved or timeout
@@ -144,11 +144,11 @@ The login code lives in `auth/login.ts` and `handlers/login.ts`. It behaves as f
 - **`filecoin login` saves the key first.** Flags left out keep the saved key's scopes, name, and expiry, so running `filecoin login` again never changes the request. It resumes a pending login with the same key, and it reuses an approved session that already covers the requested scopes. An approved key that lacks some of its own scopes returns `permission_denied`.
 - **Only `--fresh` replaces a live key.** `filecoin login` generates a new key on its own only when there is no saved key or the saved key has expired. When `--scopes` asks for more than a pending key, the CLI first checks the chain for the key's approval and saves it if found. If the key is still pending or valid, the CLI keeps it and returns `session_conflict`. The error's `next` steps are `filecoin login --check` to keep the key and `filecoin login --fresh --scopes …` to replace it. `--fresh` reuses the saved request for any flag left out.
 - **`--check` never generates a key.** It confirms a pending key or reuses an approved one. Without a saved key it returns `auth_required`, and with an expired key, `session_expired`. It rejects `--scopes`, `--name`, `--days`, and `--fresh`.
-- **The approval event names the owner.** In `AuthorizationsUpdated`, `identity` is indexed but `signer` is not. The CLI scans events from `fromBlock` in windows of at most 2,000 blocks and matches the signer locally. The matching event names the owner in `identity`, so the user never enters an address.
-- **Only the address leaves the machine.** The private key stays in `config.json`. The setup link carries the key's address, and filecoin-app never sees or stores the private key. filecoin-app keeps its own browser session keys separately in `localStorage`.
-- **The owner can change the request.** The setup page prefills the name, scopes, and expiry from the link, and the owner can change each one before signing. After the CLI finds the owner, it reads the expiry of each scope. If a requested scope is missing, the CLI still saves the session and returns `permission_denied`. The error lists the missing scopes in `error.details` and has a `by: "user"` step to log in again.
+- **The approval event names the owner.** In `AuthorizationsUpdated`, `identity` is indexed but `signer` is not. The CLI scans events from `fromBlock` in windows of 301 blocks, below the 360-block `eth_getLogs` limit of the Glif RPC, and matches the signer locally. The matching event names the owner in `identity`, so the user never enters an address.
+- **Only the address leaves the machine.** The private key stays in `config.json`. The setup link carries the key's address, and the console never sees or stores the private key.
+- **The owner can change the request.** The console prefills the name, scopes, and expiry from the link, and the owner can change each one before signing. After the CLI finds the owner, it reads the expiry of each scope. If a requested scope is missing, the CLI still saves the session and returns `permission_denied`. The error lists the missing scopes in `error.details` and has a `by: "user"` step to log in again.
 - **Only a human waits.** A human is present when clipact's `mode.interactive` is true and no agent is detected. In that case, login opens the browser and waits for up to 600 seconds, and `ctx.signal` stops the wait. Otherwise, login checks once and returns `login_pending` with two `next` steps. The first is the approval link, `by: "user"`. The second is `filecoin login --check`, `by: "agent"`, to check again. Login never opens a browser for an agent.
-- **The setup link has a fixed format.** The approval link is `/dashboard/setup?network=<net>&signer=<address>&name=<name>&scopes=<ids>&days=<n>`. `filecoin` lowercases the address, so the link never carries a bad mixed-case checksum. The scopes are comma-separated scope IDs. `--name` defaults to `filecoin-cli`, and the page uses 30 days when `--days` is not given. The funding link is `/dashboard/setup?network=<net>&deposit=<decimal>`, and `filecoin status` adds it only when the account needs a deposit. The same page offers the Warm Storage approval when the wallet lacks it. `FILECOIN_CONSOLE_URL` changes the origin.
+- **The console links have a fixed format.** The CLI follows the link contract of the [Filecoin Pay console](https://github.com/FilOzone/filecoin-pay-explorer/blob/staging/apps/explorer/src/utils/setupLink.ts), which filecoin-pin also uses. Login and funding links open `/console/setup`, which lists each requested step with its status read from the chain: the session key, the Warm Storage approval, and the deposit. The approval link is `/console/setup?network=<net>&approval=unlimited&authorize=<address>&scopes=<ids>&name=<name>&days=<n>`. `approval=unlimited` makes the console count Warm Storage as approved only without spending limits, as `getUploadCosts` requires, and offers to remove limits an account already has. `filecoin` lowercases the address, because the console rejects a bad mixed-case checksum. The scopes are comma-separated scope IDs. `--name` defaults to `filecoin-cli`, and the console uses 30 days when `--days` is not given. The funding link is `/console/setup?network=<net>&approval=unlimited&deposit=<decimal>&balance=<decimal>`. `balance` is the available USDFC the account reaches after the deposit, which is available funds plus the deposit minus debt, so the console checks the same target as the CLI. Without `deposit`, the link asks only for the approval. `filecoin status` adds the link only when the account is not ready. `filecoin logout` returns the revoke link, `/console/session-keys?revoke=<address>&network=<net>`, for an approved key. `FILECOIN_CONSOLE_URL` changes the origin.
 - **Only the owner can fund the account.** The session key cannot deposit or approve. `filecoin status` and the `put` funding check return a prefilled funding link instead.
 
 The default scopes are `createDataSet`, `addPieces`, and `schedulePieceRemovals`. `filecoin` never requests `terminateService` by default.
@@ -161,8 +161,10 @@ Before each mutation, `requireSession` rebuilds the key with `fromSecp256k1` and
 
 | Input | Stored bytes | Data set metadata | Piece metadata | Browser URL |
 | --- | --- | --- | --- | --- |
-| File | exact file bytes | `source=filecoin` | `name` | `<api>/get/<pieceCid>?network=<net>&browser=true` |
-| Folder | UnixFS CAR | `source=filecoin`, `withIPFSIndexing` | `name`, `ipfsRootCID` | `<api>/get/<rootCid>?network=<net>&browser=true` |
+| File | exact file bytes | `source=filecoin-cli` | `name` | `<api>/get/<pieceCid>?network=<net>&browser=true` |
+| Folder | UnixFS CAR | `source=filecoin-cli`, `withIPFSIndexing` | `name`, `ipfsRootCID` | `<api>/get/<rootCid>?network=<net>&browser=true` |
+
+`filecoin-cli` comes from `APPLICATION_SOURCE` in `source.ts`, which is also the default session-key name. filecoin-pin uses its own name for both in the same way.
 
 A file becomes a resource of kind `file`, and a folder becomes a resource of kind `folder`. Files and folders go into separate data sets, because data sets match on their exact metadata keys and only CARs belong in an IPFS-indexed data set.
 
@@ -202,7 +204,7 @@ The phase is separate from the operation's execution status, which is `pending`,
    - `--provider` selects the provider directly.
    - Without `--provider`, the CLI calls `fetchProviderSelectionInput` and then `selectProviders({count: 1})`, which prefers an existing data set with matching metadata.
    - The CLI checks each candidate with `SP.ping`. It excludes a provider that does not answer and runs selection again.
-   - `getUploadCosts` then checks the funding. If the account is short, the result is `insufficient_funds` with the filecoin-app funding link as a `by: "user"` step.
+   - `getUploadCosts` then checks the funding. If the account is short, the result is `insufficient_funds` with the console funding link as a `by: "user"` step.
 4. **Upload.** Call `SP.findPiece` first. If the provider does not have the piece yet, call `SP.uploadPieceStreaming` from a file stream. Then call `findPiece({poll: true})` until the provider has parked the piece. Save `stored`. For a file, report the early links as `link` progress.
 5. **Sign.** Choose a random add-pieces `nonce`. For a new data set, also choose a `clientDataSetId`. Sign the payload with `signAddPieces` or `signCreateDataSetAndAddPieces`, with `payee = provider.payee` and `payer = rootAddress`. Save the signed `extraData` and the nonce before sending the commit.
 6. **Send.** Pass the saved `extraData` to `SP.addPieces` or `SP.createDataSetAndAddPieces`. Curio submits the transaction and pays gas. Save `statusUrl` and `transactionHash`. For a folder, report the early links as `link` progress. Then report the transaction hash as `committing` progress while waiting for confirmation, so the user can look it up. clipact repeats that line with the elapsed time. A delete reports its removal transaction hash the same way.
@@ -320,7 +322,7 @@ Errors are clipact `CliError`s with a stable snake_case `code`, a `retryable` fl
 | --- | --- | --- |
 | `auth_required`, `login_pending`, `session_expired`, `permission_denied` | The user logs in or approves scopes | Session checks, login |
 | `session_conflict` | The agent keeps the saved key with `filecoin login --check`, or the user agrees to replace it with `--fresh` | login |
-| `insufficient_funds` | The user funds the account at the filecoin-app funding link | The put funding check |
+| `insufficient_funds` | The user funds the account or approves Warm Storage at the console funding link | The put funding check |
 | `not_found` | The agent lists resources or operations | Lookups |
 | `output_exists` | The agent chooses another path or passes `--force` | get |
 | `operation_failed`, `commit_rejected`, `removal_reverted`, `source_changed`, `staging_missing`, `operation_running` | The agent resumes or inspects the operation | put, delete, resume |
@@ -334,19 +336,19 @@ The tests use the Node test runner and need no network. `pnpm --filter filecoin 
 | Test | Covers |
 | --- | --- |
 | `state.test.ts` | Migrations, including `rm` → `delete` and `artifact` → `folder`, account-scoped queries, cursor paging, checkpoint merging, the lock against a live child process, a second caller in the same process, and a reused PID |
-| `login.test.ts` | The setup link format, scope classification, and the windowed event scan against a fake viem transport |
+| `login.test.ts` | The console link formats, scope classification, and the windowed event scan against a fake viem transport |
 | `login-flow.test.ts` | `filecoin login` in process against a fake JSON-RPC registry. It covers confirming a custom-scope key with bare `filecoin login` and `--check`, saving an approval found before a conflicting request, `session_conflict` for pending and approved keys, subsets, `--fresh` and expired-key renewal keeping the saved request, and partial grants |
 | `pack.test.ts` | A deterministic root CID, byte-exact extraction, no unreferenced blocks, empty directories, rejection of a tampered block, and the dotfile and symlink rules |
-| `jobs.test.ts` | A fake `StorageBackend` that simulates FWSS nonces. It covers new and existing data sets, a lost commit response, a commit that never landed, a rejected commit, a resume of a completed job, insufficient funds, a reverted removal, interruption, dry-run estimates, and the operation ID and resume step on every job error |
+| `jobs.test.ts` | A fake `StorageBackend` that simulates FWSS nonces. It covers new and existing data sets, a lost commit response, a commit that never landed, a rejected commit, a resume of a completed job, insufficient funds, an approval-only funding error, a reverted removal, interruption, dry-run estimates, and the operation ID and resume step on every job error |
 | `urls.test.ts` | The filecoin-api piece and browser URLs for files and folders, an API base path, an unknown chain ID, and the provider URL for `get` |
-| `cli.test.ts` | The whole CLI in process through `clipact/testing` in strict mode. It covers definitions, schemas and aliases, auth and pending-login errors, confirmation, a dry run without a session, and secrets kept out of flags and output |
+| `cli.test.ts` | The whole CLI in process through `clipact/testing` in strict mode. It covers definitions, schemas and aliases, auth and pending-login errors, the logout revoke link, confirmation, a dry run without a session, and secrets kept out of flags and output |
 | `contract.test.ts` | The built binary without a TTY. It covers one JSON line on stdout, exit codes, no leaked session key, and a SIGTERM during a hanging RPC call that gives an `interrupted` result and exit 143 |
 | `app.test.ts` | The signal-bound RPC transport and `abortable()`, including a call that fails after the abort |
 | `config.test.ts` | Network resolution and the `0600` mode of the config file |
 
 ### Calibration run on 2026-09-29
 
-- `login` took about 1 minute 40 seconds through the production pay.filecoin.cloud console, before `filecoin login` moved to filecoin-app. The CLI found all three scopes on chain, with nothing copied.
+- `login` took about 1 minute 40 seconds through the production pay.filecoin.cloud console. The CLI found all three scopes on chain, with nothing copied.
 - `put ./docs` used provider 9 (`calib.ezpdpz.net`) and created data set 39723 with piece 0, in about 1 minute 20 seconds.
 - `get` matched the PieceCID, and the extracted tree was byte-identical to the source.
 - `/ipfs/<rootCid>/` answered HTTP 200 seconds after the commit. Curio returns a CAR for `Accept: */*` and a raw block for any block CID. A raw request with a path gets HTTP 400. A recheck on 2026-10-06 gave the same results.
@@ -372,5 +374,5 @@ The tests use the Node test runner and need no network. `pnpm --filter filecoin 
 - A put that fails before any external change, such as with `insufficient_funds`, stays listed as an incomplete operation.
 - `inspect --check` sends a HEAD request to `urls.piece` and follows filecoin-api's redirect. It does not check each file of a folder or the inbrowser.link page.
 - `urls.piece` and a file's `urls.browser` return 404 until filecoin-api's indexer has the piece.
-- `logout` deletes the local key but does not revoke it on chain. Revoke it on the filecoin-app session keys page.
+- `logout` deletes the local key but does not revoke it on chain. It returns the console's revoke link, which the owner signs.
 - A pending login that resumes much later scans every block since `fromBlock`. `--fresh` starts over with a new key.

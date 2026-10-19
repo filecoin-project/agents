@@ -5,7 +5,7 @@ import { ErrorCodes } from '../errors.ts'
 import { account, accountEnv } from './shared.ts'
 
 /**
- * `filecoin login`: authorize a session key in the filecoin-app dashboard. A human
+ * `filecoin login`: authorize a session key in the Filecoin Pay console. A human
  * waits for approval; an agent gets the approval link back as a
  * `login_pending` error and runs `filecoin login --check` once the user approves.
  * Flags left out keep the saved key's request, and only `--fresh` replaces a
@@ -13,7 +13,7 @@ import { account, accountEnv } from './shared.ts'
  */
 export const login = defineCommand({
   name: 'login',
-  description: 'Authorize a session key in the filecoin-app dashboard',
+  description: 'Authorize a session key in the Filecoin Pay console',
   examples: [
     'filecoin login',
     'filecoin login --scopes createDataSet --scopes addPieces',

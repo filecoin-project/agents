@@ -20,8 +20,24 @@ import { SCOPES, type ScopeId, toPermissions } from './scopes.ts'
 /** Read client for the target chain. */
 type ChainClient = Client<Transport, FilecoinChain>
 
-/** filecoin-app page that reviews session-key, approval, and deposit requests. */
-const SETUP_PATH = '/dashboard/setup'
+/**
+ * Filecoin Pay console page that reviews a CLI's request: a session key, the
+ * Warm Storage approval, and a deposit, each as its own step.
+ */
+const SETUP_PATH = '/console/setup'
+
+/** Filecoin Pay console page that lists and revokes session keys. */
+const SESSION_KEYS_PATH = '/console/session-keys'
+
+/** Start a setup link that requires the unlimited Warm Storage approval. */
+function setupUrl(consoleUrl: string, network: Network): URL {
+  const url = new URL(SETUP_PATH, consoleUrl)
+  url.searchParams.set('network', network)
+  // synapse-core counts Warm Storage as approved only without spending
+  // limits; without this, the console accepts any approval.
+  url.searchParams.set('approval', 'unlimited')
+  return url
+}
 
 /** Options for {@link buildAuthorizeUrl}. */
 export type AuthorizeUrlOptions = {
@@ -32,25 +48,46 @@ export type AuthorizeUrlOptions = {
   network: Network
   /** Session-key name, recorded on chain as the authorization's origin. */
   name?: string | undefined
-  /** Days until the authorization expires; filecoin-app defaults to 30. */
+  /** Days until the authorization expires; the console defaults to 30. */
   days?: number | undefined
 }
 
 /**
- * Build the filecoin-app link that asks the wallet owner to authorize a session
- * key. The owner reviews the prefilled request and signs it with their
- * wallet. The address is lowercased so the link never carries an invalid
- * mixed-case checksum.
+ * Build the Filecoin Pay console setup link that asks the wallet owner to
+ * authorize a session key. The owner reviews the prefilled key, then the Warm
+ * Storage approval and funding steps, and signs each with their wallet. The
+ * address is lowercased because the console rejects an invalid mixed-case
+ * checksum and accepts all-lowercase input.
  *
- * @see ../../../../apps/filecoin-app/src/lib/setup-request.ts
+ * @see https://github.com/FilOzone/filecoin-pay-explorer/blob/staging/apps/explorer/src/utils/setupLink.ts
  */
 export function buildAuthorizeUrl(options: AuthorizeUrlOptions): string {
-  const url = new URL(SETUP_PATH, options.consoleUrl)
-  url.searchParams.set('network', options.network)
-  url.searchParams.set('signer', options.address.toLowerCase())
-  if (options.name) url.searchParams.set('name', options.name)
+  const url = setupUrl(options.consoleUrl, options.network)
+  url.searchParams.set('authorize', options.address.toLowerCase())
   url.searchParams.set('scopes', options.scopes.join(','))
+  if (options.name) url.searchParams.set('name', options.name)
   if (options.days != null) url.searchParams.set('days', String(options.days))
+  return url.toString()
+}
+
+/** Options for {@link buildRevokeUrl}. */
+export type RevokeUrlOptions = {
+  consoleUrl: string
+  /** Session key address to revoke. */
+  address: Address
+  network: Network
+}
+
+/**
+ * Build the Filecoin Pay console link that asks the wallet owner to revoke a
+ * session key on chain.
+ *
+ * @see https://github.com/FilOzone/filecoin-pay-explorer/blob/staging/apps/explorer/src/utils/authorizeParam.ts
+ */
+export function buildRevokeUrl(options: RevokeUrlOptions): string {
+  const url = new URL(SESSION_KEYS_PATH, options.consoleUrl)
+  url.searchParams.set('revoke', options.address.toLowerCase())
+  url.searchParams.set('network', options.network)
   return url.toString()
 }
 
@@ -58,27 +95,52 @@ export function buildAuthorizeUrl(options: AuthorizeUrlOptions): string {
 export type FundingUrlOptions = {
   consoleUrl: string
   network: Network
-  /** USDFC base units to deposit; omit to open the page without a prefill. */
+  /** USDFC base units to deposit; omit or pass 0 to ask only for the approval. */
   deposit?: bigint
+  /**
+   * USDFC base units the payer needs available once funded, so the console
+   * checks the same target as the CLI. Sent only with a deposit.
+   */
+  balance?: bigint
 }
 
 /**
- * Build the filecoin-app link that prefills a USDFC deposit. The page also offers
- * the Warm Storage (FWSS) operator approval when the wallet lacks it.
+ * Build the Filecoin Pay console setup link that asks for the unlimited Warm
+ * Storage approval and, when `deposit` is positive, a USDFC deposit. When the
+ * wallet holds the USDFC, the console approves and deposits in one
+ * transaction. Without a deposit the link asks only for the approval.
  *
- * @see ../../../../apps/filecoin-app/src/lib/setup-request.ts
+ * @see https://github.com/FilOzone/filecoin-pay-explorer/blob/staging/apps/explorer/src/utils/setupLink.ts
  */
 export function buildFundingUrl(options: FundingUrlOptions): string {
-  const url = new URL(SETUP_PATH, options.consoleUrl)
-  url.searchParams.set('network', options.network)
+  const url = setupUrl(options.consoleUrl, options.network)
   if (options.deposit != null && options.deposit > 0n) {
     url.searchParams.set('deposit', formatUsdfc(options.deposit))
+    if (options.balance != null && options.balance > 0n) {
+      url.searchParams.set('balance', formatUsdfc(options.balance))
+    }
   }
   return url.toString()
 }
 
-/** Largest block range scanned by one `eth_getLogs` request. */
-export const LOG_WINDOW = 2000n
+/**
+ * The available USDFC an account reaches after depositing `depositNeeded`.
+ * A deposit settles debt first, so the debt comes off the target.
+ */
+export function targetBalance(account: {
+  availableFunds: bigint
+  debt: bigint
+  depositNeeded: bigint
+}): bigint {
+  const target = account.availableFunds + account.depositNeeded - account.debt
+  return target > 0n ? target : 0n
+}
+
+/**
+ * Block span of one `eth_getLogs` request, below Glif's limit of 360 blocks
+ * per request (`to - from + 1`).
+ */
+export const LOG_WINDOW = 300n
 
 /** Options for {@link findAuthorizer}. */
 export type FindAuthorizerOptions = {

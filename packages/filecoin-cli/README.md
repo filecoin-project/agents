@@ -25,7 +25,7 @@ filecoin --help
 filecoin login
 ```
 
-`filecoin login` generates a session key and saves it locally. It then opens the [filecoin-app](https://poc.filecoin.cloud) setup page with the key's address. The wallet owner reviews the request there and approves it with their wallet. The private key never leaves the machine, and the CLI finds the approval on chain, so there is nothing to copy back.
+`filecoin login` generates a session key and saves it locally. It then opens the [Filecoin Pay console](https://pay.filecoin.cloud/console)'s setup page with the key's address. The wallet owner reviews the request there and approves it with their wallet. The private key never leaves the machine, and the CLI finds the approval on chain, so there is nothing to copy back.
 
 By default, `filecoin login` requests the `createDataSet`, `addPieces`, and `schedulePieceRemovals` scopes for 30 days, under the name `filecoin-cli`. To request other scopes, repeat `--scopes`. `--name` sets the name the owner sees, which is recorded on chain, and `--days` sets the expiry. The owner can change all three on the page before approving.
 
@@ -39,9 +39,9 @@ For CI, set `FILECOIN_SESSION_KEY` and `FILECOIN_ROOT_ADDRESS` instead of runnin
 
 ## Check the account
 
-The session key cannot fund the account. `filecoin status` reports the expiry of each scope, the USDFC funds, and the Warm Storage (FWSS) approval. When the account needs a deposit, `filecoin status` also returns a prefilled funding link to the filecoin-app setup page.
+The session key cannot fund the account. `filecoin status` reports the expiry of each scope, the USDFC funds, and the Warm Storage (FWSS) approval. When the account needs a deposit or the Warm Storage approval, `filecoin status` also returns a funding link to the console's setup page, which asks for both.
 
-`filecoin doctor` shows the network, RPC, filecoin-app origin (`console`), filecoin-api origin (`api`), and state directory that `filecoin` resolved, with the source of each value. It also checks the database and the RPC.
+`filecoin doctor` shows the network, RPC, Filecoin Pay console origin (`console`), filecoin-api origin (`api`), and state directory that `filecoin` resolved, with the source of each value. It also checks the database and the RPC.
 
 ## Store and retrieve
 
@@ -113,7 +113,7 @@ Ctrl+C, SIGTERM, or SIGHUP stops the work at the next step. `filecoin` returns a
 | --- | --- |
 | `auth_required`, `login_pending`, `session_expired`, `permission_denied` | The user must log in or approve scopes |
 | `session_conflict` | `filecoin login --scopes` would replace a pending or valid key. Keep it with `filecoin login --check`, or replace it with `--fresh` |
-| `insufficient_funds` | The user must fund the account at the filecoin-app link |
+| `insufficient_funds` | The user must fund the account or approve Warm Storage at the console link |
 | `not_found` | No resource, operation, provider, or piece has that name |
 | `output_exists` | The `filecoin get` output path exists. Pass `--force` to overwrite it |
 | `operation_failed`, `commit_rejected`, `removal_reverted`, `source_changed`, `staging_missing`, `operation_running` | A put or delete stopped. Follow the `next` steps |
@@ -130,11 +130,11 @@ Ctrl+C, SIGTERM, or SIGHUP stops the work at the next step. `filecoin` returns a
 | `FILECOIN_CONFIG_DIR` | Config directory. Default: the platform config directory for `filecoin` |
 | `FILECOIN_STATE_DIR` | SQLite state and staged CARs. Default: the platform data directory for `filecoin` |
 | `FILECOIN_RPC_URL` | RPC endpoint. Default: synapse-core's fallback transport for the chain |
-| `FILECOIN_CONSOLE_URL` | filecoin-app origin for approval and funding links, such as `http://localhost:5173` for a local app. Default: `https://poc.filecoin.cloud` |
+| `FILECOIN_CONSOLE_URL` | Filecoin Pay console origin for approval, funding, and revoke links, such as `https://filecoin-pay-explorer-staging.vercel.app` for staging. Default: `https://pay.filecoin.cloud` |
 | `FILECOIN_API_URL` | filecoin-api origin for retrieval links, such as `http://localhost:8787` for a local API. Default: `https://api.filecoin.cloud` |
 | `FILECOIN_OUTPUT`, `FILECOIN_AGENT` | Override clipact's output mode and agent detection |
 
-The prototype saves the session private key in the config file with mode 0600, so only its owner can read it. `filecoin logout` deletes the local key. The key stays authorized on chain until it expires or you revoke it on the filecoin-app session keys page.
+The prototype saves the session private key in the config file with mode 0600, so only its owner can read it. `filecoin logout` deletes the local key. The key stays authorized on chain until it expires or the owner revokes it, so `logout` returns the console's revoke link for an approved key.
 
 ## Development
 
