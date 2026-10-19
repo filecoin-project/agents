@@ -5,8 +5,9 @@ import type { AddressInfo } from 'node:net'
 import { after, test } from 'node:test'
 import { setImmediate } from 'node:timers/promises'
 import { custom, http } from 'viem'
-import { withSignal } from '../src/app.ts'
+import { linkTagsDisabled, withSignal } from '../src/app.ts'
 import { abortable } from '../src/errors.ts'
+import { driverOf } from '../src/handlers/context.ts'
 
 /** Collect unhandled rejections while `fn` runs and one macrotask after. */
 async function unhandledDuring(fn: () => Promise<void>): Promise<unknown[]> {
@@ -91,4 +92,18 @@ test('abortable handles a call that fails after the abort', async () => {
     fail(new Error('late failure'))
   })
   assert.deepEqual(unhandled, [])
+})
+
+test('linkTagsDisabled honors FILECOIN_TELEMETRY_DISABLED and DO_NOT_TRACK', () => {
+  assert.equal(linkTagsDisabled({}), false)
+  assert.equal(linkTagsDisabled({ DO_NOT_TRACK: '0' }), false)
+  assert.equal(linkTagsDisabled({ DO_NOT_TRACK: '1' }), true)
+  assert.equal(linkTagsDisabled({ DO_NOT_TRACK: 'TRUE' }), true)
+  assert.equal(linkTagsDisabled({ FILECOIN_TELEMETRY_DISABLED: 'true' }), true)
+})
+
+test('driverOf names the agent, a human, or automation', () => {
+  assert.equal(driverOf({ agent: 'codex', interactive: false }), 'codex')
+  assert.equal(driverOf({ agent: false, interactive: true }), 'human')
+  assert.equal(driverOf({ agent: false, interactive: false }), 'automation')
 })

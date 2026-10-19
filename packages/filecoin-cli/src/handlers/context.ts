@@ -1,4 +1,4 @@
-import type { Context } from 'clipact'
+import type { Context, Mode } from 'clipact'
 import { type App, createApp } from '../app.ts'
 import type { ScopeId } from '../auth/scopes.ts'
 import {
@@ -31,15 +31,34 @@ export type JobReporter = Pick<
   'signal' | 'progress' | 'checkpoint'>
 
 /**
- * Build the invocation context from a handler's account input and signal.
- * Shared setup is a plain function each handler calls; clipact has no
+ * Who runs the CLI, for console link tags: the detected agent's name, `human`
+ * at an interactive terminal, or `automation` otherwise (CI, a pipe).
+ */
+export function driverOf(mode: Pick<Mode, 'agent' | 'interactive'>): string {
+  if (mode.agent) return mode.agent
+  return mode.interactive ? 'human' : 'automation'
+}
+
+/**
+ * Build the invocation context from a handler's account input, signal, and
+ * mode. Shared setup is a plain function each handler calls; clipact has no
  * middleware.
  *
  * @see https://github.com/hugomrdias/agents/blob/main/docs/agent-cli/framework-design.md#defining-commands
  */
-export function appFor(ctx: { input: AccountInput; signal: AbortSignal }): App {
+export function appFor(ctx: {
+  input: AccountInput
+  signal: AbortSignal
+  mode: Mode
+}): App {
   const { network, sessionKey, rootAddress } = ctx.input
-  return createApp({ network, sessionKey, rootAddress, signal: ctx.signal })
+  return createApp({
+    network,
+    sessionKey,
+    rootAddress,
+    signal: ctx.signal,
+    driver: driverOf(ctx.mode),
+  })
 }
 
 /**

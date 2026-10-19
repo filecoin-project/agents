@@ -62,6 +62,7 @@ export function resolveCredentials(app: App): SessionCredentials | undefined {
         network: app.network,
         name: session.name,
         days: session.days,
+        tags: app.linkTags,
       })
     )
   }

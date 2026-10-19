@@ -14,6 +14,7 @@ import {
 } from 'viem'
 import { getBlockNumber, getLogs } from 'viem/actions'
 import type { Network } from '../network.ts'
+import { APPLICATION_SOURCE } from '../source.ts'
 import { formatUsdfc } from '../usdfc.ts'
 import { SCOPES, type ScopeId, toPermissions } from './scopes.ts'
 
@@ -28,6 +29,37 @@ const SETUP_PATH = '/console/setup'
 
 /** Filecoin Pay console page that lists and revokes session keys. */
 const SESSION_KEYS_PATH = '/console/session-keys'
+
+/**
+ * Who runs the CLI, for the console's link analytics. Without tags, as when
+ * the user opts out, a link carries no `utm_*` parameters.
+ */
+export type LinkTags = {
+  /** An agent name, `human`, or `automation`; sent as `utm_content`. */
+  driver?: string | undefined
+}
+
+/** The flow that printed a console link, sent as `utm_term`. */
+type LinkFlow = 'login' | 'fund' | 'revoke'
+
+/**
+ * Add the console's analytics tags to `url`: `utm_source=filecoin-cli`,
+ * `utm_medium=cli`, the flow as `utm_term`, and the driver as `utm_content`.
+ * The values match filecoin-pin's, so the console can compare the two CLIs.
+ * `utm_campaign` is left for marketing campaigns.
+ *
+ * @see https://github.com/filecoin-project/filecoin-pin/blob/master/src/core/session/console-url.ts
+ * @see https://github.com/FilOzone/filecoin-pay-explorer/blob/staging/apps/explorer/src/utils/funnel-analytics.ts
+ */
+function tagged(url: URL, tags: LinkTags | undefined, flow: LinkFlow): string {
+  if (tags) {
+    url.searchParams.set('utm_source', APPLICATION_SOURCE)
+    url.searchParams.set('utm_medium', 'cli')
+    url.searchParams.set('utm_term', flow)
+    if (tags.driver) url.searchParams.set('utm_content', tags.driver)
+  }
+  return url.toString()
+}
 
 /**
  * Start a setup link that requires the unlimited Warm Storage approval.
@@ -55,6 +87,8 @@ export type AuthorizeUrlOptions = {
   name?: string | undefined
   /** Days until the authorization expires; the console defaults to 30. */
   days?: number | undefined
+  /** Analytics tags; leave out for an untagged link. */
+  tags?: LinkTags | undefined
 }
 
 /**
@@ -72,7 +106,7 @@ export function buildAuthorizeUrl(options: AuthorizeUrlOptions): string {
   url.searchParams.set('scopes', options.scopes.join(','))
   if (options.name) url.searchParams.set('name', options.name)
   if (options.days != null) url.searchParams.set('days', String(options.days))
-  return url.toString()
+  return tagged(url, options.tags, 'login')
 }
 
 /** Options for {@link buildRevokeUrl}. */
@@ -81,6 +115,8 @@ export type RevokeUrlOptions = {
   /** Session key address to revoke. */
   address: Address
   network: Network
+  /** Analytics tags; leave out for an untagged link. */
+  tags?: LinkTags | undefined
 }
 
 /**
@@ -93,7 +129,7 @@ export function buildRevokeUrl(options: RevokeUrlOptions): string {
   const url = new URL(SESSION_KEYS_PATH, options.consoleUrl)
   url.searchParams.set('revoke', options.address.toLowerCase())
   url.searchParams.set('network', options.network)
-  return url.toString()
+  return tagged(url, options.tags, 'revoke')
 }
 
 /** Options for {@link buildFundingUrl}. */
@@ -107,6 +143,8 @@ export type FundingUrlOptions = {
    * checks the same target as the CLI. Sent only with a deposit.
    */
   balance?: bigint
+  /** Analytics tags; leave out for an untagged link. */
+  tags?: LinkTags | undefined
 }
 
 /**
@@ -125,7 +163,7 @@ export function buildFundingUrl(options: FundingUrlOptions): string {
       url.searchParams.set('balance', formatUsdfc(options.balance))
     }
   }
-  return url.toString()
+  return tagged(url, options.tags, 'fund')
 }
 
 /**

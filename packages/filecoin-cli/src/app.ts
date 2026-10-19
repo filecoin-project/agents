@@ -7,6 +7,7 @@ import {
 } from '@filoz/synapse-core/chains'
 import { getTransport } from '@filoz/synapse-core/client'
 import { type Client, createPublicClient, http, type Transport } from 'viem'
+import type { LinkTags } from './auth/login.ts'
 import {
   type Config,
   type Network,
@@ -35,6 +36,8 @@ export type App = {
   credentials: { sessionKey?: string; rootAddress?: string }
   /** Filecoin Pay console origin for session-key approval and funding links. */
   consoleUrl: string
+  /** Analytics tags for console links; `undefined` when the user opted out. */
+  linkTags: LinkTags | undefined
   /** filecoin-api origin for retrieval links. */
   apiUrl: string
   /** Aborted on SIGINT, SIGTERM, or SIGHUP; cancels chain and provider calls. */
@@ -61,6 +64,24 @@ export type CreateAppOptions = {
   env?: NodeJS.ProcessEnv
   /** The handler's signal; every RPC request rejects once it aborts. */
   signal?: AbortSignal
+  /** Who runs the CLI, for console link tags: an agent name, `human`, or `automation`. */
+  driver?: string | undefined
+}
+
+/** Returns `true` for `1` or `true`, in any case. */
+function isTrue(value: string | undefined): boolean {
+  return value === '1' || value?.toLowerCase() === 'true'
+}
+
+/**
+ * Whether the user opted out of console link tags with
+ * `FILECOIN_TELEMETRY_DISABLED` or the `DO_NOT_TRACK` convention, as
+ * filecoin-pin's telemetry switch does.
+ *
+ * @see https://github.com/filecoin-project/filecoin-pin/blob/master/src/read-telemetry-config-from-env.ts
+ */
+export function linkTagsDisabled(env: NodeJS.ProcessEnv): boolean {
+  return isTrue(env.FILECOIN_TELEMETRY_DISABLED) || isTrue(env.DO_NOT_TRACK)
 }
 
 /**
@@ -112,6 +133,7 @@ export function createApp(options: CreateAppOptions = {}): App {
       rootAddress: options.rootAddress,
     },
     consoleUrl: env.FILECOIN_CONSOLE_URL ?? DEFAULT_CONSOLE_URL,
+    linkTags: linkTagsDisabled(env) ? undefined : { driver: options.driver },
     apiUrl: env.FILECOIN_API_URL ?? DEFAULT_API_URL,
     signal: options.signal,
     transport,

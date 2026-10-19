@@ -212,6 +212,41 @@ test('logout of an approved key returns the console revoke link', async () => {
     '0x2222222222222222222222222222222222222222'
   )
   assert.equal(url.searchParams.get('network'), network)
+  assert.equal(url.searchParams.get('utm_source'), 'filecoin-cli')
+  assert.equal(url.searchParams.get('utm_term'), 'revoke')
+  assert.equal(url.searchParams.get('utm_content'), 'automation')
+})
+
+test('console links name the agent and drop their tags on opt-out', async () => {
+  const network = 'mainnet'
+  openConfig().set(`sessions.${network}`, {
+    privateKey: SESSION_KEY,
+    address: '0x2222222222222222222222222222222222222222',
+    scopes: ['addPieces'],
+    fromBlock: '1',
+    createdAt: new Date(0).toISOString(),
+  })
+  /** The pending session's approval link from `filecoin status`. */
+  const approvalLink = async (env: Record<string, string> = {}) => {
+    const { data } = await run(['status', '--network', network], env)
+    return new URL(String((data.session as { url: string }).url))
+  }
+  const tagged = await approvalLink({ AI_AGENT: 'claude-code' })
+  assert.equal(tagged.searchParams.get('utm_term'), 'login')
+  assert.equal(tagged.searchParams.get('utm_content'), 'claude-code')
+
+  // Process settings come from the real environment, like the console URL.
+  process.env.DO_NOT_TRACK = '1'
+  try {
+    const untagged = await approvalLink()
+    assert.deepEqual(
+      [...untagged.searchParams.keys()].filter((key) => key.startsWith('utm_')),
+      []
+    )
+  } finally {
+    delete process.env.DO_NOT_TRACK
+    openConfig().delete(`sessions.${network}`)
+  }
 })
 
 test('logout without a session is a no-op', async () => {

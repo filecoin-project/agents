@@ -132,6 +132,7 @@ Ctrl+C, SIGTERM, or SIGHUP stops the work at the next step. `filecoin` returns a
 | `FILECOIN_RPC_URL` | RPC endpoint. Default: synapse-core's fallback transport for the chain |
 | `FILECOIN_CONSOLE_URL` | Filecoin Pay console origin for approval, funding, and revoke links, such as `https://filecoin-pay-explorer-staging.vercel.app` for staging. Default: `https://pay.filecoin.cloud` |
 | `FILECOIN_API_URL` | filecoin-api origin for retrieval links, such as `http://localhost:8787` for a local API. Default: `https://api.filecoin.io` |
+| `FILECOIN_TELEMETRY_DISABLED`, `DO_NOT_TRACK` | `true` or `1` drops the `utm_*` tags from console links. The tags tell the console's analytics that the visit came from the `filecoin` CLI, which flow printed the link, and which agent ran it, if any |
 | `FILECOIN_OUTPUT`, `FILECOIN_AGENT` | Override clipact's output mode and agent detection |
 
 The prototype saves the session private key in the config file with mode 0600, so only its owner can read it. `filecoin logout` deletes the local key. The key stays authorized on chain until it expires or the owner revokes it, so `logout` returns the console's revoke link for an approved key.

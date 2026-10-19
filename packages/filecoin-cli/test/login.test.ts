@@ -103,6 +103,51 @@ test('buildFundingUrl without a deposit asks only for the approval', () => {
   )
 })
 
+test('console links carry the analytics tags of their flow', () => {
+  const tags = { driver: 'claude-code' }
+  const links = {
+    login: buildAuthorizeUrl({
+      consoleUrl: 'https://pay.example',
+      address: SIGNER,
+      scopes: ['addPieces'],
+      network: 'mainnet',
+      tags,
+    }),
+    fund: buildFundingUrl({
+      consoleUrl: 'https://pay.example',
+      network: 'mainnet',
+      deposit: parseUnits('1', 18),
+      tags,
+    }),
+    revoke: buildRevokeUrl({
+      consoleUrl: 'https://pay.example',
+      address: SIGNER,
+      network: 'mainnet',
+      tags,
+    }),
+  }
+  for (const [flow, link] of Object.entries(links)) {
+    const params = new URL(link).searchParams
+    assert.equal(params.get('utm_source'), 'filecoin-cli')
+    assert.equal(params.get('utm_medium'), 'cli')
+    assert.equal(params.get('utm_term'), flow)
+    assert.equal(params.get('utm_content'), 'claude-code')
+    assert.equal(params.has('utm_campaign'), false)
+  }
+})
+
+test('console links without a driver leave out utm_content', () => {
+  const params = new URL(
+    buildFundingUrl({
+      consoleUrl: 'https://pay.example',
+      network: 'mainnet',
+      tags: {},
+    })
+  ).searchParams
+  assert.equal(params.get('utm_term'), 'fund')
+  assert.equal(params.has('utm_content'), false)
+})
+
 test('targetBalance takes the debt a deposit settles first', () => {
   const unit = 10n ** 18n
   assert.equal(
