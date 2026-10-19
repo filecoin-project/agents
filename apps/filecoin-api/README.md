@@ -64,6 +64,8 @@ Resolved providers are cached per network and CID in the [Workers Cache API](htt
 
 The MCP server offers one tool per data route: `get_status`, `list_providers`, `get_provider`, `list_data_sets`, `get_data_set`, `list_data_set_pieces`, `get_piece`, `list_pieces`, `list_rails`, `get_rail`, `list_rail_settlements`, `list_session_keys` and `list_session_key_events`. Each of these requires a `network` argument.
 
+The server reports itself as `filecoin-api`, titled `Filecoin`, with the release version from [`src/app.ts`](src/app.ts), which release-please updates along with `openapi.json`. Every tool has a display `title`, such as `List storage providers`, and the `readOnlyHint`, `idempotentHint` and `openWorldHint` annotations. Clients match permission rules on the tool names, so renaming a tool breaks them; change its `title` instead.
+
 `search_docs` searches the Filecoin docs at [docs.filecoin.io](https://docs.filecoin.io). It forwards the `query` to the `searchDocumentation` tool of GitBook's [hosted MCP server](https://gitbook.com/docs/ai-for-your-readers/mcp-servers-for-published-docs) for the site, `https://docs.filecoin.io/~gitbook/mcp`, with one stateless `tools/call`, and returns GitBook's page excerpts unchanged. [`src/mcp/docs-search.ts`](src/mcp/docs-search.ts) caches results in `caches.default`, keyed by the query trimmed, with whitespace collapsed and lowercased. A result is fresh for an hour and served stale for up to 24 hours while it is refreshed in the background. Failed searches are not cached and return a `docs_unavailable` tool error. The root span gets a `filecoin.docs_search.cache` attribute: `hit`, `stale` or `miss`.
 
 ## Development

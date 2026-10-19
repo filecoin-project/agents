@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { VERSION } from '../src/app.ts'
 import { rows, testApp } from './helpers.ts'
 
 function rpc(method: string, params: unknown = {}, id = 1) {
@@ -29,16 +30,25 @@ describe('mcp', () => {
     )
     expect(res.status).toBe(200)
     const body = (await res.json()) as RpcResult<{
-      serverInfo: { name: string }
+      serverInfo: { name: string; title: string; version: string }
     }>
-    expect(body.result.serverInfo.name).toBe('filecoin-api')
+    expect(body.result.serverInfo).toEqual({
+      name: 'filecoin-api',
+      title: 'Filecoin',
+      version: VERSION,
+    })
   })
 
   it('lists every tool, with a network argument on data tools', async () => {
     const { request } = testApp()
     const res = await request('/mcp', rpc('tools/list'))
     const body = (await res.json()) as RpcResult<{
-      tools: { name: string; inputSchema: { required?: string[] } }[]
+      tools: {
+        name: string
+        title?: string
+        annotations?: Record<string, boolean>
+        inputSchema: { required?: string[] }
+      }[]
     }>
     const names = body.result.tools.map((t) => t.name)
     expect(names.sort()).toEqual(
@@ -60,6 +70,12 @@ describe('mcp', () => {
       ].sort()
     )
     for (const tool of body.result.tools) {
+      expect(tool.title).toMatch(/^[A-Z][a-z]/)
+      expect(tool.annotations).toEqual({
+        readOnlyHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      })
       if (tool.name === 'search_docs') continue
       expect(tool.inputSchema.required).toContain('network')
     }
