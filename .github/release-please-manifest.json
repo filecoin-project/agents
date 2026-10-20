@@ -2,6 +2,6 @@
   "packages/filecoin-cli": "0.5.2",
   "packages/filecoin-api-client": "0.0.0",
   "apps/filecoin-api": "0.4.0",
-  "apps/filecoin-app": "0.6.0",
+  "apps/filecoin-app": "0.7.0",
   "plugins/filecoin": "0.2.0"
 }
