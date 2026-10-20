@@ -43,6 +43,7 @@ function authorizeUrl(app: App, session: StoredSession): string {
     network: app.network,
     name: session.name,
     days: session.days,
+    tags: app.linkTags,
   })
 }
 

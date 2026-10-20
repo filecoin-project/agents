@@ -24,6 +24,7 @@ export default defineHandler(logout, async (ctx) => {
             consoleUrl: app.consoleUrl,
             address: session.address as Address,
             network: app.network,
+            tags: app.linkTags,
           }),
         }
       : {}),

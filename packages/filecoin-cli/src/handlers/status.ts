@@ -94,6 +94,7 @@ export default defineHandler(status, async (ctx) => {
             fundingUrl: buildFundingUrl({
               consoleUrl: app.consoleUrl,
               network: app.network,
+              tags: app.linkTags,
               deposit: costs.depositNeeded,
               balance: targetBalance({
                 ...summary,

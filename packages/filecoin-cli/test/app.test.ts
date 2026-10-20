@@ -7,6 +7,7 @@ import { setImmediate } from 'node:timers/promises'
 import { custom, http } from 'viem'
 import { withSignal } from '../src/app.ts'
 import { abortable } from '../src/errors.ts'
+import { driverOf } from '../src/handlers/context.ts'
 
 /** Collect unhandled rejections while `fn` runs and one macrotask after. */
 async function unhandledDuring(fn: () => Promise<void>): Promise<unknown[]> {
@@ -91,4 +92,10 @@ test('abortable handles a call that fails after the abort', async () => {
     fail(new Error('late failure'))
   })
   assert.deepEqual(unhandled, [])
+})
+
+test('driverOf names the agent, a human, or automation', () => {
+  assert.equal(driverOf({ agent: 'codex', interactive: false }), 'codex')
+  assert.equal(driverOf({ agent: false, interactive: true }), 'human')
+  assert.equal(driverOf({ agent: false, interactive: false }), 'automation')
 })

@@ -7,6 +7,7 @@ import {
 } from '@filoz/synapse-core/chains'
 import { getTransport } from '@filoz/synapse-core/client'
 import { type Client, createPublicClient, http, type Transport } from 'viem'
+import type { LinkTags } from './auth/login.ts'
 import { type Config, type Network, resolveNetwork } from './config.ts'
 import { abortable } from './errors.ts'
 import {
@@ -28,6 +29,8 @@ export type App = {
   credentials: { sessionKey?: string; rootAddress?: string }
   /** Filecoin Pay console origin for session-key approval and funding links. */
   consoleUrl: string
+  /** Analytics tags for console links; `undefined` when the user opted out. */
+  linkTags: LinkTags | undefined
   /** filecoin-api origin for retrieval links. */
   apiUrl: string
   /** `FILECOIN_RPC_URL`, which replaces the chain's fallback transport. */
@@ -64,6 +67,8 @@ export type CreateAppOptions = Partial<GlobalSettings> & {
   rootAddress?: string | undefined
   /** The handler's signal; every RPC request rejects once it aborts. */
   signal?: AbortSignal
+  /** Analytics tags for console links; leave out for untagged links. */
+  linkTags?: LinkTags | undefined
 }
 
 /**
@@ -110,6 +115,7 @@ export function createApp(options: CreateAppOptions): App {
       rootAddress: options.rootAddress,
     },
     consoleUrl: options.consoleUrl ?? DEFAULT_CONSOLE_URL,
+    linkTags: options.linkTags,
     apiUrl: options.apiUrl ?? DEFAULT_API_URL,
     rpcUrl: options.rpcUrl,
     dir,

@@ -153,6 +153,7 @@ export function createSynapseBackend(
         fundingUrl: buildFundingUrl({
           consoleUrl: app.consoleUrl,
           network: app.network,
+          tags: app.linkTags,
           deposit: costs.depositNeeded,
           ...(summary
             ? {

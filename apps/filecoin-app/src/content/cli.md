@@ -90,6 +90,7 @@ Each error has a stable `code`, and `filecoin schema <command>` lists the codes 
 | `FILECOIN_RPC_URL` | RPC endpoint |
 | `FILECOIN_CONSOLE_URL` | Filecoin Pay console origin for approval, funding, and revoke links. Default: `https://pay.filecoin.cloud` |
 | `FILECOIN_API_URL` | filecoin-api origin for retrieval links. Default: `https://api.filecoin.io` |
+| `DO_NOT_TRACK`, `FILECOIN_TELEMETRY` | `DO_NOT_TRACK=1` or `FILECOIN_TELEMETRY=0` drops the `utm_*` tags from console links, as clipact's telemetry opt-outs. The tags tell the console's analytics that the visit came from the `filecoin` CLI, which flow printed the link, and which agent ran it, if any |
 | `FILECOIN_OUTPUT`, `FILECOIN_AGENT` | Override the output mode and agent detection |
 
 The prototype saves the session key in `config.json` in that folder, readable only by its owner. `filecoin logout` deletes the local key. The key stays authorized on chain until it expires or you revoke it on the console's [session keys page](https://pay.filecoin.cloud/console/session-keys). `filecoin logout` returns a link that opens the revocation for an approved key.

@@ -1,4 +1,4 @@
-import type { Context } from 'clipact'
+import type { Context, Mode } from 'clipact'
 import { type App, createApp } from '../app.ts'
 import type { ScopeId } from '../auth/scopes.ts'
 import {
@@ -33,8 +33,19 @@ export type JobReporter = Pick<
   'signal' | 'progress' | 'checkpoint'>
 
 /**
+ * Who runs the CLI, for console link tags: the detected agent's name, `human`
+ * at an interactive terminal, or `automation` otherwise (CI, a pipe).
+ */
+export function driverOf(mode: Pick<Mode, 'agent' | 'interactive'>): string {
+  if (mode.agent) return mode.agent
+  return mode.interactive ? 'human' : 'automation'
+}
+
+/**
  * Build the invocation context from a handler's account input, the CLI's
- * globals, its folder and store, and the signal. Shared setup is a plain
+ * globals, its folder and store, and the signal. Console links get tags
+ * naming the driver unless the user opted out of telemetry with
+ * `DO_NOT_TRACK` or `FILECOIN_TELEMETRY=0`. Shared setup is a plain
  * function each handler calls; clipact has no middleware. The folder is
  * created with mode 0700 unless `create` is false, as for `doctor`, which
  * reports a folder it cannot create instead of failing.
@@ -42,6 +53,7 @@ export type JobReporter = Pick<
  * @see https://github.com/hugomrdias/agents/blob/main/docs/agent-cli/framework-design.md#defining-commands
  * @see https://github.com/hugomrdias/agents/tree/main/packages/clipact#globals
  * @see https://github.com/hugomrdias/agents/tree/main/packages/clipact#storage
+ * @see https://github.com/hugomrdias/agents/tree/main/packages/clipact#telemetry
  */
 export async function appFor(
   // biome-ignore lint/suspicious/noExplicitAny: any command's context
@@ -49,11 +61,16 @@ export async function appFor(
   { create = true }: { create?: boolean } = {}
 ): Promise<App> {
   const { network, sessionKey, rootAddress } = ctx.input
-  const [dir, config] = await Promise.all([ctx.dir({ create }), store.get(ctx)])
+  const [dir, config, telemetry] = await Promise.all([
+    ctx.dir({ create }),
+    store.get(ctx),
+    ctx.telemetry(),
+  ])
   return createApp({
     ...globals.get(ctx),
     config,
     dir,
+    linkTags: telemetry.optedOut ? undefined : { driver: driverOf(ctx.mode) },
     network,
     sessionKey,
     rootAddress,

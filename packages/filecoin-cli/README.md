@@ -130,6 +130,7 @@ Ctrl+C, SIGTERM, or SIGHUP stops the work at the next step. `filecoin` returns a
 | `FILECOIN_RPC_URL` | RPC endpoint. Default: synapse-core's fallback transport for the chain |
 | `FILECOIN_CONSOLE_URL` | Filecoin Pay console origin for approval, funding, and revoke links, such as `https://filecoin-pay-explorer-staging.vercel.app` for staging. Default: `https://pay.filecoin.cloud` |
 | `FILECOIN_API_URL` | filecoin-api origin for retrieval links, such as `http://localhost:8787` for a local API. Default: `https://api.filecoin.io` |
+| `DO_NOT_TRACK`, `FILECOIN_TELEMETRY` | `DO_NOT_TRACK=1` or `FILECOIN_TELEMETRY=0` drops the `utm_*` tags from console links, as clipact's telemetry opt-outs. The tags tell the console's analytics that the visit came from the `filecoin` CLI, which flow printed the link, and which agent ran it, if any |
 | `FILECOIN_OUTPUT`, `FILECOIN_AGENT` | Override clipact's output mode and agent detection |
 
 `FILECOIN_RPC_URL`, `FILECOIN_CONSOLE_URL`, `FILECOIN_API_URL`, and `FILECOIN_CONFIG_DIR` apply to every command and have no flags. `filecoin --help` lists them under Environment, `filecoin schema --list` publishes the three URLs under `globals`, and `filecoin doctor` shows each value and its source. An invalid URL, or a relative `FILECOIN_CONFIG_DIR`, fails with `invalid_input` that names the variable. clipact creates the folder with mode 0700 the first time a command needs it.
