@@ -39,7 +39,14 @@ For CI, set `FILECOIN_SESSION_KEY` and `FILECOIN_ROOT_ADDRESS` instead of runnin
 
 ## Check the account
 
-The session key cannot fund the account. `filecoin status` reports the expiry of each scope, the USDFC funds, and the Warm Storage (FWSS) approval. When the account needs a deposit or the Warm Storage approval, `filecoin status` also returns a funding link to the console's setup page, which asks for both.
+The session key cannot fund the account. `filecoin status` reports the expiry of each scope and the Warm Storage (FWSS) approval. It also reports these balances and totals:
+
+- `wallet`: the FIL and USDFC in the wallet. FIL pays gas, and USDFC in the wallet is not yet deposited.
+- `account`: the Filecoin Pay funds, available funds, and debt. `locked` is split into `rateLockup`, which keeps providers paid for one lockup period after a rail ends and scales with the storage rate, and `fixedLockup`, which is reserved for one-time charges such as CDN egress. The names match synapse-core's `totalRateBasedLockup` and `totalFixedLockup`. `burnRatePerMonth` is the USDFC spent every 30 days at the current rate.
+- `account.health`: `deficit` when the account owes debt or its available funds are spent, `warning` with 14 days or less left, and `healthy` otherwise. `runwayDays` and `fundedUntil` say when the available funds run out. Both are absent when nothing is being spent.
+- `storage`: the number of live data sets and the bytes they store, as Warm Storage prices them.
+
+When the account needs a deposit or the Warm Storage approval, `filecoin status` also returns a funding link to the console's setup page, which asks for both.
 
 `filecoin doctor` shows the network, RPC, Filecoin Pay console origin (`console`), filecoin-api origin (`api`), and folder that `filecoin` resolved, with the source of each value. It also checks the database and the RPC.
 
