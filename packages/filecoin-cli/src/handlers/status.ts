@@ -98,7 +98,7 @@ export default defineHandler(status, async (ctx) => {
       rateLockup: formatUsdfc(summary.totalRateBasedLockup),
       fixedLockup: formatUsdfc(summary.totalFixedLockup),
       burnRatePerMonth: formatUsdfc(summary.lockupRatePerMonth),
-      ...describeRunway(summary),
+      ...describeRunway(summary, app.chain.genesisTimestamp),
       ready: costs.ready,
       needsApproval: costs.needsFwssMaxApproval,
       depositNeeded: formatUsdfc(costs.depositNeeded),
