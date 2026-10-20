@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/filecoin-project/agents/compare/filecoin-api-v0.4.0...filecoin-api-v0.4.1) (2026-10-20)
+
+
+### Bug Fixes
+
+* **filecoin-api:** report the release version and tool titles over MCP ([#47](https://github.com/filecoin-project/agents/issues/47)) ([54a7435](https://github.com/filecoin-project/agents/commit/54a7435ebc68c6cea208871c72f5e32884ab843f))
+
 ## [0.4.0](https://github.com/filecoin-project/agents/compare/filecoin-api-v0.3.0...filecoin-api-v0.4.0) (2026-10-16)
 
 
