@@ -67,7 +67,7 @@ Then check the account:
 filecoin status
 ```
 
-`filecoin status` reports when each permission expires, your USDFC funds, and the Warm Storage approval. If the account needs a deposit, it also returns a funding link.
+`filecoin status` reports when each permission expires, the Warm Storage approval, your wallet and Filecoin Pay balances, how many days your funds last, and how much you store. If the account needs a deposit, it also returns a funding link.
 
 ## Store a file
 

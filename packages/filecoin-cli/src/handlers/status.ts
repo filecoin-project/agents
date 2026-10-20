@@ -1,14 +1,17 @@
+import * as ERC20 from '@filoz/synapse-core/erc20'
 import * as Pay from '@filoz/synapse-core/pay'
 import { getExpirations } from '@filoz/synapse-core/session-key'
 import * as WarmStorage from '@filoz/synapse-core/warm-storage'
 import { defineHandler, isCliError } from 'clipact'
-import type { Hex } from 'viem'
+import { formatEther, type Hex } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
+import { getBalance } from 'viem/actions'
 import { buildFundingUrl, targetBalance } from '../auth/login.ts'
 import { SCOPES } from '../auth/scopes.ts'
 import { resolveCredentials } from '../auth/session.ts'
 import { status } from '../commands/status.ts'
 import { ErrorCodes } from '../errors.ts'
+import { describeRunway } from '../runway.ts'
 import { formatUsdfc } from '../usdfc.ts'
 import { appFor } from './context.ts'
 
@@ -16,7 +19,8 @@ import { appFor } from './context.ts'
 const PROBE_SIZE = 1n << 20n
 
 /**
- * Report the session, its scope expiries, and whether the payer can upload.
+ * Report the session, its scope expiries, the wallet and Filecoin Pay
+ * balances, the runway, the stored bytes, and whether the payer can upload.
  * A missing or pending session is a state to report, not an error.
  */
 export default defineHandler(status, async (ctx) => {
@@ -44,7 +48,7 @@ export default defineHandler(status, async (ctx) => {
   }
   const root = credentials.rootAddress
   const signer = privateKeyToAccount(credentials.privateKey as Hex).address
-  const [expirations, summary, costs] = await Promise.all([
+  const [expirations, summary, costs, fil, usdfc, storage] = await Promise.all([
     getExpirations(app.client, {
       address: root,
       sessionKeyAddress: signer,
@@ -56,6 +60,9 @@ export default defineHandler(status, async (ctx) => {
       pieceSizes: [PROBE_SIZE],
       isNewDataSet: true,
     }),
+    getBalance(app.client, { address: root }),
+    ERC20.balance(app.client, { address: root }),
+    WarmStorage.getAccountTotalStorageSize(app.client, { address: root }),
   ])
   const now = BigInt(Math.floor(Date.now() / 1000))
   const scopes = Object.fromEntries(
@@ -80,11 +87,18 @@ export default defineHandler(status, async (ctx) => {
       rootAddress: root,
       scopes,
     },
+    // FIL has 18 decimals, like ether.
+    wallet: { fil: formatEther(fil), usdfc: formatUsdfc(usdfc.value) },
     account: {
       token: 'USDFC',
       funds: formatUsdfc(summary.funds),
       availableFunds: formatUsdfc(summary.availableFunds),
       debt: formatUsdfc(summary.debt),
+      locked: formatUsdfc(summary.totalLockup),
+      rateLockup: formatUsdfc(summary.totalRateBasedLockup),
+      fixedLockup: formatUsdfc(summary.totalFixedLockup),
+      burnRatePerMonth: formatUsdfc(summary.lockupRatePerMonth),
+      ...describeRunway(summary),
       ready: costs.ready,
       needsApproval: costs.needsFwssMaxApproval,
       depositNeeded: formatUsdfc(costs.depositNeeded),
@@ -102,6 +116,10 @@ export default defineHandler(status, async (ctx) => {
               }),
             }),
           }),
+    },
+    storage: {
+      dataSets: storage.datasetCount,
+      size: Number(storage.totalSizeBytes),
     },
   })
 })

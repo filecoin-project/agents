@@ -33,7 +33,7 @@ For CI or a [cloud agent](/agents#cloud-agents), set `FILECOIN_SESSION_KEY` and 
 
 ## Check the account
 
-The session key cannot fund the account. `filecoin status` reports when each permission expires, the USDFC funds, and the Warm Storage approval. When the account needs a deposit or the Warm Storage approval, it also returns a funding link to the console's setup page, which asks for both.
+The session key cannot fund the account. `filecoin status` reports when each permission expires, the Warm Storage approval, the FIL and USDFC in the wallet, the Filecoin Pay funds and how they are locked, the monthly spend, how many days the funds last, and the bytes stored. When the account needs a deposit or the Warm Storage approval, it also returns a funding link to the console's setup page, which asks for both.
 
 `filecoin doctor` shows the network, RPC, Filecoin Pay console and filecoin-api origins, and folder that `filecoin` uses, with where each value came from.
 

@@ -55,6 +55,7 @@ packages/filecoin-cli/
     ├── config.ts         clipact store (config.json) and network resolution
     ├── errors.ts         error codes, operationError(), abortable()
     ├── usdfc.ts          USDFC amount formatting
+    ├── runway.ts         account health and runway for `status`
     ├── auth/
     │   ├── scope-ids.ts  scope IDs and the default key name, free of imports
     │   ├── scopes.ts     scope IDs ↔ FWSS permission typehashes
@@ -384,3 +385,4 @@ The tests use the Node test runner and need no network. `pnpm --filter filecoin 
 - `urls.piece` and a file's `urls.browser` return 404 until filecoin-api's indexer has the piece.
 - `logout` deletes the local key but does not revoke it on chain. It returns the console's revoke link, which the owner signs.
 - A pending login that resumes much later scans every block since `fromBlock`. `--fresh` starts over with a new key.
+- `status` reads every rail and every data set of the wallet from the chain. `Pay.getAccountSummary` sums the fixed lockup of each rail, and `getAccountTotalStorageSize` reads each data set's size. On calibration's dealbot wallet, with 362 live data sets, `status` took 51 seconds through the Glif RPC on 2026-10-20, and the rail read took 48 of them.
