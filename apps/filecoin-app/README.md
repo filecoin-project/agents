@@ -85,7 +85,7 @@ Server routes serve the files that agents use to discover the site:
 | `/.well-known/agent-skills/index.json` | The [agent skills discovery](https://github.com/cloudflare/agent-skills-discovery-rfc) index of the [filecoin plugin](../../plugins/filecoin/README.md)'s `skills/` directory |
 | `/.well-known/agent-skills/<name>/SKILL.md`, `/.well-known/agent-skills/<name>.tar.gz` | Each skill: a lone `SKILL.md`, or an archive of a skill with more files |
 | `/sitemap.xml` | The site pages and each network's explorer |
-| `/robots.txt` | Allows every crawler and links the sitemap. Cloudflare's managed robots.txt adds its content signals above it |
+| `/robots.txt` | Allows every crawler and links the sitemap |
 
 [`@hugomrdias/vite-plugin-agent-skills`](https://github.com/hugomrdias/agents/blob/main/packages/vite-plugin-agent-skills/README.md) writes the agent skills files into the client build at build time, so Workers static assets serves them and `public/_headers` sets their headers. The dev server serves them from memory. The API URLs in these files come from `VITE_FILECOIN_API_URL`.
 
