@@ -37,7 +37,7 @@ Never edit a `CHANGELOG.md`, a `version` field, a plugin manifest's `version`, o
 
 Use [Conventional Commits](https://www.conventionalcommits.org/): `<type>(<optional scope>): <concise imperative description>`, such as `fix(filecoin-cli): keep a saved session key when filecoin login runs again`.
 
-Pull requests merge by squash or rebase, never by merge commit. A squash merge makes the pull request title the commit message, so the title must follow the same format. A rebase merge keeps each commit, so each of their messages must.
+Pull requests merge by rebase or squash, never by merge commit. Prefer **Rebase and merge**: it keeps each commit, so each commit's message must follow the format, and release-please files each commit under only the components its own files change. A squash merge folds every commit into one under the pull request title, so the title must follow the format, and that one commit lands in the release of every component the pull request touches.
 
 release-please reads these messages to pick each release's version and write its changelog. The type decides both:
 
@@ -60,7 +60,7 @@ release-please reads these messages to pick each release's version and write its
 2. Open a pull request against `main` with a Conventional Commits title. Describe what changed and why, and link any issue it closes.
 3. The [CI workflow](workflows/ci.yml) runs `pnpm build` and `pnpm check`.
 4. A pull request that changes `apps/filecoin-api` or `apps/filecoin-app` gets a Cloudflare preview deployment, and a comment links to it. Fork pull requests have no access to the Cloudflare secret, so they get no preview. Closing the pull request deletes the preview.
-5. After approval, squash-merge the pull request. Pushing to `main` deploys filecoin-api or filecoin-app to production when the merged change touches that app or the root workspace files, such as `pnpm-lock.yaml`.
+5. After approval, rebase-merge the pull request, or squash-merge it when its commits belong together as one. Pushing to `main` deploys filecoin-api or filecoin-app to production when the merged change touches that app or the root workspace files, such as `pnpm-lock.yaml`.
 
 ## FOC project tracking
 
