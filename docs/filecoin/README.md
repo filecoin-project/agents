@@ -68,6 +68,8 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 | --- | --- |
 | [CLI architecture](architecture.md) | How the CLI works: modules, login, put, get, delete, local state, recovery, and how the CLI differs from the research |
 | [CLI interface research](interface-research.md) | The historical design research from 2026-09-28 that came before the CLI. The [differences table](architecture.md#differences-from-the-research-design) lists where the CLI differs from it. |
+| [Agent support on docs.filecoin.io](filecoin-docs-agent-support.md) | What GitBook gives agents on docs.filecoin.io, what is missing compared with filecoin-app, and what GitBook lets the docs team change |
+| [Agent discovery on filecoin.io](filecoin-io-agent-support.md) | How www.filecoin.io compares with poc.filecoin.cloud for agent discovery, with Is Agentic scores, the problems to fix and things to add on filecoin.io, and the gaps it found in this project |
 | [API and MCP domains](mcp-domains.md) | The `filecoin.io` and `filecoin.cloud` hostnames that serve filecoin-api and its MCP server, and the Cloudflare for SaaS setup behind `filecoin.io` |
 | [filecoin-api README](../../apps/filecoin-api/README.md) | Routes, retrieval redirects, MCP tools, deploys, and limits |
 | [filecoin-app README](../../apps/filecoin-app/README.md) | The explorer, the dashboard, the stack, and deploys |
