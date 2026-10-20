@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.0](https://github.com/filecoin-project/agents/compare/filecoin-cli-v0.5.2...filecoin-cli-v0.6.0) (2026-10-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **filecoin-cli:** `filecoin publish` and `filecoin rm` are removed. Use `filecoin put` and `filecoin delete` instead.
+* **filecoin-cli:** the default `FILECOIN_CONSOLE_URL` is https://pay.filecoin.cloud. New data sets carry `source: 'filecoin-cli'`, so data sets tagged `source: 'filecoin'` are no longer reused and the next `put` creates a new data set.
+
+### Features
+
+* **filecoin-cli:** send login, funding, and revoke links to the Filecoin Pay console ([#45](https://github.com/filecoin-project/agents/issues/45)) ([83a330c](https://github.com/filecoin-project/agents/commit/83a330ce34d6fd816976ab79f52afdae26cd3a21))
+* **filecoin-cli:** tag console links for the console's analytics ([#53](https://github.com/filecoin-project/agents/issues/53)) ([2442eae](https://github.com/filecoin-project/agents/commit/2442eae2d8c4fd3546266998f90cf88f2a9afd3a))
+* **filecoin-cli:** upgrade to clipact 0.7, with globals, its folder, and its store ([#54](https://github.com/filecoin-project/agents/issues/54)) ([f53f53d](https://github.com/filecoin-project/agents/commit/f53f53d01fc90a5dc3a6464363eee64f8edcbff6))
+
 ## [0.5.2](https://github.com/filecoin-project/agents/compare/filecoin-cli-v0.5.1...filecoin-cli-v0.5.2) (2026-10-16)
 
 
