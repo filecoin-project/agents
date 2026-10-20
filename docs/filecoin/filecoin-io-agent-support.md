@@ -1,6 +1,6 @@
 # Agent discovery on filecoin.io
 
-This report compares how AI agents discover and read [www.filecoin.io](https://www.filecoin.io) and [poc.filecoin.cloud](https://poc.filecoin.cloud), the [filecoin-app](../../apps/filecoin-app/README.md#website) prototype. It lists the problems to fix and the things to add on filecoin.io, and the gaps it found in this project. It is for the filecoin.io web team and for this project.
+This report compares how AI agents discover and read [www.filecoin.io](https://www.filecoin.io) and [poc.filecoin.cloud](https://poc.filecoin.cloud), the [filecoin-app](../../apps/filecoin-app/README.md#website) prototype. It lists the problems to fix and the things to add on filecoin.io, for the filecoin.io web team. The gaps it found in Filecoin for Agents are tracked in issues [#56](https://github.com/filecoin-project/agents/issues/56) to [#63](https://github.com/filecoin-project/agents/issues/63).
 
 The checks ran on 2026-10-20, with `curl` against the live sites and with [Is Agentic](https://is-agentic.com) reports from the same day. We had no access to the filecoin.io source.
 
@@ -87,27 +87,10 @@ The scans ran at 13:30 and 13:33 UTC. Is Agentic infers a site type and scores t
 - **Developer links on the home page.** The home page links to docs.filecoin.io pages and to the Filecoin Pay console. It doesn't link to the API reference, the MCP server, or a page for agents. Is Agentic searched for these by name and found none on filecoin.io. Link them from the home page and the footer, with "Filecoin" in their titles.
 - **Content signals in `robots.txt`.** This is optional. docs.filecoin.io sends `Content-Signal: ai-train=yes, search=yes, ai-input=yes`. The same line on filecoin.io states the site's policy for AI use.
 
-## Problems to fix in Filecoin for Agents
-
-Is Agentic also scored the services on filecoin.io hostnames that this project runs. These fixes belong in this repository.
-
-- **`mcp.filecoin.io` serves no server card.** Is Agentic looked for a card at `mcp.filecoin.io/.well-known/mcp/server-card.json`, at `mcp.filecoin.io/server-card`, and in an `ai-catalog.json`. All three were missing. Only poc.filecoin.cloud serves the card, so a client that starts from the MCP URL can't find it. filecoin-api's own origin serves no discovery files ([compromises in the app](README.md#app)). Tracked in [#57](https://github.com/filecoin-project/agents/issues/57).
-- **An unknown MCP tool returns a plain-text error.** A call to a tool that doesn't exist returns a result with `isError: true` and the text `MCP error -32602: Tool nope not found`. The result has no structured error code. Is Agentic gave MCP error handling 75%. Tracked in [#58](https://github.com/filecoin-project/agents/issues/58).
-- **filecoin-api sends no rate-limit headers.** filecoin-api limits each IP to 120 REST requests and 60 MCP requests a minute. It sends only `Retry-After`, and only on a `429`. Workers Rate Limiting doesn't report the remaining requests. So filecoin-api can send only the policy, for example in a `RateLimit-Policy` header, and document it. Tracked in [#59](https://github.com/filecoin-project/agents/issues/59).
-- **The REST API has no versioning policy.** The routes have no version in the path or in a header, and no deprecation policy. Is Agentic counts this as a failed recommended check. Tracked in [#60](https://github.com/filecoin-project/agents/issues/60).
-- **The poc.filecoin.cloud scan misses the API it found.** Is Agentic found the OpenAPI document at `api.filecoin.io`. It then reported no API for the JSON error check, and no API schema. The filecoin.io scan passed both checks against the same API, which returns JSON `404` errors. This looks like a fault in the scanner, not in the site. It cost poc.filecoin.cloud one essential check. Tracked in [#56](https://github.com/filecoin-project/agents/issues/56).
-
-## Things to add to Filecoin for Agents
-
-- **`/.well-known/ai-catalog.json` on poc.filecoin.cloud.** Is Agentic reads this file to find MCP server cards. Tracked in [#61](https://github.com/filecoin-project/agents/issues/61).
-- **A server card on the MCP origin.** Serve the card from filecoin-api at `/.well-known/mcp/server-card.json` and `/server-card` on `mcp.filecoin.io`. Tracked in [#57](https://github.com/filecoin-project/agents/issues/57).
-- **Trust and pricing pages.** poc.filecoin.cloud has no About, Contact, Privacy, or Pricing page, and no `Organization` JSON-LD. Agents check these pages before they recommend a service. The prototype can do without them. The release on filecoin.cloud or filecoin.io needs them. Tracked in [#62](https://github.com/filecoin-project/agents/issues/62).
-- **A link to the CLI on npm.** Is Agentic saw the CLI on the Agents page, but didn't find it in a package registry from poc.filecoin.cloud. Link [`filecoin` on npm](https://www.npmjs.com/package/filecoin) from the Agents page and from `llms.txt`. Tracked in [#63](https://github.com/filecoin-project/agents/issues/63).
-
 ## Questions for the filecoin.io team
 
 - Which hostname is canonical, `www.filecoin.io` or `filecoin.io`?
-- Which site do agents reach first: filecoin.io, docs.filecoin.io, or a future filecoin.cloud? That site should serve `llms.txt` and the `/.well-known/` files and link to the others.
+- Which site do agents reach first, filecoin.io or docs.filecoin.io? That site should serve `llms.txt` and the `/.well-known/` files and link to the others.
 - Can the site add Next.js middleware that answers `Accept: text/markdown`? Does the Markdown come from the CMS, or from a conversion of the rendered HTML?
 
 ## How to reproduce
@@ -131,14 +114,6 @@ curl -sI -H "Accept: text/markdown" https://poc.filecoin.cloud/ | grep -iE "^(co
 
 # Missing page in Markdown
 curl -s -o /dev/null -w "%{http_code} %{content_type}\n" -H "Accept: text/markdown" https://www.filecoin.io/nope
-
-# Server card on the MCP origin
-curl -s -o /dev/null -w "%{http_code}\n" https://mcp.filecoin.io/.well-known/mcp/server-card.json
-
-# Unknown MCP tool
-curl -s -X POST https://mcp.filecoin.io \
-	-H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
-	-d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"nope","arguments":{}}}'
 
 # Is Agentic reports. These calls are read-only and start no scan
 curl -s "https://is-agentic.com/api/v1/report?url=https%3A%2F%2Ffilecoin.io"
