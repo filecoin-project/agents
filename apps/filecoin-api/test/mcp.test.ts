@@ -33,10 +33,37 @@ describe('mcp', () => {
       serverInfo: { name: string; title: string; version: string }
     }>
     expect(body.result.serverInfo).toEqual({
-      name: 'filecoin-api',
+      name: 'io.filecoin/mcp',
       title: 'Filecoin',
       version: VERSION,
     })
+  })
+
+  it('reports the identity and protocol versions its server card declares', async () => {
+    const { request } = testApp()
+    const card = (await (await request('/mcp/server-card')).json()) as {
+      name: string
+      title: string
+      version: string
+      remotes: { supportedProtocolVersions: string[] }[]
+    }
+    const res = await request(
+      '/mcp',
+      rpc('initialize', {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test', version: '0' },
+      })
+    )
+    const body = (await res.json()) as RpcResult<{
+      serverInfo: { name: string; title: string; version: string }
+    }>
+    expect(body.result.serverInfo).toEqual({
+      name: card.name,
+      title: card.title,
+      version: card.version,
+    })
+    expect(card.remotes[0]?.supportedProtocolVersions).toContain('2025-06-18')
   })
 
   it('lists every tool, with a network argument on data tools', async () => {
