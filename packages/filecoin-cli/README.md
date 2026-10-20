@@ -49,11 +49,10 @@ The session key cannot fund the account. `filecoin status` reports the expiry of
 filecoin put ./report.pdf          # raw piece   → <api>/get/<pieceCid>
 filecoin put ./site                # UnixFS CAR  → <api>/get/<rootCid>?browser=true
 filecoin put ./site --dry-run      # size, provider, cost, and authorization; stores nothing
-filecoin publish ./site            # alias of put
 filecoin get res_… --output ./copy # verifies the PieceCID and extracts folders
 filecoin ls                        # add --all to include resources pending removal
 filecoin inspect res_… --check     # sends a HEAD request to the piece URL
-filecoin delete res_… --yes        # alias rm; schedules removal
+filecoin delete res_… --yes        # schedules removal
 ```
 
 `filecoin` stores a file as its exact bytes. It packs a folder into a UnixFS CAR with the IPIP-499 `unixfs-v1-2025` profile, the same way as [Filecoin Pin](https://github.com/filecoin-project/filecoin-pin). The CAR goes into a data set with `withIPFSIndexing`, so Curio serves it at `/ipfs/<rootCid>/`. Curio's `/ipfs` endpoint is a trustless gateway. It returns blocks and CARs, not rendered pages.

@@ -54,7 +54,7 @@ before(async () => {
 
 test('definitions are valid', () => assertDefinitions(cli))
 
-test('schemas cover every command, and aliases resolve to them', async () => {
+test('schemas cover every command', async () => {
   assert.deepEqual(Object.keys(schemas(cli)).sort(), [
     'delete',
     'doctor',
@@ -72,9 +72,8 @@ test('schemas cover every command, and aliases resolve to them', async () => {
     'skills uninstall',
     'status',
   ])
-  const { data } = await run(['schema', 'publish'])
+  const { data } = await run(['schema', 'put'])
   assert.equal(data.command, 'put')
-  assert.deepEqual(data.aliases, ['publish'])
   assert.deepEqual(data.secrets, ['sessionKey'])
 })
 
@@ -91,12 +90,8 @@ test('reads without a session ask the user to log in', async () => {
   ])
 })
 
-test('put and its publish alias need a session', async () => {
+test('put needs a session', async () => {
   assert.equal(code((await run(['put', './missing'])).json), 'auth_required')
-  assert.equal(
-    code((await run(['publish', './missing'])).json),
-    'auth_required'
-  )
 })
 
 test('put --dry-run describes a directory without a session', async () => {
@@ -114,12 +109,12 @@ test('put --dry-run describes a directory without a session', async () => {
 })
 
 test('delete needs --yes when no human can confirm', async () => {
-  const { json } = await run(['rm', 'res_x'])
+  const { json } = await run(['delete', 'res_x'])
   assert.equal(code(json), 'confirmation_required')
   assert.deepEqual(json.next, [
     {
       by: 'user',
-      command: 'filecoin rm res_x --yes',
+      command: 'filecoin delete res_x --yes',
       description: 'Approve this action, then run it with --yes',
     },
   ])

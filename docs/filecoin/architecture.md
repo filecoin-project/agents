@@ -38,7 +38,7 @@ packages/filecoin-cli/
 ├── skills/               gitignored build copy of plugins/filecoin/skills/, installed by `filecoin skills install`
 └── src/
     ├── main.ts           cli.run()
-    ├── cli.ts            defineCli: name, version, commands, aliases, skills, mapError
+    ├── cli.ts            defineCli: name, version, commands, skills, mapError
     ├── commands/         one definition per command; imports only zod and clipact
     │   ├── shared.ts     account input fragment, paging, output schemas
     │   ├── login.ts  logout.ts  status.ts  doctor.ts
@@ -286,7 +286,7 @@ Extraction checks the bytes of every block against its CID, as `ipfs-car unpack 
 
 ## The delete flow
 
-`delete <ref>`, with the alias `rm`, needs confirmation. clipact asks a human at a terminal. Everyone else, including agents, gets `confirmation_required` until they pass `--yes`. `delete` then creates an operation with the stored copy as its target and runs these steps:
+`delete <ref>` needs confirmation. clipact asks a human at a terminal. Everyone else, including agents, gets `confirmation_required` until they pass `--yes`. `delete` then creates an operation with the stored copy as its target and runs these steps:
 
 1. Read `clientDataSetId` from the data set and call `SP.schedulePieceDeletions`.
 2. Save the transaction hash.
@@ -343,7 +343,7 @@ The tests use the Node test runner and need no network. `pnpm --filter filecoin 
 | `pack.test.ts` | A deterministic root CID, byte-exact extraction, no unreferenced blocks, empty directories, rejection of a tampered block, the dotfile and symlink rules, and the canonical encoding of a 3 GiB file root built from fake leaves |
 | `jobs.test.ts` | A fake `StorageBackend` that simulates FWSS nonces. It covers new and existing data sets, a lost commit response, a commit that never landed, a rejected commit, a resume of a completed job, insufficient funds, an approval-only funding error, a reverted removal, interruption, dry-run estimates, and the operation ID and resume step on every job error |
 | `urls.test.ts` | The filecoin-api piece and browser URLs for files and folders, an API base path, an unknown chain ID, and the provider URL for `get` |
-| `cli.test.ts` | The whole CLI in process through `clipact/testing` in strict mode. It covers definitions, schemas and aliases, auth and pending-login errors, the logout revoke link, confirmation, a dry run without a session, and secrets kept out of flags and output |
+| `cli.test.ts` | The whole CLI in process through `clipact/testing` in strict mode. It covers definitions, schemas, auth and pending-login errors, the logout revoke link, confirmation, a dry run without a session, and secrets kept out of flags and output |
 | `contract.test.ts` | The built binary without a TTY. It covers one JSON line on stdout, exit codes, no leaked session key, and a SIGTERM during a hanging RPC call that gives an `interrupted` result and exit 143 |
 | `app.test.ts` | The signal-bound RPC transport and `abortable()`, including a call that fails after the abort |
 | `config.test.ts` | Network resolution and the `0600` mode of the config file |
@@ -359,7 +359,7 @@ The tests use the Node test runner and need no network. `pnpm --filter filecoin 
 
 | Research | Prototype | Reason |
 | --- | --- | --- |
-| `filecoin files …` and `filecoin artifacts …` groups | Flat `put`, `get`, `ls`, `inspect`, and `delete`, chosen by input type, with the `publish` and `rm` aliases | One command set covers files and folders |
+| `filecoin files …` and `filecoin artifacts …` groups | Flat `put`, `get`, `ls`, `inspect`, and `delete`, chosen by input type, without aliases | One command set covers files and folders. clipact 0.5 removed command aliases, so `publish` and `rm` went with them |
 | `artifact` resources for IPFS files and folders | Resource kind `file` for a file and `folder` for a folder | The kind names the input type. A migration renames saved `artifact` resources to `folder` |
 | `auth login`, `auth status` | `login`, `logout`, `status` | Flat, like the storage commands |
 | Two copies by default | One copy | Simplicity. synapse-sdk also stores two copies by default |

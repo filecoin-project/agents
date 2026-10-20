@@ -43,11 +43,10 @@ The session key cannot fund the account. `filecoin status` reports when each per
 filecoin put ./report.pdf          # a file, stored as its exact bytes
 filecoin put ./site                # a folder, packed into a UnixFS CAR
 filecoin put ./site --dry-run      # size, provider, cost, and authorization; stores nothing
-filecoin publish ./site            # same as put
 filecoin get res_… --output ./copy # verifies the PieceCID and extracts folders
 filecoin ls                        # add --all to include content pending removal
 filecoin inspect res_… --check     # checks that the piece link answers
-filecoin delete res_… --yes        # same as rm; schedules removal
+filecoin delete res_… --yes        # schedules removal
 ```
 
 `put` returns `urls.browser`, the link to share, and `urls.piece`, the exact stored bytes. [Retrieve and verify](/docs/retrieve) explains what each link and `filecoin get` check.

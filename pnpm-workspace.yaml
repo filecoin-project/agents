@@ -16,7 +16,7 @@ catalog:
 
 minimumReleaseAgeExclude:
   - iso-conf@0.4.2
-  - clipact@0.4.0
+  - clipact@0.5.0
   - '@filoz/synapse-core@0.10.2'
   - '@filoz/synapse-react@0.5.1'
   - '@hugomrdias/commp-wasm@0.1.4'

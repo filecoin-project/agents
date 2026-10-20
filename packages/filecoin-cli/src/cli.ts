@@ -17,7 +17,6 @@ export const cli = defineCli({
   description: 'Store files and folders on Filecoin and get retrieval links',
   envPrefix: 'FIL',
   commands,
-  aliases: { publish: 'put', rm: 'delete' },
   skills: new URL('../skills/', import.meta.url),
   mapError: () => import('./map-error.ts'),
   errors,
