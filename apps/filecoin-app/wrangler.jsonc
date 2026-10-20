@@ -15,5 +15,13 @@
   // Required by `wrangler preview`; the app needs no preview bindings.
   // https://developers.cloudflare.com/workers/previews/configuration/
   "previews": {},
-  "observability": { "enabled": true }
+  // `enabled` alone turns on logs only; traces show the server renders'
+  // subrequests to filecoin-api.
+  // https://developers.cloudflare.com/workers/observability/traces/
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": { "enabled": true, "invocation_logs": true },
+    "traces": { "enabled": true, "head_sampling_rate": 1 }
+  }
 }

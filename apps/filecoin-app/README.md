@@ -24,7 +24,7 @@ Built with:
 | `src/start.ts` | Request middleware that adds the security and WebMCP origin-trial headers, and serves site pages as Markdown |
 | `src/content` | Markdown for the website's pages |
 | `src/lib/site` | Page list, Markdown rendering, content negotiation, and the agent discovery files |
-| `src/lib/api` | The filecoin-api client from [`@filecoin-project/api-client`](../../packages/filecoin-api-client/README.md), set to `VITE_FILECOIN_API_URL`, and query factories |
+| `src/lib/api` | The filecoin-api client from [`@filecoin-project/api-client`](../../packages/filecoin-api-client/README.md), set to `env.filApiFetchUrl`, and query factories |
 | `src/hooks-synapse` | Hooks missing from `@filoz/synapse-react`, kept here until they move upstream. See [its README](src/hooks-synapse/README.md) |
 | `src/components/ui` | shadcn components |
 | `public/_headers` | Headers for static assets, which skip the Worker: immutable caching for `/assets/*`, and CORS and content types for the agent skills |
@@ -38,7 +38,7 @@ pnpm --filter filecoin-app dev
 
 The dev server runs the app in workerd through the [Cloudflare Vite plugin](https://developers.cloudflare.com/workers/vite-plugin/), as in production.
 
-The app calls `https://api.filecoin.io` by default. Set `VITE_FILECOIN_API_URL` to point it elsewhere, for example a local `wrangler dev` of filecoin-api (see `.env.example`). `VITE_FILECOIN_MCP_URL` sets the MCP server URL that the site advertises, and defaults to `https://mcp.filecoin.io`, or to the API URL plus `/mcp` when only `VITE_FILECOIN_API_URL` is set. `VITE_SITE_URL` sets the site origin used in canonical and Open Graph URLs, and defaults to `https://poc.filecoin.cloud`.
+The app advertises `https://api.filecoin.io`, but its API client calls `https://api.filecoin.cloud` by default. The explorer's server renders run on the `filecoin.cloud` zone, and a Worker's `fetch()` can't reach a Worker route on its own zone, which is how `api.filecoin.io` reaches filecoin-api. It can reach a Custom Domain such as `api.filecoin.cloud` ([Worker to Worker communication](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/#worker-to-worker-communication)). Set `VITE_FILECOIN_API_URL` to point both elsewhere, for example a local `wrangler dev` of filecoin-api (see `.env.example`). `VITE_FILECOIN_MCP_URL` sets the MCP server URL that the site advertises, and defaults to `https://mcp.filecoin.io`, or to the API URL plus `/mcp` when only `VITE_FILECOIN_API_URL` is set. `VITE_SITE_URL` sets the site origin used in canonical and Open Graph URLs, and defaults to `https://poc.filecoin.cloud`.
 
 Scripts:
 - `pnpm test`: `node --test` over `test/**/*.test.ts`

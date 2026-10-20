@@ -1,6 +1,6 @@
 # API and MCP domains
 
-This document describes the hostnames that serve filecoin-api and its MCP server. `api.filecoin.io` and `mcp.filecoin.io` are the primary hostnames, and the plugin, the CLI, and the site advertise them. `api.filecoin.cloud` and `mcp.filecoin.cloud` serve the same Worker, so links and plugins released before the switch keep working.
+This document describes the hostnames that serve filecoin-api and its MCP server. `api.filecoin.io` and `mcp.filecoin.io` are the primary hostnames, and the plugin, the CLI, and the site advertise them. `api.filecoin.cloud` and `mcp.filecoin.cloud` serve the same Worker, so links and plugins released before the switch keep working. filecoin-app's API client also needs `api.filecoin.cloud` ([same-zone fetches](#same-zone-fetches)).
 
 | Hostname | Serves | How it reaches the Worker |
 | --- | --- | --- |
@@ -71,6 +71,12 @@ Once a CNAME resolves, Cloudflare validates the hostname, then issues and renews
 
 `MCP_HOSTS` lists `mcp.filecoin.io`. The deploy token can create Worker routes, but adding custom hostnames would need SSL and certificate permissions, which it doesn't have, so steps 1 to 3 stay in the dashboard.
 
+## Same-zone fetches
+
+filecoin-app runs on the `filecoin.cloud` zone, and its explorer renders detail pages on the server. A Worker's `fetch()` to a hostname on its own zone skips that zone's Worker routes and goes to the zone's origin, but it does reach a Worker on a Custom Domain ([Worker to Worker communication](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/#worker-to-worker-communication)). A server-side fetch to `api.filecoin.io` therefore reached the fallback origin, `fallback.filecoin.cloud`, which answered 522, and filecoin-api never saw it. The rail, data set, and provider pages returned 500 from 14 October, when `api.filecoin.io` became filecoin-app's default, until filecoin-app's API client moved to `api.filecoin.cloud`. The list pages kept working, because they fetch from the browser.
+
+So filecoin-app's API client calls `api.filecoin.cloud`, while its links and discovery files still advertise `api.filecoin.io`. `api.filecoin.cloud` has to stay a Custom Domain until filecoin-app calls filecoin-api through a [service binding](https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/) instead.
+
 ## Rejected options
 
 - **Redirects.** A Cloudflare redirect rule or a DNSimple URL record could send the `filecoin.io` hosts to their `filecoin.cloud` twins. MCP clients don't reliably follow redirects on `POST`, and some reject a redirect to another origin. Retrieval links would also take an extra hop.
@@ -91,3 +97,4 @@ These files advertise `https://api.filecoin.io` or `https://mcp.filecoin.io`:
 ## Open questions
 
 - Who keeps the DNSimple records for `filecoin.io` in place?
+- Should filecoin-app call filecoin-api through a service binding? That would remove its dependence on `api.filecoin.cloud`. filecoin-api rate-limits by `cf-connecting-ip`, and both a service binding and a same-zone fetch put every server render into one bucket. So the binding would also need filecoin-api to key the limit on the visitor's IP, which filecoin-app forwards.
