@@ -4,29 +4,33 @@ This document describes the hostnames that serve filecoin-api and its MCP server
 
 | Hostname | Serves | How it reaches the Worker |
 | --- | --- | --- |
-| `api.filecoin.io` | The REST API and `/mcp` | Cloudflare for SaaS custom hostname on the `filecoin.cloud` zone, plus a Worker route |
-| `mcp.filecoin.io` | The MCP server only, at `/` | Cloudflare for SaaS custom hostname on the `filecoin.cloud` zone, plus a Worker route |
-| `api.filecoin.cloud` | The REST API and `/mcp` | Custom Domain |
-| `mcp.filecoin.cloud` | The MCP server only, at `/` | Custom Domain |
+| `api.filecoin.io` | The REST API, `/mcp`, and the server card at `/mcp/server-card` | Cloudflare for SaaS custom hostname on the `filecoin.cloud` zone, plus a Worker route |
+| `mcp.filecoin.io` | The MCP server only, at `/`, and its server card at `/server-card` | Cloudflare for SaaS custom hostname on the `filecoin.cloud` zone, plus a Worker route |
+| `api.filecoin.cloud` | The REST API, `/mcp`, and the server card at `/mcp/server-card` | Custom Domain |
+| `mcp.filecoin.cloud` | The MCP server only, at `/`, and its server card at `/server-card` | Custom Domain |
 
 We checked the Cloudflare behavior below against the Cloudflare docs on 2026-10-14.
 
 ## What the MCP hosts serve
 
-The same `filecoin-api` Worker serves the MCP hosts. A host check in [`src/mcp-host.ts`](../../apps/filecoin-api/src/mcp-host.ts), which wraps the app in `src/index.ts`, rewrites the request before the Hono app sees it, so the MCP hosts reuse the `/mcp` handler, its rate limit, CORS, request ids, and tracing. The MCP hosts serve only MCP:
+The same `filecoin-api` Worker serves the MCP hosts. A host check in [`src/mcp-host.ts`](../../apps/filecoin-api/src/mcp-host.ts), which wraps the app in `src/index.ts`, rewrites the request before the Hono app sees it, so the MCP hosts reuse the `/mcp` handler, its rate limit, CORS, request ids, and tracing. The MCP hosts serve only MCP and the MCP server card:
 
 | Request on an MCP host | Result |
 | --- | --- |
 | `POST /` | The MCP endpoint, the same as `POST https://api.filecoin.io/mcp` |
 | `GET /`, `DELETE /` | `405`, as on `/mcp`, because the server is stateless |
 | `OPTIONS /` | The CORS preflight |
-| Any other path, such as `/mcp`, `/health`, `/docs`, or `/calibration/providers` | `404 not_found` |
+| `GET /server-card` | The [server card](../../apps/filecoin-api/README.md#server-card), the same as `GET https://api.filecoin.io/mcp/server-card` |
+| `GET /.well-known/mcp/server-card.json`, `GET /.well-known/mcp-server-card` | The same card, at the paths of older drafts |
+| Any other path, such as `/mcp`, `/mcp/server-card`, `/health`, `/docs`, or `/calibration/providers` | `404 not_found` |
 
 `/mcp` keeps working on both API hosts, because plugins released before the MCP hosts, and connectors added by hand, point to `https://api.filecoin.cloud/mcp`.
 
 The MCP hostnames are in the `MCP_HOSTS` variable in `wrangler.jsonc`, comma separated, so adding a hostname changes no code.
 
-Worker Previews run on `workers.dev`, which matches no MCP host, and set `MCP_HOSTS` to an empty string, so they keep serving MCP at `/mcp`.
+Every card advertises `https://mcp.filecoin.io`, the `MCP_PUBLIC_URL` variable in `wrangler.jsonc`, whichever host serves it, so clients and the MCP registry see one endpoint.
+
+Worker Previews run on `workers.dev`, which matches no MCP host, and set `MCP_HOSTS` to an empty string, so they keep serving MCP at `/mcp`. They also set `MCP_PUBLIC_URL` to an empty string, so their card advertises the Preview's own `/mcp`.
 
 ## Subdomains of filecoin.cloud
 
@@ -88,6 +92,7 @@ So filecoin-app's API client calls `api.filecoin.cloud`, while its links and dis
 These files advertise `https://api.filecoin.io` or `https://mcp.filecoin.io`:
 
 - The plugin's [`mcp.json`](../../plugins/filecoin/mcp.json) and [`.claude-plugin/plugin.json`](../../plugins/filecoin/.claude-plugin/plugin.json), and the custom connector URL in its [README](../../plugins/filecoin/README.md)
+- `MCP_PUBLIC_URL` in filecoin-api's [`wrangler.jsonc`](../../apps/filecoin-api/wrangler.jsonc), which the server card advertises
 - The CLI's default `FILECOIN_API_URL` in [`src/app.ts`](../../packages/filecoin-cli/src/app.ts), which builds the retrieval links it prints
 - The REST API and MCP server rows in the [Filecoin for Agents README](README.md)
 - filecoin-app's defaults in [`src/config/env.ts`](../../apps/filecoin-app/src/config/env.ts), which its retrieval links, explorer, discovery files, and `llms.txt` use ([development](../../apps/filecoin-app/README.md#development))
