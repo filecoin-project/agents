@@ -93,6 +93,7 @@ export function createApp(options: AppOptions = {}) {
         'Mcp-Session-Id',
         'X-Request-Id',
         'Retry-After',
+        'RateLimit-Policy',
         'Server-Timing',
       ],
     })

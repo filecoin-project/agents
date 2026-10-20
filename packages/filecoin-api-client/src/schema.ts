@@ -657,6 +657,8 @@ export interface operations {
             /** @description Network status */
             200: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -666,6 +668,8 @@ export interface operations {
             /** @description Invalid request */
             400: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -675,6 +679,10 @@ export interface operations {
             /** @description Rate limited */
             429: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before retrying */
+                    "Retry-After"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -684,6 +692,8 @@ export interface operations {
             /** @description Network not available */
             503: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -718,6 +728,8 @@ export interface operations {
             /** @description Providers */
             200: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -727,6 +739,8 @@ export interface operations {
             /** @description Invalid request */
             400: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -736,6 +750,10 @@ export interface operations {
             /** @description Rate limited */
             429: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before retrying */
+                    "Retry-After"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -745,6 +763,8 @@ export interface operations {
             /** @description Network not available */
             503: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -769,6 +789,8 @@ export interface operations {
             /** @description Provider */
             200: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -778,6 +800,8 @@ export interface operations {
             /** @description Invalid request */
             400: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -787,6 +811,8 @@ export interface operations {
             /** @description Not found */
             404: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -796,6 +822,10 @@ export interface operations {
             /** @description Rate limited */
             429: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before retrying */
+                    "Retry-After"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -805,6 +835,8 @@ export interface operations {
             /** @description Network not available */
             503: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -841,6 +873,8 @@ export interface operations {
             /** @description Data sets */
             200: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -850,6 +884,8 @@ export interface operations {
             /** @description Invalid request */
             400: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -859,6 +895,10 @@ export interface operations {
             /** @description Rate limited */
             429: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before retrying */
+                    "Retry-After"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -868,6 +908,8 @@ export interface operations {
             /** @description Network not available */
             503: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -892,6 +934,8 @@ export interface operations {
             /** @description Data set */
             200: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -901,6 +945,8 @@ export interface operations {
             /** @description Invalid request */
             400: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -910,6 +956,8 @@ export interface operations {
             /** @description Not found */
             404: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -919,6 +967,10 @@ export interface operations {
             /** @description Rate limited */
             429: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before retrying */
+                    "Retry-After"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -928,6 +980,8 @@ export interface operations {
             /** @description Network not available */
             503: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -959,6 +1013,8 @@ export interface operations {
             /** @description Pieces */
             200: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -968,6 +1024,8 @@ export interface operations {
             /** @description Invalid request */
             400: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -977,6 +1035,10 @@ export interface operations {
             /** @description Rate limited */
             429: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before retrying */
+                    "Retry-After"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -986,6 +1048,8 @@ export interface operations {
             /** @description Network not available */
             503: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1011,6 +1075,8 @@ export interface operations {
             /** @description Piece */
             200: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1020,6 +1086,8 @@ export interface operations {
             /** @description Invalid request */
             400: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1029,6 +1097,8 @@ export interface operations {
             /** @description Not found */
             404: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1038,6 +1108,10 @@ export interface operations {
             /** @description Rate limited */
             429: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before retrying */
+                    "Retry-After"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1047,6 +1121,8 @@ export interface operations {
             /** @description Network not available */
             503: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1083,6 +1159,8 @@ export interface operations {
             /** @description Pieces with data set owner and provider */
             200: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1092,6 +1170,8 @@ export interface operations {
             /** @description Invalid request */
             400: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1101,6 +1181,10 @@ export interface operations {
             /** @description Rate limited */
             429: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before retrying */
+                    "Retry-After"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1110,6 +1194,8 @@ export interface operations {
             /** @description Network not available */
             503: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1148,6 +1234,8 @@ export interface operations {
             /** @description Rails */
             200: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1157,6 +1245,8 @@ export interface operations {
             /** @description Invalid request */
             400: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1166,6 +1256,10 @@ export interface operations {
             /** @description Rate limited */
             429: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before retrying */
+                    "Retry-After"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1175,6 +1269,8 @@ export interface operations {
             /** @description Network not available */
             503: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1199,6 +1295,8 @@ export interface operations {
             /** @description Rail */
             200: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1208,6 +1306,8 @@ export interface operations {
             /** @description Invalid request */
             400: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1217,6 +1317,8 @@ export interface operations {
             /** @description Not found */
             404: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1226,6 +1328,10 @@ export interface operations {
             /** @description Rate limited */
             429: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before retrying */
+                    "Retry-After"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1235,6 +1341,8 @@ export interface operations {
             /** @description Network not available */
             503: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1264,6 +1372,8 @@ export interface operations {
             /** @description Settlements */
             200: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1273,6 +1383,8 @@ export interface operations {
             /** @description Invalid request */
             400: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1282,6 +1394,10 @@ export interface operations {
             /** @description Rate limited */
             429: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before retrying */
+                    "Retry-After"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1291,6 +1407,8 @@ export interface operations {
             /** @description Network not available */
             503: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1325,6 +1443,8 @@ export interface operations {
             /** @description Session keys */
             200: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1334,6 +1454,8 @@ export interface operations {
             /** @description Invalid request */
             400: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1343,6 +1465,10 @@ export interface operations {
             /** @description Rate limited */
             429: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before retrying */
+                    "Retry-After"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1352,6 +1478,8 @@ export interface operations {
             /** @description Network not available */
             503: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1384,6 +1512,8 @@ export interface operations {
             /** @description Session key events */
             200: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1393,6 +1523,8 @@ export interface operations {
             /** @description Invalid request */
             400: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1402,6 +1534,10 @@ export interface operations {
             /** @description Rate limited */
             429: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before retrying */
+                    "Retry-After"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1411,6 +1547,8 @@ export interface operations {
             /** @description Network not available */
             503: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1441,6 +1579,8 @@ export interface operations {
             /** @description Redirect to the retrieval URL */
             302: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     /** @description Retrieval URL */
                     Location?: string;
                     /** @description Provider cache status: hit, stale, miss or none */
@@ -1452,6 +1592,8 @@ export interface operations {
             /** @description Invalid request */
             400: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1461,6 +1603,8 @@ export interface operations {
             /** @description Not found */
             404: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1470,6 +1614,10 @@ export interface operations {
             /** @description Rate limited */
             429: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before retrying */
+                    "Retry-After"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1479,6 +1627,8 @@ export interface operations {
             /** @description Network not available */
             503: {
                 headers: {
+                    /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
+                    "RateLimit-Policy"?: string;
                     [name: string]: unknown;
                 };
                 content: {

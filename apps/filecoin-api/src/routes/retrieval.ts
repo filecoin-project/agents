@@ -17,6 +17,7 @@ import {
   NetworkSchema,
   notFoundResponse,
   RetrievalCidInput,
+  rateLimitHeaders,
   UintInput,
 } from '../schemas/common.ts'
 import { staleWhileRevalidate } from '../swr-cache.ts'
@@ -81,6 +82,7 @@ const route = createRoute({
     302: {
       description: 'Redirect to the retrieval URL',
       headers: {
+        ...rateLimitHeaders,
         Location: { description: 'Retrieval URL', schema: { type: 'string' } },
         'X-Cache': {
           description: 'Provider cache status: hit, stale, miss or none',

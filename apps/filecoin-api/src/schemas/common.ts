@@ -152,18 +152,40 @@ export const Metadata = z
   .nullable()
   .openapi({ example: { source: 'filecoin-pin' } })
 
+/**
+ * `RateLimit-Policy` response header, sent by every rate-limited route.
+ *
+ * @see https://datatracker.ietf.org/doc/draft-ietf-httpapi-ratelimit-headers/
+ */
+export const rateLimitHeaders = {
+  'RateLimit-Policy': {
+    description:
+      'Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>`',
+    schema: { type: 'string', example: '"api";q=120;w=60' },
+  },
+} as const
+
 /** Standard error responses for network routes. */
 export const errorResponses = {
   400: {
     description: 'Invalid request',
+    headers: rateLimitHeaders,
     content: { 'application/json': { schema: ErrorSchema } },
   },
   429: {
     description: 'Rate limited',
+    headers: {
+      ...rateLimitHeaders,
+      'Retry-After': {
+        description: 'Seconds to wait before retrying',
+        schema: { type: 'string', example: '60' },
+      },
+    },
     content: { 'application/json': { schema: ErrorSchema } },
   },
   503: {
     description: 'Network not available',
+    headers: rateLimitHeaders,
     content: { 'application/json': { schema: ErrorSchema } },
   },
 } as const
@@ -172,6 +194,7 @@ export const errorResponses = {
 export const notFoundResponse = {
   404: {
     description: 'Not found',
+    headers: rateLimitHeaders,
     content: { 'application/json': { schema: ErrorSchema } },
   },
 } as const
