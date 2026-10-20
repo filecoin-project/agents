@@ -31,6 +31,12 @@ const SETUP_PATH = '/console/setup'
 const SESSION_KEYS_PATH = '/console/session-keys'
 
 /**
+ * Filecoin Pay console home: the connected wallet's funds, services, and
+ * approvals. It follows the wallet's network, so its link has no `network`.
+ */
+const CONSOLE_PATH = '/console'
+
+/**
  * Who runs the CLI, for the console's link analytics. Without tags, as when
  * the user opts out, a link carries no `utm_*` parameters.
  */
@@ -40,7 +46,7 @@ export type LinkTags = {
 }
 
 /** The flow that printed a console link, sent as `utm_term`. */
-type LinkFlow = 'login' | 'fund' | 'revoke'
+type LinkFlow = 'login' | 'fund' | 'revoke' | 'console'
 
 /**
  * Add the console's analytics tags to `url`: `utm_source=filecoin-cli`,
@@ -130,6 +136,25 @@ export function buildRevokeUrl(options: RevokeUrlOptions): string {
   url.searchParams.set('revoke', options.address.toLowerCase())
   url.searchParams.set('network', options.network)
   return tagged(url, options.tags, 'revoke')
+}
+
+/** Options for {@link buildConsoleUrl}. */
+export type ConsoleUrlOptions = {
+  consoleUrl: string
+  /** Analytics tags; leave out for an untagged link. */
+  tags?: LinkTags | undefined
+}
+
+/**
+ * Build the Filecoin Pay console home link, where the wallet owner manages
+ * funds, services, and approvals. filecoin-pin's `dashboard` opens the same
+ * page but tags it `utm_term=dashboard`.
+ *
+ * @see https://github.com/filecoin-project/filecoin-pin/blob/master/src/core/session/console-url.ts
+ */
+export function buildConsoleUrl(options: ConsoleUrlOptions): string {
+  const url = new URL(CONSOLE_PATH, options.consoleUrl)
+  return tagged(url, options.tags, 'console')
 }
 
 /** Options for {@link buildFundingUrl}. */

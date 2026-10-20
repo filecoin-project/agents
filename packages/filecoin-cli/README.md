@@ -46,7 +46,7 @@ The session key cannot fund the account. `filecoin status` reports the expiry of
 - `account.health`: `deficit` when the account owes debt or its available funds are spent, `warning` with 14 days or less left, and `healthy` otherwise. `runwayDays` and `fundedUntil` say when the available funds run out. Both are absent when nothing is being spent.
 - `storage`: the number of live data sets and the bytes they store, as Warm Storage prices them.
 
-When the account needs a deposit or the Warm Storage approval, `filecoin status` also returns a funding link to the console's setup page, which asks for both.
+When the account needs a deposit or the Warm Storage approval, `filecoin status` also returns a funding link to the console's setup page, which asks for both. `account.consoleUrl` always links the console home, where the owner manages funds, services, and approvals. filecoin-pin's `dashboard` command opens the same page.
 
 `filecoin doctor` shows the network, RPC, Filecoin Pay console origin (`console`), filecoin-api origin (`api`), and folder that `filecoin` resolved, with the source of each value. It also checks the database and the RPC.
 

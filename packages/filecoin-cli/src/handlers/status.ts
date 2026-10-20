@@ -6,7 +6,11 @@ import { defineHandler, isCliError } from 'clipact'
 import { formatEther, type Hex } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { getBalance } from 'viem/actions'
-import { buildFundingUrl, targetBalance } from '../auth/login.ts'
+import {
+  buildConsoleUrl,
+  buildFundingUrl,
+  targetBalance,
+} from '../auth/login.ts'
 import { SCOPES } from '../auth/scopes.ts'
 import { resolveCredentials } from '../auth/session.ts'
 import { status } from '../commands/status.ts'
@@ -116,6 +120,10 @@ export default defineHandler(status, async (ctx) => {
               }),
             }),
           }),
+      consoleUrl: buildConsoleUrl({
+        consoleUrl: app.consoleUrl,
+        tags: app.linkTags,
+      }),
     },
     storage: {
       dataSets: storage.datasetCount,
