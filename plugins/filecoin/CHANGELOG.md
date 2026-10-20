@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.0](https://github.com/filecoin-project/agents/compare/filecoin-plugin-v0.2.0...filecoin-plugin-v0.3.0) (2026-10-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **filecoin-cli:** the default `FILECOIN_CONSOLE_URL` is https://pay.filecoin.cloud. New data sets carry `source: 'filecoin-cli'`, so data sets tagged `source: 'filecoin'` are no longer reused and the next `put` creates a new data set.
+* **filecoin-plugin:** the plugin's MCP tools are renamed, for example from mcp__plugin_filecoin_filecoin-api__list_providers to mcp__plugin_filecoin_filecoin__list_providers in Claude Code, so permission rules that name the old tools must be updated.
+
+### Features
+
+* **filecoin-cli:** send login, funding, and revoke links to the Filecoin Pay console ([#45](https://github.com/filecoin-project/agents/issues/45)) ([83a330c](https://github.com/filecoin-project/agents/commit/83a330ce34d6fd816976ab79f52afdae26cd3a21))
+
+
+### Bug Fixes
+
+* **filecoin-plugin:** describe and categorize the plugin in marketplaces, and name the MCP server filecoin ([#46](https://github.com/filecoin-project/agents/issues/46)) ([74e3311](https://github.com/filecoin-project/agents/commit/74e331152eba3ea7bb94540add127a366b28e11b))
+
 ## [0.2.0](https://github.com/filecoin-project/agents/compare/filecoin-plugin-v0.1.1...filecoin-plugin-v0.2.0) (2026-10-14)
 
 
