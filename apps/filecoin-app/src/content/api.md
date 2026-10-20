@@ -49,6 +49,6 @@ The MCP server at `https://mcp.filecoin.io` offers one read-only tool for each d
 
 ## Limits
 
-- **Rate limits.** 120 requests a minute per IP for the REST API, and 60 for MCP. Over the limit, requests get `429` with `Retry-After`.
+- **Rate limits.** 120 requests a minute per IP for the REST API, and 60 for MCP. Responses send the limit in a `RateLimit-Policy` header, such as `"api";q=120;w=60`. Over the limit, requests get `429` with `Retry-After`.
 - **Caching.** Data reads are not cached by browsers, so every read returns the latest indexed data.
 - **No authentication.** Every route is public and read-only.

@@ -18,6 +18,7 @@ import {
   notFoundResponse,
   PageQuery,
   pageOf,
+  rateLimitHeaders,
   UintInput,
 } from '../schemas/common.ts'
 import {
@@ -46,7 +47,11 @@ import { validationHook } from './hook.ts'
 /** JSON response entry for an OpenAPI route. */
 function ok<T extends z.ZodType>(schema: T, description: string) {
   return {
-    200: { description, content: { 'application/json': { schema } } },
+    200: {
+      description,
+      headers: rateLimitHeaders,
+      content: { 'application/json': { schema } },
+    },
   }
 }
 
