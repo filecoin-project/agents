@@ -72,6 +72,11 @@ export const status = defineCommand({
         needsApproval: z.boolean(),
         depositNeeded: z.string(),
         fundingUrl: z.string().optional(),
+        consoleUrl: z
+          .string()
+          .describe(
+            'Filecoin Pay console home, where the owner manages funds, services, and approvals'
+          ),
       })
       .optional(),
     storage: z
@@ -115,6 +120,7 @@ export const status = defineCommand({
     if (account) {
       lines.push(`ready: ${account.ready ? 'yes' : 'no'}`)
       if (account.fundingUrl) lines.push(`fund at: ${account.fundingUrl}`)
+      lines.push(`console: ${account.consoleUrl}`)
     }
     return lines.join('\n')
   },

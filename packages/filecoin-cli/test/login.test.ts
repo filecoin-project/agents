@@ -14,6 +14,7 @@ import {
 } from 'viem'
 import {
   buildAuthorizeUrl,
+  buildConsoleUrl,
   buildFundingUrl,
   buildRevokeUrl,
   classifyScopes,
@@ -75,6 +76,13 @@ test('buildRevokeUrl matches the Filecoin Pay console revoke link', () => {
   )
 })
 
+test('buildConsoleUrl links the console home without a network', () => {
+  assert.equal(
+    buildConsoleUrl({ consoleUrl: 'https://pay.example/base' }),
+    'https://pay.example/console'
+  )
+})
+
 test('buildFundingUrl asks for the unlimited approval and the deposit', () => {
   const url = new URL(
     buildFundingUrl({
@@ -125,6 +133,7 @@ test('console links carry the analytics tags of their flow', () => {
       network: 'mainnet',
       tags,
     }),
+    console: buildConsoleUrl({ consoleUrl: 'https://pay.example', tags }),
   }
   for (const [flow, link] of Object.entries(links)) {
     const params = new URL(link).searchParams

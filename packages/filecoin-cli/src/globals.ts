@@ -24,7 +24,7 @@ export const globals = defineGlobals({
       .url()
       .default(DEFAULT_CONSOLE_URL)
       .describe(
-        'Filecoin Pay console origin for approval, funding, and revoke links'
+        'Filecoin Pay console origin for approval, funding, revoke, and console home links'
       ),
     apiUrl: z
       .url()
