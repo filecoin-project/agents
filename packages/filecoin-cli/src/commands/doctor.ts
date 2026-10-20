@@ -1,5 +1,6 @@
 import { defineCommand } from 'clipact'
 import * as z from 'zod'
+import { STORAGE_ERRORS } from '../errors.ts'
 import { account, accountEnv } from './shared.ts'
 
 /** A resolved setting and where its value came from. */
@@ -29,12 +30,15 @@ export const doctor = defineCommand({
     consoleUrl: setting,
     apiUrl: setting,
     configFile: z.string(),
-    stateDir: setting,
+    dir: setting.describe(
+      'Folder of config.json, state.db, and staged input; env means FILECOIN_CONFIG_DIR'
+    ),
     credentials: z.enum(['env', 'config', 'pending', 'none']),
     checks: z.array(
       z.object({ name: z.string(), ok: z.boolean(), message: z.string() })
     ),
   }),
+  errors: [...STORAGE_ERRORS],
   readOnly: true,
   human: (data) =>
     [
@@ -43,7 +47,7 @@ export const doctor = defineCommand({
       `console: ${data.consoleUrl.value} (${data.consoleUrl.source})`,
       `api: ${data.apiUrl.value} (${data.apiUrl.source})`,
       `config: ${data.configFile}`,
-      `state: ${data.stateDir.value} (${data.stateDir.source})`,
+      `folder: ${data.dir.value} (${data.dir.source})`,
       `credentials: ${data.credentials}`,
       ...data.checks.map(
         (check) => `${check.ok ? 'ok' : 'FAIL'} ${check.name}: ${check.message}`

@@ -15,13 +15,12 @@ import {
   schemas,
 } from 'clipact/testing'
 import { cli } from '../src/cli.ts'
-import { openConfig } from '../src/config.ts'
-import { tempDir } from './helpers.ts'
+import { openConfig, tempDir } from './helpers.ts'
 
 const SESSION_KEY = `0x${'11'.repeat(32)}`
 const ROOT = '0x1111111111111111111111111111111111111111'
 
-/** The config and state directories of every run, as globals. */
+/** The folder of every run, as `FILECOIN_CONFIG_DIR`. */
 const globalsEnv: Record<string, string> = {}
 
 /** Runs the CLI in process and returns the asserted result and its `data`. */
@@ -53,10 +52,9 @@ function config() {
 }
 
 before(async () => {
-  // Globals, like command input, come from `invoke`'s env, not process.env.
-  const dir = await tempDir()
-  globalsEnv.FILECOIN_CONFIG_DIR = join(dir, 'config')
-  globalsEnv.FILECOIN_STATE_DIR = join(dir, 'state')
+  // The folder, like globals and command input, comes from `invoke`'s env,
+  // not process.env.
+  globalsEnv.FILECOIN_CONFIG_DIR = join(await tempDir(), 'filecoin')
 })
 
 test('definitions are valid', () => assertDefinitions(cli))
@@ -91,8 +89,9 @@ test('root help and schema list the globals', async () => {
     'FILECOIN_RPC_URL',
     'FILECOIN_CONSOLE_URL',
     'FILECOIN_API_URL',
+    'FILECOIN_OUTPUT',
+    'FILECOIN_AGENT',
     'FILECOIN_CONFIG_DIR',
-    'FILECOIN_STATE_DIR',
   ]) {
     assert.ok(environment.includes(variable), `${variable} not in help`)
   }
@@ -102,8 +101,6 @@ test('root help and schema list the globals', async () => {
     rpcUrl: 'FILECOIN_RPC_URL',
     consoleUrl: 'FILECOIN_CONSOLE_URL',
     apiUrl: 'FILECOIN_API_URL',
-    configDir: 'FILECOIN_CONFIG_DIR',
-    stateDir: 'FILECOIN_STATE_DIR',
   })
 })
 
@@ -127,10 +124,10 @@ test('doctor reports where each global came from', async () => {
     value: 'https://api.filecoin.io',
     source: 'default',
   })
-  assert.deepEqual(data.stateDir, {
-    value: globalsEnv.FILECOIN_STATE_DIR,
-    source: 'env',
-  })
+  assert.equal(
+    (data.dir as { value: string }).value,
+    globalsEnv.FILECOIN_CONFIG_DIR
+  )
 })
 
 test('reads without a session ask the user to log in', async () => {

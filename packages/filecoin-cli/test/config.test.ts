@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict'
-import { stat } from 'node:fs/promises'
+import { stat, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { test } from 'node:test'
-import { openConfig, resolveNetwork } from '../src/config.ts'
-import { tempDir } from './helpers.ts'
+import { invoke } from 'clipact/testing'
+import { cli } from '../src/cli.ts'
+import { resolveNetwork } from '../src/config.ts'
+import { openConfig, tempDir } from './helpers.ts'
 
 test('resolveNetwork prefers input, then config, then calibration', async () => {
   const config = openConfig(await tempDir())
@@ -12,16 +15,32 @@ test('resolveNetwork prefers input, then config, then calibration', async () => 
   assert.equal(resolveNetwork('calibration', config), 'calibration')
 })
 
-test('config file is private to the user', async () => {
-  const config = openConfig(await tempDir())
-  config.set('sessions.calibration', {
-    privateKey: '0x01',
-    address: '0x02',
-    scopes: ['addPieces'],
-    fromBlock: '1',
-    createdAt: new Date(0).toISOString(),
+test('the folder is private to the user, and created on first use', async () => {
+  const dir = join(await tempDir(), 'filecoin')
+  await invoke(cli, ['ls'], { env: { FILECOIN_CONFIG_DIR: dir } })
+  const { mode } = await stat(dir)
+  assert.equal(mode & 0o777, 0o700)
+})
+
+test('a relative FILECOIN_CONFIG_DIR is invalid input', async () => {
+  const { json } = await invoke(cli, ['ls'], {
+    env: { FILECOIN_CONFIG_DIR: 'relative/dir' },
   })
-  const { mode } = await stat(config.path)
-  assert.equal(mode & 0o777, 0o600)
-  assert.equal(config.get('sessions.calibration.fromBlock'), '1')
+  assert.equal(
+    (json as { error?: { code: string } }).error?.code,
+    'invalid_input'
+  )
+})
+
+test('a corrupt config file is config_invalid', async () => {
+  const dir = await tempDir()
+  const config = openConfig(dir)
+  await writeFile(config.path, '{ not json')
+  const { json } = await invoke(cli, ['ls'], {
+    env: { FILECOIN_CONFIG_DIR: dir },
+  })
+  assert.equal(
+    (json as { error?: { code: string } }).error?.code,
+    'config_invalid'
+  )
 })

@@ -29,8 +29,7 @@ before(async () => {
   await new Promise<void>((resolve) => rpc.listen(0, '127.0.0.1', resolve))
   const dir = await tempDir()
   env = {
-    FILECOIN_CONFIG_DIR: join(dir, 'config'),
-    FILECOIN_STATE_DIR: join(dir, 'state'),
+    FILECOIN_CONFIG_DIR: join(dir, 'filecoin'),
     FILECOIN_RPC_URL: `http://127.0.0.1:${(rpc.address() as AddressInfo).port}`,
   }
 })

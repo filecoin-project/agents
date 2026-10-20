@@ -6,8 +6,8 @@ import { appFor, findOperation } from '../context.ts'
  * Show a saved operation with its input and checkpoint. The signed commit's
  * `extraData` is left out: it is long and only useful to `resume`.
  */
-export default defineHandler(inspect, (ctx) => {
-  const app = appFor(ctx)
+export default defineHandler(inspect, async (ctx) => {
+  const app = await appFor(ctx)
   const op = findOperation(app, ctx.input.id)
   const { commit, ...checkpoint } = op.checkpoint
   return ctx.ok({

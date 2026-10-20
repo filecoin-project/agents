@@ -7,19 +7,14 @@ import {
 } from '@filoz/synapse-core/chains'
 import { getTransport } from '@filoz/synapse-core/client'
 import { type Client, createPublicClient, http, type Transport } from 'viem'
-import {
-  type Config,
-  type Network,
-  openConfig,
-  resolveNetwork,
-} from './config.ts'
+import { type Config, type Network, resolveNetwork } from './config.ts'
 import { abortable } from './errors.ts'
 import {
   DEFAULT_API_URL,
   DEFAULT_CONSOLE_URL,
   type GlobalSettings,
 } from './globals.ts'
-import { openDatabase, stateDir } from './state/db.ts'
+import { openDatabase } from './state/db.ts'
 
 /**
  * Shared per-invocation context: resolved network, chain client, config, and
@@ -37,8 +32,8 @@ export type App = {
   apiUrl: string
   /** `FILECOIN_RPC_URL`, which replaces the chain's fallback transport. */
   rpcUrl: string | undefined
-  /** Directory of the state database and staged input. */
-  stateDir: string
+  /** The CLI's folder (`ctx.dir()`), which holds the state database and staged input. */
+  dir: string
   /** Aborted on SIGINT, SIGTERM, or SIGHUP; cancels chain and provider calls. */
   signal: AbortSignal | undefined
   /** RPC transport for the resolved chain, bound to `signal`. */
@@ -52,10 +47,15 @@ export type App = {
 }
 
 /**
- * Options for {@link createApp}: the shared account input of a command and
- * the CLI's globals. Omitted globals take their defaults.
+ * Options for {@link createApp}: the opened config store, the CLI's folder,
+ * the shared account input of a command, and the CLI's globals. Omitted
+ * globals take their defaults.
  */
 export type CreateAppOptions = Partial<GlobalSettings> & {
+  /** The `config.json` store, from `store.get(ctx)`. */
+  config: Config
+  /** The CLI's folder, from `ctx.dir()`. */
+  dir: string
   /** `--network` or `FILECOIN_NETWORK`; falls back to the config file. */
   network?: Network | undefined
   /** `FILECOIN_SESSION_KEY`, for CI without `filecoin login`. */
@@ -94,13 +94,12 @@ export function withSignal(
  * this directly; clipact has no middleware. `rpcUrl` replaces the chain's
  * default fallback transport.
  */
-export function createApp(options: CreateAppOptions = {}): App {
-  const config = openConfig(options.configDir)
+export function createApp(options: CreateAppOptions): App {
+  const { config, dir } = options
   const network = resolveNetwork(options.network, config)
   const chain = network === 'mainnet' ? mainnet : calibration
   const base = options.rpcUrl ? http(options.rpcUrl) : getTransport(chain)
   const transport = options.signal ? withSignal(base, options.signal) : base
-  const root = stateDir(options.stateDir)
   let db: DatabaseSync | undefined
   return {
     network,
@@ -113,14 +112,14 @@ export function createApp(options: CreateAppOptions = {}): App {
     consoleUrl: options.consoleUrl ?? DEFAULT_CONSOLE_URL,
     apiUrl: options.apiUrl ?? DEFAULT_API_URL,
     rpcUrl: options.rpcUrl,
-    stateDir: root,
+    dir,
     signal: options.signal,
     transport,
     client: createPublicClient({ chain, transport }),
     db: () => {
-      db ??= openDatabase(root)
+      db ??= openDatabase(dir)
       return db
     },
-    stagingDir: (operationId) => join(root, 'staging', operationId),
+    stagingDir: (operationId) => join(dir, 'staging', operationId),
   }
 }

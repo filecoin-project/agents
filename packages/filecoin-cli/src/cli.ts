@@ -1,6 +1,7 @@
 import { defineCli } from 'clipact'
 import pkg from '../package.json' with { type: 'json' }
 import { commands } from './commands/index.ts'
+import { store } from './config.ts'
 import { errors } from './errors.ts'
 import { globals } from './globals.ts'
 
@@ -16,8 +17,9 @@ export const cli = defineCli({
   name: 'filecoin',
   version: pkg.version,
   description: 'Store files and folders on Filecoin and get retrieval links',
-  envPrefix: 'FIL',
+  envPrefix: 'FILECOIN',
   globals,
+  store,
   commands,
   skills: new URL('../skills/', import.meta.url),
   mapError: () => import('./map-error.ts'),

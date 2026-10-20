@@ -6,6 +6,7 @@ import {
   requireSession,
   resolveCredentials,
 } from '../auth/session.ts'
+import { store } from '../config.ts'
 import { notFound, resumeStep } from '../errors.ts'
 import { globals } from '../globals.ts'
 import type { Network } from '../network.ts'
@@ -33,19 +34,26 @@ export type JobReporter = Pick<
 
 /**
  * Build the invocation context from a handler's account input, the CLI's
- * globals, and the signal. Shared setup is a plain function each handler
- * calls; clipact has no middleware.
+ * globals, its folder and store, and the signal. Shared setup is a plain
+ * function each handler calls; clipact has no middleware. The folder is
+ * created with mode 0700 unless `create` is false, as for `doctor`, which
+ * reports a folder it cannot create instead of failing.
  *
  * @see https://github.com/hugomrdias/agents/blob/main/docs/agent-cli/framework-design.md#defining-commands
  * @see https://github.com/hugomrdias/agents/tree/main/packages/clipact#globals
+ * @see https://github.com/hugomrdias/agents/tree/main/packages/clipact#storage
  */
-export function appFor(
+export async function appFor(
   // biome-ignore lint/suspicious/noExplicitAny: any command's context
-  ctx: Context<any, any> & { input: AccountInput }
-): App {
+  ctx: Context<any, any> & { input: AccountInput },
+  { create = true }: { create?: boolean } = {}
+): Promise<App> {
   const { network, sessionKey, rootAddress } = ctx.input
+  const [dir, config] = await Promise.all([ctx.dir({ create }), store.get(ctx)])
   return createApp({
     ...globals.get(ctx),
+    config,
+    dir,
     network,
     sessionKey,
     rootAddress,

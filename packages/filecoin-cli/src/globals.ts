@@ -30,21 +30,11 @@ export const globals = defineGlobals({
       .url()
       .default(DEFAULT_API_URL)
       .describe('filecoin-api origin for retrieval links'),
-    configDir: z
-      .string()
-      .optional()
-      .describe('Config directory (default: the platform config directory)'),
-    stateDir: z
-      .string()
-      .optional()
-      .describe('State directory (default: the platform data directory)'),
   }),
   env: {
     rpcUrl: 'FILECOIN_RPC_URL',
     consoleUrl: 'FILECOIN_CONSOLE_URL',
     apiUrl: 'FILECOIN_API_URL',
-    configDir: 'FILECOIN_CONFIG_DIR',
-    stateDir: 'FILECOIN_STATE_DIR',
   },
 })
 

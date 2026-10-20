@@ -4,8 +4,8 @@ import { listOperations } from '../../state/operations.ts'
 import { accountScope, appFor } from '../context.ts'
 
 /** List operations, most recently updated first, one page at a time. */
-export default defineHandler(ls, (ctx) => {
-  const app = appFor(ctx)
+export default defineHandler(ls, async (ctx) => {
+  const app = await appFor(ctx)
   const page = listOperations(app.db(), {
     ...accountScope(app),
     limit: ctx.input.limit,

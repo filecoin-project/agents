@@ -25,8 +25,8 @@ import {
 } from 'viem'
 import { SCOPES, type ScopeId } from '../src/auth/scopes.ts'
 import { cli } from '../src/cli.ts'
-import { openConfig, type StoredSession } from '../src/config.ts'
-import { tempDir } from './helpers.ts'
+import type { StoredSession } from '../src/config.ts'
+import { openConfig, tempDir } from './helpers.ts'
 
 const OWNER = '0x1111111111111111111111111111111111111111' as Address
 const LATER = BigInt(Math.floor(Date.now() / 1000) + 86_400)
@@ -164,7 +164,7 @@ const server = createServer((req, res) => {
   })
 })
 
-/** Globals of every run: temporary config and state, and the fake RPC. */
+/** Env of every run: a temporary folder (`FILECOIN_CONFIG_DIR`) and the fake RPC. */
 const env: Record<string, string> = {}
 
 /** The config file every run reads. */
@@ -174,8 +174,7 @@ function config() {
 
 before(async () => {
   const dir = await tempDir()
-  env.FILECOIN_CONFIG_DIR = join(dir, 'config')
-  env.FILECOIN_STATE_DIR = join(dir, 'state')
+  env.FILECOIN_CONFIG_DIR = join(dir, 'filecoin')
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
   const { port } = server.address() as AddressInfo
   env.FILECOIN_RPC_URL = `http://127.0.0.1:${port}`

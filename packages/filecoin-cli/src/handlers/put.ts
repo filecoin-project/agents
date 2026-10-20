@@ -23,7 +23,7 @@ type Authorization =
  */
 export default defineHandler(put, async (ctx) => {
   const { input } = ctx
-  const app = appFor(ctx)
+  const app = await appFor(ctx)
   const options = {
     path: input.path,
     name: input.name,

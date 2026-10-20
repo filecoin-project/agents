@@ -3,7 +3,7 @@ import { getBlockNumber } from 'viem/actions'
 import { resolveCredentials } from '../auth/session.ts'
 import { doctor } from '../commands/doctor.ts'
 import { abortable } from '../errors.ts'
-import { DEFAULT_API_URL, DEFAULT_CONSOLE_URL, globals } from '../globals.ts'
+import { DEFAULT_API_URL, DEFAULT_CONSOLE_URL } from '../globals.ts'
 import { firstLine } from '../map-error.ts'
 import { appFor } from './context.ts'
 
@@ -15,11 +15,14 @@ const RPC_TIMEOUT = 10_000
  * database opens and the RPC endpoint answers on the expected chain. Never
  * prints the session key. A global is `env` when its variable is set; a URL
  * set to its default value reports `default`, since clipact applies schema
- * defaults before the handler runs.
+ * defaults before the handler runs. The folder comes from `ctx.dir()` without
+ * creating it; clipact does not tell handlers whether `FILECOIN_CONFIG_DIR`
+ * chose it, so its source reads the process environment, as `run()` does.
+ *
+ * @see https://github.com/hugomrdias/agents/tree/main/packages/clipact#storage
  */
 export default defineHandler(doctor, async (ctx) => {
-  const app = appFor(ctx)
-  const settings = globals.get(ctx)
+  const app = await appFor(ctx, { create: false })
   const checks: { name: string; ok: boolean; message: string }[] = []
 
   let credentials: 'env' | 'config' | 'pending' | 'none' = 'none'
@@ -91,9 +94,9 @@ export default defineHandler(doctor, async (ctx) => {
       source: app.apiUrl === DEFAULT_API_URL ? 'default' : 'env',
     },
     configFile: app.config.path,
-    stateDir: {
-      value: app.stateDir,
-      source: settings.stateDir ? 'env' : 'default',
+    dir: {
+      value: app.dir,
+      source: process.env.FILECOIN_CONFIG_DIR ? 'env' : 'default',
     },
     credentials,
     checks,

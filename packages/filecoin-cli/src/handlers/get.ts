@@ -22,7 +22,7 @@ async function assertWritable(path: string, force: boolean): Promise<void> {
  */
 export default defineHandler(get, async (ctx) => {
   const { input } = ctx
-  const app = appFor(ctx)
+  const app = await appFor(ctx)
   const { target } = input
   let resource: Resource | undefined
   if (target.startsWith('res_')) {

@@ -52,7 +52,7 @@ packages/filecoin-cli/
     ├── map-error.ts      viem and synapse-core errors → service_unavailable, timeout
     ├── network.ts        network names, free of imports
     ├── app.ts            per-invocation context: network, chain, signal-bound clients, config, lazy DB
-    ├── config.ts         iso-conf store and network resolution
+    ├── config.ts         clipact store (config.json) and network resolution
     ├── errors.ts         error codes, operationError(), abortable()
     ├── usdfc.ts          USDFC amount formatting
     ├── auth/
@@ -88,7 +88,9 @@ We measured startup on Node 26 as the median of 20 runs after 5 warmups, with a 
 
 ## Configuration
 
-[iso-conf](https://github.com/hugomrdias/iso-repo/tree/main/packages/iso-conf) stores `config.json` with mode `0600`. The file lives in the platform config directory for `filecoin`, or in `FILECOIN_CONFIG_DIR` when it is set.
+`filecoin` keeps its files in clipact's [folder](https://github.com/hugomrdias/agents/blob/main/packages/clipact/README.md#storage) for the CLI: `~/Library/Application Support/filecoin` on macOS, `%LOCALAPPDATA%\filecoin` on Windows, and `$XDG_DATA_HOME/filecoin` (default `~/.local/share/filecoin`) elsewhere. `FILECOIN_CONFIG_DIR`, a clipact framework variable since `envPrefix` is `FILECOIN`, replaces it with an absolute path. `appFor` gets the folder from `ctx.dir()`, which creates it with mode `0700`. `doctor` passes `create: false`, so it reports a folder it cannot create instead of failing. Folders used before clipact 0.6 (`~/Library/Preferences/filecoin`, `~/.config/filecoin`, and env-paths' data folder on Windows) are not read, so users log in again.
+
+`config.ts` defines the clipact store, `defineStore({ schema: ConfigSchema })`, and `appFor` opens it with `store.get(ctx)`. It is `config.json` in the folder, read and written with [iso-conf](https://github.com/hugomrdias/iso-repo/tree/main/packages/iso-conf). Each write is atomic, holds a lock, and gives the file mode `0600`. A corrupt file is `config_invalid`, and a folder that refuses a write is `state_unwritable`, so every command that builds an app declares both codes. clipact also keeps its own `clipact.json` there.
 
 ```jsonc
 {
@@ -113,7 +115,7 @@ We measured startup on Node 26 as the median of 20 runs after 5 warmups, with a 
 
 `filecoin` takes credentials from `FILECOIN_SESSION_KEY` with `FILECOIN_ROOT_ADDRESS` first, then from the saved session. Both variables are also command input fields. `sessionKey` is a clipact secret. clipact reads it only from the environment, rejects it as a flag, and redacts it in `--debug` and `schema`. `filecoin` reports a pending session as `login_pending`, not as logged out. CI and cloud agents, whose disk does not outlive the session, use the variables with a key exported from the Filecoin Pay console's session keys page ([cloud agents](https://poc.filecoin.cloud/agents#cloud-agents)).
 
-`FILECOIN_CONFIG_DIR`, `FILECOIN_STATE_DIR`, `FILECOIN_RPC_URL`, `FILECOIN_CONSOLE_URL`, and `FILECOIN_API_URL` are clipact [globals](https://github.com/hugomrdias/agents/blob/main/packages/clipact/README.md#globals), defined in `globals.ts`, not command input. clipact reads them from the environment of each run, validates them before the command's input (the three URLs must be URLs), and applies the console and API defaults. Root help lists them under Environment, `schema --list` publishes them under `globals`, and `--debug` prints their sources. `filecoin doctor` shows each resolved value and its source. A console or API URL set to its default value reports `default`, because clipact applies schema defaults before the handler runs.
+`FILECOIN_RPC_URL`, `FILECOIN_CONSOLE_URL`, and `FILECOIN_API_URL` are clipact [globals](https://github.com/hugomrdias/agents/blob/main/packages/clipact/README.md#globals), defined in `globals.ts`, not command input. clipact reads them from the environment of each run, validates them before the command's input, and applies the console and API defaults. Root help lists them under Environment, `schema --list` publishes them under `globals`, and `--debug` prints their sources. `filecoin doctor` shows each resolved value and its source. A console or API URL set to its default value reports `default`, because clipact applies schema defaults before the handler runs. clipact does not tell a handler whether `FILECOIN_CONFIG_DIR` chose the folder, so `doctor` reads that variable from the process environment. An in-process `invoke` test therefore sees `default` for the folder even when its env sets the variable.
 
 ## Login
 
@@ -301,7 +303,9 @@ The provider removes the piece later, at a proving boundary. `ls` hides resource
 ## Local state
 
 ```text
-<FILECOIN_STATE_DIR or platform data dir>/
+<FILECOIN_CONFIG_DIR or clipact's platform folder>/
+├── config.json        clipact store: network and sessions (mode 0600)
+├── clipact.json       clipact's telemetry state
 ├── state.db           SQLite (node:sqlite), WAL, migrations via PRAGMA user_version
 └── staging/<op_id>/   folder.car for unfinished folder puts
 ```
@@ -347,7 +351,7 @@ The tests use the Node test runner and need no network. `pnpm --filter filecoin 
 | `cli.test.ts` | The whole CLI in process through `clipact/testing` in strict mode. It covers definitions, schemas, auth and pending-login errors, the logout revoke link, confirmation, a dry run without a session, secrets kept out of flags and output, and the globals in root help, `schema --list`, validation, and `doctor` sources. Globals come from the env passed to `invoke`, not from `process.env` |
 | `contract.test.ts` | The built binary without a TTY. It covers one JSON line on stdout, exit codes, no leaked session key, and a SIGTERM during a hanging RPC call that gives an `interrupted` result and exit 143 |
 | `app.test.ts` | The signal-bound RPC transport and `abortable()`, including a call that fails after the abort |
-| `config.test.ts` | Network resolution and the `0600` mode of the config file |
+| `config.test.ts` | Network resolution, the `0700` folder clipact creates, a relative `FILECOIN_CONFIG_DIR`, and a corrupt `config.json` |
 
 ### Calibration run on 2026-09-29
 

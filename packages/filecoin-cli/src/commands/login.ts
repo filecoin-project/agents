@@ -1,7 +1,7 @@
 import { defineCommand } from 'clipact'
 import * as z from 'zod'
 import { DEFAULT_KEY_NAME, SCOPE_IDS } from '../auth/scope-ids.ts'
-import { ErrorCodes } from '../errors.ts'
+import { ErrorCodes, STORAGE_ERRORS } from '../errors.ts'
 import { account, accountEnv } from './shared.ts'
 
 /**
@@ -82,6 +82,7 @@ export const login = defineCommand({
     expiresAt: z.string().optional().describe('Earliest scope expiry'),
   }),
   errors: [
+    ...STORAGE_ERRORS,
     ErrorCodes.authRequired,
     ErrorCodes.loginPending,
     ErrorCodes.permissionDenied,
