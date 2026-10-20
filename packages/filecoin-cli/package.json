@@ -35,7 +35,7 @@
     "@filoz/synapse-core": "catalog:",
     "@ipld/car": "^5.4.7",
     "@types/node": "catalog:",
-    "clipact": "0.6.0",
+    "clipact": "0.7.0",
     "esbuild": "0.28.2",
     "ipfs-unixfs-exporter": "^16.2.3",
     "ipfs-unixfs-importer": "^17.1.1",

@@ -30,9 +30,14 @@ export const doctor = defineCommand({
     consoleUrl: setting,
     apiUrl: setting,
     configFile: z.string(),
-    dir: setting.describe(
-      'Folder of config.json, state.db, and staged input; env means FILECOIN_CONFIG_DIR'
-    ),
+    dir: setting
+      .extend({
+        variable: z
+          .string()
+          .optional()
+          .describe('FILECOIN_CONFIG_DIR, or XDG_DATA_HOME on Linux'),
+      })
+      .describe('Folder of config.json, state.db, and staged input'),
     credentials: z.enum(['env', 'config', 'pending', 'none']),
     checks: z.array(
       z.object({ name: z.string(), ok: z.boolean(), message: z.string() })
@@ -47,7 +52,7 @@ export const doctor = defineCommand({
       `console: ${data.consoleUrl.value} (${data.consoleUrl.source})`,
       `api: ${data.apiUrl.value} (${data.apiUrl.source})`,
       `config: ${data.configFile}`,
-      `folder: ${data.dir.value} (${data.dir.source})`,
+      `folder: ${data.dir.value} (${data.dir.variable ?? data.dir.source})`,
       `credentials: ${data.credentials}`,
       ...data.checks.map(
         (check) => `${check.ok ? 'ok' : 'FAIL'} ${check.name}: ${check.message}`

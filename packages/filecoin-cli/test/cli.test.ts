@@ -124,10 +124,24 @@ test('doctor reports where each global came from', async () => {
     value: 'https://api.filecoin.io',
     source: 'default',
   })
-  assert.equal(
-    (data.dir as { value: string }).value,
-    globalsEnv.FILECOIN_CONFIG_DIR
-  )
+  assert.deepEqual(data.dir, {
+    value: globalsEnv.FILECOIN_CONFIG_DIR,
+    source: 'env',
+    variable: 'FILECOIN_CONFIG_DIR',
+  })
+})
+
+test('doctor reports the platform folder when FILECOIN_CONFIG_DIR is unset', async () => {
+  const home = await tempDir()
+  const result = await invoke(cli, ['doctor'], {
+    env: { HOME: home, FILECOIN_RPC_URL: 'http://127.0.0.1:1' },
+  })
+  const { dir } = assertContract(result).data as {
+    dir: { value: string; source: string; variable?: string }
+  }
+  assert.equal(dir.source, 'default')
+  assert.equal(dir.variable, undefined)
+  assert.ok(dir.value.startsWith(home), `${dir.value} is not under HOME`)
 })
 
 test('reads without a session ask the user to log in', async () => {
