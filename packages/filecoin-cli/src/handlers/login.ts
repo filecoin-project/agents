@@ -196,7 +196,7 @@ export default defineHandler(login, async (ctx) => {
       }
     }
   }
-  const app = appFor(ctx)
+  const app = await appFor(ctx)
   const human = ctx.mode.interactive && ctx.mode.agent === false
   const wait = input.wait ?? human
   const key = `sessions.${app.network}` as const

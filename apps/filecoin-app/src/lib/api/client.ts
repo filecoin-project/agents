@@ -20,4 +20,4 @@ export {
  *
  * @see https://openapi-ts.dev/openapi-fetch/
  */
-export const api = createApiClient({ baseUrl: env.filApiUrl })
+export const api = createApiClient({ baseUrl: env.filApiFetchUrl })

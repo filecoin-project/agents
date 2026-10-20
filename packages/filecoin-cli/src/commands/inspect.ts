@@ -1,6 +1,6 @@
 import { defineCommand } from 'clipact'
 import * as z from 'zod'
-import { ErrorCodes } from '../errors.ts'
+import { ErrorCodes, STORAGE_ERRORS } from '../errors.ts'
 import { account, accountEnv, resource, urls } from './shared.ts'
 
 /** `filecoin inspect <ref>`: show a resource and its retrieval URLs. */
@@ -35,6 +35,7 @@ export const inspect = defineCommand({
       .optional(),
   }),
   errors: [
+    ...STORAGE_ERRORS,
     ErrorCodes.authRequired,
     ErrorCodes.loginPending,
     ErrorCodes.notFound,

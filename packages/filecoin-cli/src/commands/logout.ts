@@ -1,5 +1,6 @@
 import { defineCommand } from 'clipact'
 import * as z from 'zod'
+import { STORAGE_ERRORS } from '../errors.ts'
 import { account, accountEnv } from './shared.ts'
 
 /** `filecoin logout`: forget the local session key for a network. */
@@ -19,6 +20,7 @@ export const logout = defineCommand({
       .optional()
       .describe('Console link that revokes the approved key on chain'),
   }),
+  errors: [...STORAGE_ERRORS],
   idempotent: true,
   human: (data) => {
     if (!data.removed) return `No session key on ${data.network}.`

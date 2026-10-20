@@ -20,7 +20,7 @@ const PROBE_SIZE = 1n << 20n
  * A missing or pending session is a state to report, not an error.
  */
 export default defineHandler(status, async (ctx) => {
-  const app = appFor(ctx)
+  const app = await appFor(ctx)
   let credentials: ReturnType<typeof resolveCredentials>
   try {
     credentials = resolveCredentials(app)

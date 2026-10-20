@@ -40,7 +40,7 @@ const estimate = z.object({
 })
 
 /**
- * `filecoin put <path>` (alias `publish`): store a file as exact bytes, or a
+ * `filecoin put <path>`: store a file as exact bytes, or a
  * directory as a UnixFS CAR served at `/ipfs/<rootCid>/`, with one copy.
  */
 export const put = defineCommand({
@@ -50,7 +50,7 @@ export const put = defineCommand({
   examples: [
     'filecoin put ./report.pdf',
     'filecoin put ./site --name docs',
-    'filecoin publish ./site --dry-run',
+    'filecoin put ./site --dry-run',
   ],
   input: z.strictObject({
     path: z.string().describe('File or directory to store'),

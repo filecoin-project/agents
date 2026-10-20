@@ -6,7 +6,9 @@ import {
   requireSession,
   resolveCredentials,
 } from '../auth/session.ts'
+import { store } from '../config.ts'
 import { notFound, resumeStep } from '../errors.ts'
+import { globals } from '../globals.ts'
 import type { Network } from '../network.ts'
 import { getOperation, type Operation } from '../state/operations.ts'
 import {
@@ -40,24 +42,39 @@ export function driverOf(mode: Pick<Mode, 'agent' | 'interactive'>): string {
 }
 
 /**
- * Build the invocation context from a handler's account input, signal, and
- * mode. Shared setup is a plain function each handler calls; clipact has no
- * middleware.
+ * Build the invocation context from a handler's account input, the CLI's
+ * globals, its folder and store, and the signal. Console links get tags
+ * naming the driver unless the user opted out of telemetry with
+ * `DO_NOT_TRACK` or `FILECOIN_TELEMETRY=0`. Shared setup is a plain
+ * function each handler calls; clipact has no middleware. The folder is
+ * created with mode 0700 unless `create` is false, as for `doctor`, which
+ * reports a folder it cannot create instead of failing.
  *
  * @see https://github.com/hugomrdias/agents/blob/main/docs/agent-cli/framework-design.md#defining-commands
+ * @see https://github.com/hugomrdias/agents/tree/main/packages/clipact#globals
+ * @see https://github.com/hugomrdias/agents/tree/main/packages/clipact#storage
+ * @see https://github.com/hugomrdias/agents/tree/main/packages/clipact#telemetry
  */
-export function appFor(ctx: {
-  input: AccountInput
-  signal: AbortSignal
-  mode: Mode
-}): App {
+export async function appFor(
+  // biome-ignore lint/suspicious/noExplicitAny: any command's context
+  ctx: Context<any, any> & { input: AccountInput },
+  { create = true }: { create?: boolean } = {}
+): Promise<App> {
   const { network, sessionKey, rootAddress } = ctx.input
+  const [dir, config, telemetry] = await Promise.all([
+    ctx.dir({ create }),
+    store.get(ctx),
+    ctx.telemetry(),
+  ])
   return createApp({
+    ...globals.get(ctx),
+    config,
+    dir,
+    linkTags: telemetry.optedOut ? undefined : { driver: driverOf(ctx.mode) },
     network,
     sessionKey,
     rootAddress,
     signal: ctx.signal,
-    driver: driverOf(ctx.mode),
   })
 }
 

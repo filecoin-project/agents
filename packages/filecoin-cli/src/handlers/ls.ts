@@ -5,8 +5,8 @@ import { resourceUrls } from '../storage/urls.ts'
 import { accountScope, appFor } from './context.ts'
 
 /** List managed resources, newest first, one page at a time. */
-export default defineHandler(ls, (ctx) => {
-  const app = appFor(ctx)
+export default defineHandler(ls, async (ctx) => {
+  const app = await appFor(ctx)
   const page = listResources(app.db(), {
     ...accountScope(app),
     limit: ctx.input.limit,

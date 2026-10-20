@@ -38,7 +38,8 @@ packages/filecoin-cli/
 ├── skills/               gitignored build copy of plugins/filecoin/skills/, installed by `filecoin skills install`
 └── src/
     ├── main.ts           cli.run()
-    ├── cli.ts            defineCli: name, version, commands, aliases, skills, mapError
+    ├── cli.ts            defineCli: name, version, globals, commands, skills, mapError
+    ├── globals.ts        environment-only settings (defineGlobals); imports only zod and clipact
     ├── commands/         one definition per command; imports only zod and clipact
     │   ├── shared.ts     account input fragment, paging, output schemas
     │   ├── login.ts  logout.ts  status.ts  doctor.ts
@@ -51,7 +52,7 @@ packages/filecoin-cli/
     ├── map-error.ts      viem and synapse-core errors → service_unavailable, timeout
     ├── network.ts        network names, free of imports
     ├── app.ts            per-invocation context: network, chain, signal-bound clients, config, lazy DB
-    ├── config.ts         iso-conf store and network resolution
+    ├── config.ts         clipact store (config.json) and network resolution
     ├── errors.ts         error codes, operationError(), abortable()
     ├── usdfc.ts          USDFC amount formatting
     ├── auth/
@@ -77,8 +78,8 @@ packages/filecoin-cli/
 
 The code has three layers:
 
-1. **`commands/`** declares each command once. A definition holds the input schema (flags, positionals, environment fallbacks, and secrets), the output schema, the error codes, and the side effects (`readOnly`, `idempotent`, `confirm`, and `dryRun`). clipact derives parsing, validation, help, `schema`, and completions from it. These modules import only zod, clipact, `commands/shared.ts`, and three local modules that need nothing else: `errors.ts`, `network.ts`, and `auth/scope-ids.ts`. So `--help`, `--version`, and `schema` never load synapse-core or viem.
-2. **`handlers/`** resolve the session and the account scope through plain functions, `appFor` and `jobContext`, and then call into storage or auth. clipact has no middleware, so shared setup is a function that each handler calls.
+1. **`commands/`** declares each command once. A definition holds the input schema (flags, positionals, environment fallbacks, and secrets), the output schema, the error codes, and the side effects (`readOnly`, `idempotent`, `confirm`, and `dryRun`). clipact derives parsing, validation, help, `schema`, and completions from it. These modules and `globals.ts` import only zod, clipact, `commands/shared.ts`, and three local modules that need nothing else: `errors.ts`, `network.ts`, and `auth/scope-ids.ts`. So `--help`, `--version`, and `schema` never load synapse-core or viem.
+2. **`handlers/`** resolve the session and the account scope through plain functions, `appFor` and `jobContext`, and then call into storage or auth. `appFor` reads the CLI's globals with `globals.get(ctx)` and passes them to `createApp`. clipact has no middleware, so shared setup is a function that each handler calls.
 3. **`storage/`, `state/`, and `auth/`** hold the storage, state, and auth logic. `jobs.ts` depends only on the `StorageBackend` interface, so tests replace the provider and the chain with a fake.
 
 `createApp` in `app.ts` builds one `App` per command from the command's account input. The `App` opens the database on first use, so `status` and `logout` never touch the state database.
@@ -87,7 +88,9 @@ We measured startup on Node 26 as the median of 20 runs after 5 warmups, with a 
 
 ## Configuration
 
-[iso-conf](https://github.com/hugomrdias/iso-repo/tree/main/packages/iso-conf) stores `config.json` with mode `0600`. The file lives in the platform config directory for `filecoin`, or in `FILECOIN_CONFIG_DIR` when it is set.
+`filecoin` keeps its files in clipact's [folder](https://github.com/hugomrdias/agents/blob/main/packages/clipact/README.md#storage) for the CLI: `~/Library/Application Support/filecoin` on macOS, `%LOCALAPPDATA%\filecoin` on Windows, and `$XDG_DATA_HOME/filecoin` (default `~/.local/share/filecoin`) elsewhere. `FILECOIN_CONFIG_DIR`, a clipact framework variable since `envPrefix` is `FILECOIN`, replaces it with an absolute path. `appFor` gets the folder from `ctx.dir()`, which creates it with mode `0700`. `doctor` passes `create: false`, so it reports a folder it cannot create instead of failing. Folders used before clipact 0.6 (`~/Library/Preferences/filecoin`, `~/.config/filecoin`, and env-paths' data folder on Windows) are not read, so users log in again.
+
+`config.ts` defines the clipact store, `defineStore({ schema: ConfigSchema })`, and `appFor` opens it with `store.get(ctx)`. It is `config.json` in the folder, read and written with [iso-conf](https://github.com/hugomrdias/iso-repo/tree/main/packages/iso-conf). Each write is atomic, holds a lock, and gives the file mode `0600`. A corrupt file is `config_invalid`, and a folder that refuses a write is `state_unwritable`, so every command that builds an app declares both codes. clipact also keeps its own `clipact.json` there.
 
 ```jsonc
 {
@@ -108,11 +111,11 @@ We measured startup on Node 26 as the median of 20 runs after 5 warmups, with a 
 }
 ```
 
-`filecoin` resolves the network from `--network`, then `FILECOIN_NETWORK`, then the config file, then `calibration`. clipact has no global flags, so `network` is a field of every command's input, in the `account` fragment of `commands/shared.ts`. The field has `FILECOIN_NETWORK` as its environment fallback and no schema default, so the config file still applies when neither is set. Each network has its own session.
+`filecoin` resolves the network from `--network`, then `FILECOIN_NETWORK`, then the config file, then `calibration`. clipact globals come only from the environment, and `network` also needs a flag, so it is a field of every command's input, in the `account` fragment of `commands/shared.ts`. The field has `FILECOIN_NETWORK` as its environment fallback and no schema default, so the config file still applies when neither is set. Each network has its own session.
 
 `filecoin` takes credentials from `FILECOIN_SESSION_KEY` with `FILECOIN_ROOT_ADDRESS` first, then from the saved session. Both variables are also command input fields. `sessionKey` is a clipact secret. clipact reads it only from the environment, rejects it as a flag, and redacts it in `--debug` and `schema`. `filecoin` reports a pending session as `login_pending`, not as logged out. CI and cloud agents, whose disk does not outlive the session, use the variables with a key exported from the Filecoin Pay console's session keys page ([cloud agents](https://poc.filecoin.cloud/agents#cloud-agents)).
 
-`FILECOIN_CONFIG_DIR`, `FILECOIN_STATE_DIR`, `FILECOIN_RPC_URL`, `FILECOIN_CONSOLE_URL`, and `FILECOIN_API_URL` are process settings, not command input. `filecoin doctor` shows each resolved value and its source. `FILECOIN_TELEMETRY_DISABLED` and `DO_NOT_TRACK` are process settings too; they drop the [console link tags](#login).
+`FILECOIN_RPC_URL`, `FILECOIN_CONSOLE_URL`, and `FILECOIN_API_URL` are clipact [globals](https://github.com/hugomrdias/agents/blob/main/packages/clipact/README.md#globals), defined in `globals.ts`, not command input. clipact reads them from the environment of each run, validates them before the command's input, and applies the console and API defaults. Root help lists them under Environment, `schema --list` publishes them under `globals`, and `--debug` prints their sources. `filecoin doctor` shows each resolved value and its source. A console or API URL set to its default value reports `default`, because clipact applies schema defaults before the handler runs. For the folder, `doctor` reports what `ctx.storage()` resolved from the run's environment: `env` with the variable `FILECOIN_CONFIG_DIR`, or `default`, with `XDG_DATA_HOME` as the variable when it set the default on Linux.
 
 ## Login
 
@@ -149,7 +152,7 @@ The login code lives in `auth/login.ts` and `handlers/login.ts`. It behaves as f
 - **The owner can change the request.** The console prefills the name, scopes, and expiry from the link, and the owner can change each one before signing. After the CLI finds the owner, it reads the expiry of each scope. If a requested scope is missing, the CLI still saves the session and returns `permission_denied`. The error lists the missing scopes in `error.details` and has a `by: "user"` step to log in again.
 - **Only a human waits.** A human is present when clipact's `mode.interactive` is true and no agent is detected. In that case, login opens the browser and waits for up to 600 seconds, and `ctx.signal` stops the wait. Otherwise, login checks once and returns `login_pending` with two `next` steps. The first is the approval link, `by: "user"`. The second is `filecoin login --check`, `by: "agent"`, to check again. Login never opens a browser for an agent.
 - **The console links have a fixed format.** The CLI follows the link contract of the [Filecoin Pay console](https://github.com/FilOzone/filecoin-pay-explorer/blob/staging/apps/explorer/src/utils/setupLink.ts), which filecoin-pin also uses. Login and funding links open `/console/setup`, which lists each requested step with its status read from the chain: the session key, the Warm Storage approval, and the deposit. The approval link is `/console/setup?network=<net>&approval=unlimited&authorize=<address>&scopes=<ids>&name=<name>&days=<n>`. `approval=unlimited` makes the console count Warm Storage as approved only without spending limits, as `getUploadCosts` requires, and offers to remove limits an account already has. `filecoin` lowercases the address, because the console rejects a bad mixed-case checksum. The scopes are comma-separated scope IDs. `--name` defaults to `filecoin-cli`, and the console uses 30 days when `--days` is not given. The funding link is `/console/setup?network=<net>&approval=unlimited&deposit=<decimal>&balance=<decimal>`. `balance` is the available USDFC the account reaches after the deposit, which is available funds plus the deposit minus debt, so the console checks the same target as the CLI. Without `deposit`, the link asks only for the approval. `filecoin status` adds the link only when the account is not ready. `filecoin logout` returns the revoke link, `/console/session-keys?revoke=<address>&network=<net>`, for an approved key. `FILECOIN_CONSOLE_URL` changes the origin.
-- **The console links carry analytics tags.** Every console link ends with `utm_source=filecoin-cli&utm_medium=cli&utm_term=<flow>&utm_content=<driver>`, with the same values as filecoin-pin's [`withUtm`](https://github.com/filecoin-project/filecoin-pin/blob/master/src/core/session/console-url.ts), so the console's funnel analytics can compare the two CLIs ([FilOzone/filecoin-pay-explorer#576](https://github.com/FilOzone/filecoin-pay-explorer/issues/576)). The flow is `login` for an approval link, `fund` for a funding link, and `revoke` for the revoke link. The driver is the agent that clipact detects, `human` at an interactive terminal, or `automation` otherwise. `utm_campaign` is left for marketing campaigns. `FILECOIN_TELEMETRY_DISABLED=true` or `DO_NOT_TRACK=1` drops the tags. Nothing else is sent; the tags travel only in the link the user opens.
+- **The console links carry analytics tags.** Every console link ends with `utm_source=filecoin-cli&utm_medium=cli&utm_term=<flow>&utm_content=<driver>`, with the same values as filecoin-pin's [`withUtm`](https://github.com/filecoin-project/filecoin-pin/blob/master/src/core/session/console-url.ts), so the console's funnel analytics can compare the two CLIs ([FilOzone/filecoin-pay-explorer#576](https://github.com/FilOzone/filecoin-pay-explorer/issues/576)). The flow is `login` for an approval link, `fund` for a funding link, and `revoke` for the revoke link. The driver is the agent that clipact detects, `human` at an interactive terminal, or `automation` otherwise. `utm_campaign` is left for marketing campaigns. clipact's [telemetry opt-outs](https://github.com/hugomrdias/agents/blob/main/packages/clipact/README.md#telemetry), `DO_NOT_TRACK=1` or `FILECOIN_TELEMETRY=0`, drop the tags: `appFor` reads `ctx.telemetry()` and leaves the links untagged when `optedOut` is true. Nothing else is sent; the tags travel only in the link the user opens.
 - **Only the owner can fund the account.** The session key cannot deposit or approve. `filecoin status` and the `put` funding check return a prefilled funding link instead.
 
 The default scopes are `createDataSet`, `addPieces`, and `schedulePieceRemovals`. `filecoin` never requests `terminateService` by default.
@@ -287,7 +290,7 @@ Extraction checks the bytes of every block against its CID, as `ipfs-car unpack 
 
 ## The delete flow
 
-`delete <ref>`, with the alias `rm`, needs confirmation. clipact asks a human at a terminal. Everyone else, including agents, gets `confirmation_required` until they pass `--yes`. `delete` then creates an operation with the stored copy as its target and runs these steps:
+`delete <ref>` needs confirmation. clipact asks a human at a terminal. Everyone else, including agents, gets `confirmation_required` until they pass `--yes`. `delete` then creates an operation with the stored copy as its target and runs these steps:
 
 1. Read `clientDataSetId` from the data set and call `SP.schedulePieceDeletions`.
 2. Save the transaction hash.
@@ -301,7 +304,9 @@ The provider removes the piece later, at a proving boundary. `ls` hides resource
 ## Local state
 
 ```text
-<FILECOIN_STATE_DIR or platform data dir>/
+<FILECOIN_CONFIG_DIR or clipact's platform folder>/
+├── config.json        clipact store: network and sessions (mode 0600)
+├── clipact.json       clipact's telemetry state
 ├── state.db           SQLite (node:sqlite), WAL, migrations via PRAGMA user_version
 └── staging/<op_id>/   folder.car for unfinished folder puts
 ```
@@ -344,10 +349,10 @@ The tests use the Node test runner and need no network. `pnpm --filter filecoin 
 | `pack.test.ts` | A deterministic root CID, byte-exact extraction, no unreferenced blocks, empty directories, rejection of a tampered block, the dotfile and symlink rules, and the canonical encoding of a 3 GiB file root built from fake leaves |
 | `jobs.test.ts` | A fake `StorageBackend` that simulates FWSS nonces. It covers new and existing data sets, a lost commit response, a commit that never landed, a rejected commit, a resume of a completed job, insufficient funds, an approval-only funding error, a reverted removal, interruption, dry-run estimates, and the operation ID and resume step on every job error |
 | `urls.test.ts` | The filecoin-api piece and browser URLs for files and folders, an API base path, an unknown chain ID, and the provider URL for `get` |
-| `cli.test.ts` | The whole CLI in process through `clipact/testing` in strict mode. It covers definitions, schemas and aliases, auth and pending-login errors, the logout revoke link, confirmation, a dry run without a session, and secrets kept out of flags and output |
+| `cli.test.ts` | The whole CLI in process through `clipact/testing` in strict mode. It covers definitions, schemas, auth and pending-login errors, the logout revoke link, confirmation, a dry run without a session, secrets kept out of flags and output, and the globals in root help, `schema --list`, validation, and `doctor` sources, including the folder from `FILECOIN_CONFIG_DIR` or the platform default. Globals and the folder come from the env passed to `invoke`, not from `process.env` |
 | `contract.test.ts` | The built binary without a TTY. It covers one JSON line on stdout, exit codes, no leaked session key, and a SIGTERM during a hanging RPC call that gives an `interrupted` result and exit 143 |
 | `app.test.ts` | The signal-bound RPC transport and `abortable()`, including a call that fails after the abort |
-| `config.test.ts` | Network resolution and the `0600` mode of the config file |
+| `config.test.ts` | Network resolution, the `0700` folder clipact creates, a relative `FILECOIN_CONFIG_DIR`, and a corrupt `config.json` |
 
 ### Calibration run on 2026-09-29
 
@@ -360,7 +365,7 @@ The tests use the Node test runner and need no network. `pnpm --filter filecoin 
 
 | Research | Prototype | Reason |
 | --- | --- | --- |
-| `filecoin files …` and `filecoin artifacts …` groups | Flat `put`, `get`, `ls`, `inspect`, and `delete`, chosen by input type, with the `publish` and `rm` aliases | One command set covers files and folders |
+| `filecoin files …` and `filecoin artifacts …` groups | Flat `put`, `get`, `ls`, `inspect`, and `delete`, chosen by input type, without aliases | One command set covers files and folders. clipact 0.5 removed command aliases, so `publish` and `rm` went with them |
 | `artifact` resources for IPFS files and folders | Resource kind `file` for a file and `folder` for a folder | The kind names the input type. A migration renames saved `artifact` resources to `folder` |
 | `auth login`, `auth status` | `login`, `logout`, `status` | Flat, like the storage commands |
 | Two copies by default | One copy | Simplicity. synapse-sdk also stores two copies by default |

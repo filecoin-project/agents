@@ -35,7 +35,7 @@ For CI or a [cloud agent](/agents#cloud-agents), set `FILECOIN_SESSION_KEY` and 
 
 The session key cannot fund the account. `filecoin status` reports when each permission expires, the USDFC funds, and the Warm Storage approval. When the account needs a deposit or the Warm Storage approval, it also returns a funding link to the console's setup page, which asks for both.
 
-`filecoin doctor` shows the network, RPC, Filecoin Pay console and filecoin-api origins, and state directory that `filecoin` uses, with where each value came from.
+`filecoin doctor` shows the network, RPC, Filecoin Pay console and filecoin-api origins, and folder that `filecoin` uses, with where each value came from.
 
 ## Store and retrieve
 
@@ -43,11 +43,10 @@ The session key cannot fund the account. `filecoin status` reports when each per
 filecoin put ./report.pdf          # a file, stored as its exact bytes
 filecoin put ./site                # a folder, packed into a UnixFS CAR
 filecoin put ./site --dry-run      # size, provider, cost, and authorization; stores nothing
-filecoin publish ./site            # same as put
 filecoin get res_… --output ./copy # verifies the PieceCID and extracts folders
 filecoin ls                        # add --all to include content pending removal
 filecoin inspect res_… --check     # checks that the piece link answers
-filecoin delete res_… --yes        # same as rm; schedules removal
+filecoin delete res_… --yes        # schedules removal
 ```
 
 `put` returns `urls.browser`, the link to share, and `urls.piece`, the exact stored bytes. [Retrieve and verify](/docs/retrieve) explains what each link and `filecoin get` check.
@@ -87,12 +86,11 @@ Each error has a stable `code`, and `filecoin schema <command>` lists the codes 
 | --- | --- |
 | `FILECOIN_NETWORK` | `mainnet` or `calibration`. `--network` wins, then `FILECOIN_NETWORK`, then the config file, then `calibration` |
 | `FILECOIN_SESSION_KEY`, `FILECOIN_ROOT_ADDRESS` | Session key and wallet address, used instead of `filecoin login` |
-| `FILECOIN_CONFIG_DIR` | Config directory. Default: the platform config directory for `filecoin` |
-| `FILECOIN_STATE_DIR` | Local state and staged folders. Default: the platform data directory for `filecoin` |
+| `FILECOIN_CONFIG_DIR` | Absolute path of the folder that holds `config.json`, `state.db`, and staged folders. Default: `~/Library/Application Support/filecoin` on macOS, `%LOCALAPPDATA%\filecoin` on Windows, and `$XDG_DATA_HOME/filecoin` (`~/.local/share/filecoin`) elsewhere |
 | `FILECOIN_RPC_URL` | RPC endpoint |
 | `FILECOIN_CONSOLE_URL` | Filecoin Pay console origin for approval, funding, and revoke links. Default: `https://pay.filecoin.cloud` |
 | `FILECOIN_API_URL` | filecoin-api origin for retrieval links. Default: `https://api.filecoin.io` |
-| `FILECOIN_TELEMETRY_DISABLED`, `DO_NOT_TRACK` | `true` or `1` drops the `utm_*` tags from console links. The tags tell the console's analytics that the visit came from the `filecoin` CLI, which flow printed the link, and which agent ran it, if any |
+| `DO_NOT_TRACK`, `FILECOIN_TELEMETRY` | `DO_NOT_TRACK=1` or `FILECOIN_TELEMETRY=0` drops the `utm_*` tags from console links, as clipact's telemetry opt-outs. The tags tell the console's analytics that the visit came from the `filecoin` CLI, which flow printed the link, and which agent ran it, if any |
 | `FILECOIN_OUTPUT`, `FILECOIN_AGENT` | Override the output mode and agent detection |
 
-The prototype saves the session key in the config file, readable only by its owner. `filecoin logout` deletes the local key. The key stays authorized on chain until it expires or you revoke it on the console's [session keys page](https://pay.filecoin.cloud/console/session-keys). `filecoin logout` returns a link that opens the revocation for an approved key.
+The prototype saves the session key in `config.json` in that folder, readable only by its owner. `filecoin logout` deletes the local key. The key stays authorized on chain until it expires or you revoke it on the console's [session keys page](https://pay.filecoin.cloud/console/session-keys). `filecoin logout` returns a link that opens the revocation for an approved key.

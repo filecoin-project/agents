@@ -1,6 +1,6 @@
 import { defineCommand } from 'clipact'
 import * as z from 'zod'
-import { ErrorCodes } from '../../errors.ts'
+import { ErrorCodes, STORAGE_ERRORS } from '../../errors.ts'
 import { account, accountEnv, operationSummary, paging } from '../shared.ts'
 
 /** `filecoin operations ls`: saved put and delete jobs, newest update first. */
@@ -23,7 +23,7 @@ export const ls = defineCommand({
     operations: z.array(operationSummary),
     nextCursor: z.string().optional(),
   }),
-  errors: [ErrorCodes.authRequired, ErrorCodes.loginPending],
+  errors: [...STORAGE_ERRORS, ErrorCodes.authRequired, ErrorCodes.loginPending],
   readOnly: true,
   human: (data) =>
     data.operations.length === 0

@@ -7,7 +7,7 @@
 import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { after, before, test } from 'node:test'
+import { before, test } from 'node:test'
 import {
   assertContract,
   assertDefinitions,
@@ -15,15 +15,13 @@ import {
   schemas,
 } from 'clipact/testing'
 import { cli } from '../src/cli.ts'
-import { openConfig } from '../src/config.ts'
-import { tempDir } from './helpers.ts'
+import { openConfig, tempDir } from './helpers.ts'
 
 const SESSION_KEY = `0x${'11'.repeat(32)}`
 const ROOT = '0x1111111111111111111111111111111111111111'
 
-/** Variables that drop the console link tags, cleared while the tests run. */
-const OPT_OUTS = ['DO_NOT_TRACK', 'FILECOIN_TELEMETRY_DISABLED'] as const
-const inherited = new Map<string, string | undefined>()
+/** The folder of every run, as `FILECOIN_CONFIG_DIR`. */
+const globalsEnv: Record<string, string> = {}
 
 /** Runs the CLI in process and returns the asserted result and its `data`. */
 async function run(
@@ -34,7 +32,7 @@ async function run(
   data: Record<string, unknown>
   stderr: string
 }> {
-  const result = await invoke(cli, args, { env })
+  const result = await invoke(cli, args, { env: { ...globalsEnv, ...env } })
   const json = assertContract(result)
   return {
     json,
@@ -48,29 +46,20 @@ function code(json: Record<string, unknown>): string | undefined {
   return (json.error as { code: string } | undefined)?.code
 }
 
-before(async () => {
-  // State and config locations come from the real environment, like the
-  // RPC and console overrides; command input comes from `invoke`'s env.
-  const dir = await tempDir()
-  process.env.FILECOIN_CONFIG_DIR = join(dir, 'config')
-  process.env.FILECOIN_STATE_DIR = join(dir, 'state')
-  // Console links are tagged unless the user opted out; start from no opt-out.
-  for (const name of OPT_OUTS) {
-    inherited.set(name, process.env[name])
-    delete process.env[name]
-  }
-})
+/** The config file every run reads. */
+function config() {
+  return openConfig(globalsEnv.FILECOIN_CONFIG_DIR)
+}
 
-after(() => {
-  for (const [name, value] of inherited) {
-    if (value === undefined) delete process.env[name]
-    else process.env[name] = value
-  }
+before(async () => {
+  // The folder, like globals and command input, comes from `invoke`'s env,
+  // not process.env.
+  globalsEnv.FILECOIN_CONFIG_DIR = join(await tempDir(), 'filecoin')
 })
 
 test('definitions are valid', () => assertDefinitions(cli))
 
-test('schemas cover every command, and aliases resolve to them', async () => {
+test('schemas cover every command', async () => {
   assert.deepEqual(Object.keys(schemas(cli)).sort(), [
     'delete',
     'doctor',
@@ -88,10 +77,71 @@ test('schemas cover every command, and aliases resolve to them', async () => {
     'skills uninstall',
     'status',
   ])
-  const { data } = await run(['schema', 'publish'])
+  const { data } = await run(['schema', 'put'])
   assert.equal(data.command, 'put')
-  assert.deepEqual(data.aliases, ['publish'])
   assert.deepEqual(data.secrets, ['sessionKey'])
+})
+
+test('root help and schema list the globals', async () => {
+  const help = await invoke(cli, ['--help'])
+  const environment = help.stdout.slice(help.stdout.indexOf('Environment'))
+  for (const variable of [
+    'FILECOIN_RPC_URL',
+    'FILECOIN_CONSOLE_URL',
+    'FILECOIN_API_URL',
+    'FILECOIN_OUTPUT',
+    'FILECOIN_AGENT',
+    'FILECOIN_CONFIG_DIR',
+  ]) {
+    assert.ok(environment.includes(variable), `${variable} not in help`)
+  }
+  const { data } = await run(['schema', '--list'])
+  const { env } = data.globals as { env: Record<string, string> }
+  assert.deepEqual(env, {
+    rpcUrl: 'FILECOIN_RPC_URL',
+    consoleUrl: 'FILECOIN_CONSOLE_URL',
+    apiUrl: 'FILECOIN_API_URL',
+  })
+})
+
+test('an invalid global is invalid input naming its variable', async () => {
+  const { json } = await run(['status'], { FILECOIN_API_URL: 'not a url' })
+  assert.equal(code(json), 'invalid_input')
+  assert.ok(JSON.stringify(json).includes('FILECOIN_API_URL'))
+})
+
+test('doctor reports where each global came from', async () => {
+  const { data } = await run(['doctor'], {
+    FILECOIN_RPC_URL: 'http://127.0.0.1:1',
+    FILECOIN_CONSOLE_URL: 'http://localhost:3000',
+  })
+  assert.deepEqual(data.rpcUrl, { value: 'http://127.0.0.1:1', source: 'env' })
+  assert.deepEqual(data.consoleUrl, {
+    value: 'http://localhost:3000',
+    source: 'env',
+  })
+  assert.deepEqual(data.apiUrl, {
+    value: 'https://api.filecoin.io',
+    source: 'default',
+  })
+  assert.deepEqual(data.dir, {
+    value: globalsEnv.FILECOIN_CONFIG_DIR,
+    source: 'env',
+    variable: 'FILECOIN_CONFIG_DIR',
+  })
+})
+
+test('doctor reports the platform folder when FILECOIN_CONFIG_DIR is unset', async () => {
+  const home = await tempDir()
+  const result = await invoke(cli, ['doctor'], {
+    env: { HOME: home, FILECOIN_RPC_URL: 'http://127.0.0.1:1' },
+  })
+  const { dir } = assertContract(result).data as {
+    dir: { value: string; source: string; variable?: string }
+  }
+  assert.equal(dir.source, 'default')
+  assert.equal(dir.variable, undefined)
+  assert.ok(dir.value.startsWith(home), `${dir.value} is not under HOME`)
 })
 
 test('reads without a session ask the user to log in', async () => {
@@ -107,12 +157,8 @@ test('reads without a session ask the user to log in', async () => {
   ])
 })
 
-test('put and its publish alias need a session', async () => {
+test('put needs a session', async () => {
   assert.equal(code((await run(['put', './missing'])).json), 'auth_required')
-  assert.equal(
-    code((await run(['publish', './missing'])).json),
-    'auth_required'
-  )
 })
 
 test('put --dry-run describes a directory without a session', async () => {
@@ -130,12 +176,12 @@ test('put --dry-run describes a directory without a session', async () => {
 })
 
 test('delete needs --yes when no human can confirm', async () => {
-  const { json } = await run(['rm', 'res_x'])
+  const { json } = await run(['delete', 'res_x'])
   assert.equal(code(json), 'confirmation_required')
   assert.deepEqual(json.next, [
     {
       by: 'user',
-      command: 'filecoin rm res_x --yes',
+      command: 'filecoin delete res_x --yes',
       description: 'Approve this action, then run it with --yes',
     },
   ])
@@ -178,7 +224,7 @@ test('login rejects unknown scopes and environment credentials', async () => {
 
 test('a pending login is reported with the approval link', async () => {
   const network = 'mainnet'
-  openConfig().set(`sessions.${network}`, {
+  config().set(`sessions.${network}`, {
     privateKey: SESSION_KEY,
     address: '0x2222222222222222222222222222222222222222',
     scopes: ['addPieces'],
@@ -211,7 +257,7 @@ test('a pending login is reported with the approval link', async () => {
 
 test('logout of an approved key returns the console revoke link', async () => {
   const network = 'mainnet'
-  openConfig().set(`sessions.${network}`, {
+  config().set(`sessions.${network}`, {
     privateKey: SESSION_KEY,
     address: '0x2222222222222222222222222222222222222222',
     rootAddress: '0x1111111111111111111111111111111111111111',
@@ -235,7 +281,7 @@ test('logout of an approved key returns the console revoke link', async () => {
 
 test('console links name the agent and drop their tags on opt-out', async () => {
   const network = 'mainnet'
-  openConfig().set(`sessions.${network}`, {
+  config().set(`sessions.${network}`, {
     privateKey: SESSION_KEY,
     address: '0x2222222222222222222222222222222222222222',
     scopes: ['addPieces'],
@@ -247,6 +293,10 @@ test('console links name the agent and drop their tags on opt-out', async () => 
     const { data } = await run(['status', '--network', network], env)
     return new URL(String((data.session as { url: string }).url))
   }
+  /** The link's `utm_*` parameter names. */
+  const utmKeys = (url: URL) =>
+    [...url.searchParams.keys()].filter((key) => key.startsWith('utm_'))
+
   const tagged = await approvalLink({ AI_AGENT: 'claude-code' })
   assert.equal(tagged.searchParams.get('utm_term'), 'login')
   assert.equal(tagged.searchParams.get('utm_content'), 'claude-code')
@@ -254,18 +304,10 @@ test('console links name the agent and drop their tags on opt-out', async () => 
   const forced = await approvalLink({ FILECOIN_AGENT: '1' })
   assert.equal(forced.searchParams.get('utm_content'), 'unknown')
 
-  // Process settings come from the real environment, like the console URL.
-  process.env.DO_NOT_TRACK = '1'
-  try {
-    const untagged = await approvalLink()
-    assert.deepEqual(
-      [...untagged.searchParams.keys()].filter((key) => key.startsWith('utm_')),
-      []
-    )
-  } finally {
-    delete process.env.DO_NOT_TRACK
-    openConfig().delete(`sessions.${network}`)
-  }
+  // clipact's telemetry opt-outs drop the tags.
+  assert.deepEqual(utmKeys(await approvalLink({ DO_NOT_TRACK: '1' })), [])
+  assert.deepEqual(utmKeys(await approvalLink({ FILECOIN_TELEMETRY: '0' })), [])
+  config().delete(`sessions.${network}`)
 })
 
 test('logout without a session is a no-op', async () => {

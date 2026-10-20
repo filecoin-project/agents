@@ -1,7 +1,6 @@
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import envPaths from 'env-paths'
 
 /**
  * Schema migrations, applied in order. `PRAGMA user_version` records how many
@@ -104,20 +103,12 @@ const MIGRATIONS = [
 ]
 
 /**
- * Resolve the CLI state directory: `FILECOIN_STATE_DIR`, or the platform
- * application data directory.
- */
-export function stateDir(env: NodeJS.ProcessEnv = process.env): string {
-  return env.FILECOIN_STATE_DIR ?? envPaths('filecoin', { suffix: '' }).data
-}
-
-/**
  * Open (and migrate) the SQLite state database in `dir`.
  *
  * @see https://nodejs.org/api/sqlite.html
  */
 export function openDatabase(dir: string): DatabaseSync {
-  mkdirSync(dir, { recursive: true })
+  mkdirSync(dir, { recursive: true, mode: 0o700 })
   const db = new DatabaseSync(join(dir, 'state.db'))
   db.exec('PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;')
   migrate(db)

@@ -4,13 +4,13 @@ import { JOB_ERRORS } from '../errors.ts'
 import { account, accountEnv, jobResult } from './shared.ts'
 
 /**
- * `filecoin delete <ref>` (alias `rm`): schedule removal of a resource's stored
+ * `filecoin delete <ref>`: schedule removal of a resource's stored
  * copy. Destructive, so it needs `--yes` when no human can confirm.
  */
 export const remove = defineCommand({
   name: 'delete',
   description: 'Schedule removal of a managed resource',
-  examples: ['filecoin delete res_abc123', 'filecoin rm res_abc123 --yes'],
+  examples: ['filecoin delete res_abc123', 'filecoin delete res_abc123 --yes'],
   input: z.strictObject({
     ref: z.string().describe('Resource ref (res_…)'),
     ...account,

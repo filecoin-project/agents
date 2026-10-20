@@ -1,4 +1,4 @@
-import { Conf } from 'iso-conf'
+import { defineStore } from 'clipact'
 import * as z from 'zod'
 import { DEFAULT_NETWORK, NETWORKS, type Network } from './network.ts'
 
@@ -42,23 +42,17 @@ export const ConfigSchema = z.object({
     .default({}),
 })
 
-/** The CLI configuration store. */
-export type Config = Conf<typeof ConfigSchema>
-
 /**
- * Open the configuration file. `FILECOIN_CONFIG_DIR` overrides the platform
- * config directory. The file is written with mode 0600.
+ * The CLI's store: `config.json` in clipact's folder for `filecoin`, which
+ * `FILECOIN_CONFIG_DIR` moves. clipact writes it atomically with mode 0600
+ * under a lock, and reports a corrupt file as `config_invalid`.
  *
- * @see https://github.com/hugomrdias/iso-repo/tree/main/packages/iso-conf
+ * @see https://github.com/hugomrdias/agents/tree/main/packages/clipact#storage
  */
-export function openConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  return new Conf({
-    projectName: 'filecoin',
-    projectSuffix: '',
-    cwd: env.FILECOIN_CONFIG_DIR,
-    schema: ConfigSchema,
-  })
-}
+export const store = defineStore({ schema: ConfigSchema })
+
+/** The opened configuration store, an iso-conf `Conf`. */
+export type Config = Awaited<ReturnType<typeof store.get>>
 
 /**
  * Resolve the network: the command input (a `--network` flag or

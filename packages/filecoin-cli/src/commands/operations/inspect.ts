@@ -1,6 +1,6 @@
 import { defineCommand } from 'clipact'
 import * as z from 'zod'
-import { ErrorCodes } from '../../errors.ts'
+import { ErrorCodes, STORAGE_ERRORS } from '../../errors.ts'
 import { account, accountEnv, executionStatus } from '../shared.ts'
 
 /** `filecoin operations inspect <id>`: the saved record and its checkpoint. */
@@ -31,6 +31,7 @@ export const inspect = defineCommand({
     updatedAt: z.string(),
   }),
   errors: [
+    ...STORAGE_ERRORS,
     ErrorCodes.authRequired,
     ErrorCodes.loginPending,
     ErrorCodes.notFound,

@@ -13,7 +13,7 @@ const PROBE_TIMEOUT = 15_000
  * a folder always redirects to inbrowser.link, so probing it proves nothing.
  */
 export default defineHandler(inspect, async (ctx) => {
-  const app = appFor(ctx)
+  const app = await appFor(ctx)
   const resource = findResource(app, ctx.input.ref)
   const urls = resourceUrls(resource, app.apiUrl)
   if (!ctx.input.check) return ctx.ok({ resource, urls })

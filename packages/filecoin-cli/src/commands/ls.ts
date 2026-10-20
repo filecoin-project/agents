@@ -1,6 +1,6 @@
 import { defineCommand } from 'clipact'
 import * as z from 'zod'
-import { ErrorCodes } from '../errors.ts'
+import { ErrorCodes, STORAGE_ERRORS } from '../errors.ts'
 import { account, accountEnv, formatBytes, paging } from './shared.ts'
 
 /** `filecoin ls`: list managed resources, newest first, one page at a time. */
@@ -33,7 +33,7 @@ export const ls = defineCommand({
     ),
     nextCursor: z.string().optional(),
   }),
-  errors: [ErrorCodes.authRequired, ErrorCodes.loginPending],
+  errors: [...STORAGE_ERRORS, ErrorCodes.authRequired, ErrorCodes.loginPending],
   readOnly: true,
   human: (data) =>
     data.resources.length === 0

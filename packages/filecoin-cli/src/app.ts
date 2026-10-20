@@ -8,20 +8,14 @@ import {
 import { getTransport } from '@filoz/synapse-core/client'
 import { type Client, createPublicClient, http, type Transport } from 'viem'
 import type { LinkTags } from './auth/login.ts'
-import {
-  type Config,
-  type Network,
-  openConfig,
-  resolveNetwork,
-} from './config.ts'
+import { type Config, type Network, resolveNetwork } from './config.ts'
 import { abortable } from './errors.ts'
-import { openDatabase, stateDir } from './state/db.ts'
-
-/** Default Filecoin Pay console origin, which approves keys and funds accounts. */
-const DEFAULT_CONSOLE_URL = 'https://pay.filecoin.cloud'
-
-/** Default filecoin-api origin, whose `/get/{cid}` route redirects to providers. */
-const DEFAULT_API_URL = 'https://api.filecoin.io'
+import {
+  DEFAULT_API_URL,
+  DEFAULT_CONSOLE_URL,
+  type GlobalSettings,
+} from './globals.ts'
+import { openDatabase } from './state/db.ts'
 
 /**
  * Shared per-invocation context: resolved network, chain client, config, and
@@ -30,7 +24,6 @@ const DEFAULT_API_URL = 'https://api.filecoin.io'
 export type App = {
   network: Network
   chain: FilecoinChain
-  env: NodeJS.ProcessEnv
   config: Config
   /** Session key and owner given as input (`FILECOIN_SESSION_KEY`, `FILECOIN_ROOT_ADDRESS`). */
   credentials: { sessionKey?: string; rootAddress?: string }
@@ -40,6 +33,10 @@ export type App = {
   linkTags: LinkTags | undefined
   /** filecoin-api origin for retrieval links. */
   apiUrl: string
+  /** `FILECOIN_RPC_URL`, which replaces the chain's fallback transport. */
+  rpcUrl: string | undefined
+  /** The CLI's folder (`ctx.dir()`), which holds the state database and staged input. */
+  dir: string
   /** Aborted on SIGINT, SIGTERM, or SIGHUP; cancels chain and provider calls. */
   signal: AbortSignal | undefined
   /** RPC transport for the resolved chain, bound to `signal`. */
@@ -52,36 +49,26 @@ export type App = {
   stagingDir: (operationId: string) => string
 }
 
-/** Options for {@link createApp}: the shared account input of a command. */
-export type CreateAppOptions = {
+/**
+ * Options for {@link createApp}: the opened config store, the CLI's folder,
+ * the shared account input of a command, and the CLI's globals. Omitted
+ * globals take their defaults.
+ */
+export type CreateAppOptions = Partial<GlobalSettings> & {
+  /** The `config.json` store, from `store.get(ctx)`. */
+  config: Config
+  /** The CLI's folder, from `ctx.dir()`. */
+  dir: string
   /** `--network` or `FILECOIN_NETWORK`; falls back to the config file. */
   network?: Network | undefined
   /** `FILECOIN_SESSION_KEY`, for CI without `filecoin login`. */
   sessionKey?: string | undefined
   /** `FILECOIN_ROOT_ADDRESS`, the wallet that authorized `sessionKey`. */
   rootAddress?: string | undefined
-  /** Process environment for state, config, RPC, console, and API overrides. */
-  env?: NodeJS.ProcessEnv
   /** The handler's signal; every RPC request rejects once it aborts. */
   signal?: AbortSignal
-  /** Who runs the CLI, for console link tags: an agent name, `human`, or `automation`. */
-  driver?: string | undefined
-}
-
-/** Returns `true` for `1` or `true`, in any case. */
-function isTrue(value: string | undefined): boolean {
-  return value === '1' || value?.toLowerCase() === 'true'
-}
-
-/**
- * Whether the user opted out of console link tags with
- * `FILECOIN_TELEMETRY_DISABLED` or the `DO_NOT_TRACK` convention, as
- * filecoin-pin's telemetry switch does.
- *
- * @see https://github.com/filecoin-project/filecoin-pin/blob/master/src/read-telemetry-config-from-env.ts
- */
-export function linkTagsDisabled(env: NodeJS.ProcessEnv): boolean {
-  return isTrue(env.FILECOIN_TELEMETRY_DISABLED) || isTrue(env.DO_NOT_TRACK)
+  /** Analytics tags for console links; leave out for untagged links. */
+  linkTags?: LinkTags | undefined
 }
 
 /**
@@ -109,39 +96,36 @@ export function withSignal(
 
 /**
  * Build the invocation context from a command's account input. Handlers call
- * this directly; clipact has no middleware. `FILECOIN_RPC_URL` overrides the
- * chain's default fallback transport.
+ * this directly; clipact has no middleware. `rpcUrl` replaces the chain's
+ * default fallback transport.
  */
-export function createApp(options: CreateAppOptions = {}): App {
-  const env = options.env ?? process.env
-  const config = openConfig(env)
+export function createApp(options: CreateAppOptions): App {
+  const { config, dir } = options
   const network = resolveNetwork(options.network, config)
   const chain = network === 'mainnet' ? mainnet : calibration
-  const base = env.FILECOIN_RPC_URL
-    ? http(env.FILECOIN_RPC_URL)
-    : getTransport(chain)
+  const base = options.rpcUrl ? http(options.rpcUrl) : getTransport(chain)
   const transport = options.signal ? withSignal(base, options.signal) : base
-  const root = stateDir(env)
   let db: DatabaseSync | undefined
   return {
     network,
     chain,
-    env,
     config,
     credentials: {
       sessionKey: options.sessionKey,
       rootAddress: options.rootAddress,
     },
-    consoleUrl: env.FILECOIN_CONSOLE_URL ?? DEFAULT_CONSOLE_URL,
-    linkTags: linkTagsDisabled(env) ? undefined : { driver: options.driver },
-    apiUrl: env.FILECOIN_API_URL ?? DEFAULT_API_URL,
+    consoleUrl: options.consoleUrl ?? DEFAULT_CONSOLE_URL,
+    linkTags: options.linkTags,
+    apiUrl: options.apiUrl ?? DEFAULT_API_URL,
+    rpcUrl: options.rpcUrl,
+    dir,
     signal: options.signal,
     transport,
     client: createPublicClient({ chain, transport }),
     db: () => {
-      db ??= openDatabase(root)
+      db ??= openDatabase(dir)
       return db
     },
-    stagingDir: (operationId) => join(root, 'staging', operationId),
+    stagingDir: (operationId) => join(dir, 'staging', operationId),
   }
 }
