@@ -25,8 +25,8 @@ import {
 } from 'viem'
 import { SCOPES, type ScopeId } from '../src/auth/scopes.ts'
 import { cli } from '../src/cli.ts'
-import { openConfig, type StoredSession } from '../src/config.ts'
-import { tempDir } from './helpers.ts'
+import type { StoredSession } from '../src/config.ts'
+import { openConfig, tempDir } from './helpers.ts'
 
 const OWNER = '0x1111111111111111111111111111111111111111' as Address
 const LATER = BigInt(Math.floor(Date.now() / 1000) + 86_400)
@@ -164,26 +164,33 @@ const server = createServer((req, res) => {
   })
 })
 
+/** Env of every run: a temporary folder (`FILECOIN_CONFIG_DIR`) and the fake RPC. */
+const env: Record<string, string> = {}
+
+/** The config file every run reads. */
+function config() {
+  return openConfig(env.FILECOIN_CONFIG_DIR)
+}
+
 before(async () => {
   const dir = await tempDir()
-  process.env.FILECOIN_CONFIG_DIR = join(dir, 'config')
-  process.env.FILECOIN_STATE_DIR = join(dir, 'state')
+  env.FILECOIN_CONFIG_DIR = join(dir, 'filecoin')
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
   const { port } = server.address() as AddressInfo
-  process.env.FILECOIN_RPC_URL = `http://127.0.0.1:${port}`
+  env.FILECOIN_RPC_URL = `http://127.0.0.1:${port}`
 })
 
 after(() => server.close())
 
 beforeEach(() => {
-  openConfig().delete('sessions.calibration')
+  config().delete('sessions.calibration')
   chain.block = 100n
   chain.grants = []
 })
 
 /** Runs `filecoin login` with `args` and returns the asserted JSON result. */
 async function login(args: string[] = []) {
-  const result = await invoke(cli, ['login', ...args], {})
+  const result = await invoke(cli, ['login', ...args], { env })
   return assertContract(result) as {
     data?: Record<string, unknown>
     error?: { code: string; details?: Record<string, unknown> }
@@ -193,7 +200,7 @@ async function login(args: string[] = []) {
 
 /** The saved calibration session. */
 function saved(): StoredSession {
-  const session = openConfig().get('sessions.calibration')
+  const session = config().get('sessions.calibration')
   assert.ok(session, 'no saved session')
   return session
 }
@@ -240,7 +247,7 @@ test('bare login while pending keeps the saved request', async () => {
 test('--check confirms a pending key and never makes one', async () => {
   const none = await login(['--check'])
   assert.equal(none.error?.code, 'auth_required')
-  assert.equal(openConfig().get('sessions.calibration'), undefined)
+  assert.equal(config().get('sessions.calibration'), undefined)
 
   await login(CUSTOM)
   const key = saved()
@@ -314,7 +321,7 @@ test('an expired key is renewed with the same request', async () => {
   const key = saved()
   approve(key.address, ['createDataSet', 'addPieces'], EARLIER)
   // The approval was found while it was live.
-  openConfig().set('sessions.calibration', { ...key, rootAddress: OWNER })
+  config().set('sessions.calibration', { ...key, rootAddress: OWNER })
 
   const check = await login(['--check'])
   assert.equal(check.error?.code, 'session_expired')

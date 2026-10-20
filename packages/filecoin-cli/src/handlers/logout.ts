@@ -9,8 +9,8 @@ import { appFor } from './context.ts'
  * on chain until it expires, so the result carries the console link that
  * revokes it.
  */
-export default defineHandler(logout, (ctx) => {
-  const app = appFor(ctx)
+export default defineHandler(logout, async (ctx) => {
+  const app = await appFor(ctx)
   const key = `sessions.${app.network}` as const
   const session = app.config.get(key)
   if (session) app.config.delete(key)

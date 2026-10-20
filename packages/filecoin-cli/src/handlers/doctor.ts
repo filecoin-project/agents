@@ -3,8 +3,8 @@ import { getBlockNumber } from 'viem/actions'
 import { resolveCredentials } from '../auth/session.ts'
 import { doctor } from '../commands/doctor.ts'
 import { abortable } from '../errors.ts'
+import { DEFAULT_API_URL, DEFAULT_CONSOLE_URL } from '../globals.ts'
 import { firstLine } from '../map-error.ts'
-import { stateDir } from '../state/db.ts'
 import { appFor } from './context.ts'
 
 /** Milliseconds to wait for the RPC check. */
@@ -13,11 +13,17 @@ const RPC_TIMEOUT = 10_000
 /**
  * Report resolved settings with their sources, then check that the state
  * database opens and the RPC endpoint answers on the expected chain. Never
- * prints the session key.
+ * prints the session key. A global is `env` when its variable is set; a URL
+ * set to its default value reports `default`, since clipact applies schema
+ * defaults before the handler runs. The folder comes from `ctx.dir()` without
+ * creating it, and `ctx.storage()` reports what chose it: `FILECOIN_CONFIG_DIR`,
+ * `XDG_DATA_HOME` on Linux, or the platform default.
+ *
+ * @see https://github.com/hugomrdias/agents/tree/main/packages/clipact#storage
  */
 export default defineHandler(doctor, async (ctx) => {
-  const app = appFor(ctx)
-  const env = app.env
+  const app = await appFor(ctx, { create: false })
+  const storage = await ctx.storage()
   const checks: { name: string; ok: boolean; message: string }[] = []
 
   let credentials: 'env' | 'config' | 'pending' | 'none' = 'none'
@@ -69,7 +75,7 @@ export default defineHandler(doctor, async (ctx) => {
     })
   }
 
-  const rpcUrl = env.FILECOIN_RPC_URL ?? app.chain.rpcUrls.default.http[0] ?? ''
+  const rpcUrl = app.rpcUrl ?? app.chain.rpcUrls.default.http[0] ?? ''
   return ctx.ok({
     network: {
       value: app.network,
@@ -79,19 +85,20 @@ export default defineHandler(doctor, async (ctx) => {
           ? 'config'
           : 'default',
     },
-    rpcUrl: { value: rpcUrl, source: env.FILECOIN_RPC_URL ? 'env' : 'default' },
+    rpcUrl: { value: rpcUrl, source: app.rpcUrl ? 'env' : 'default' },
     consoleUrl: {
       value: app.consoleUrl,
-      source: env.FILECOIN_CONSOLE_URL ? 'env' : 'default',
+      source: app.consoleUrl === DEFAULT_CONSOLE_URL ? 'default' : 'env',
     },
     apiUrl: {
       value: app.apiUrl,
-      source: env.FILECOIN_API_URL ? 'env' : 'default',
+      source: app.apiUrl === DEFAULT_API_URL ? 'default' : 'env',
     },
     configFile: app.config.path,
-    stateDir: {
-      value: stateDir(env),
-      source: env.FILECOIN_STATE_DIR ? 'env' : 'default',
+    dir: {
+      value: app.dir,
+      source: storage.source,
+      ...(storage.variable ? { variable: storage.variable } : {}),
     },
     credentials,
     checks,

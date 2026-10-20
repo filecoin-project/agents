@@ -2,7 +2,7 @@
 
 `filecoin` is a prototype command-line interface for Filecoin. It stores a file or a folder as one copy on one Curio provider and returns retrieval URLs on [filecoin-api](../../apps/filecoin-api/README.md#retrieval). It runs on the calibration network unless you choose mainnet.
 
-`filecoin` calls [synapse-core](https://github.com/FilOzone/synapse-sdk/tree/master/packages/synapse-core) directly. It uses [clipact](https://github.com/hugomrdias/agents/blob/main/packages/clipact/README.md) for the agent output contract and [iso-conf](https://github.com/hugomrdias/iso-repo/tree/main/packages/iso-conf) for configuration. The design follows the [CLI interface research](../../docs/filecoin/interface-research.md) and the [CLI guidelines for agents](https://github.com/hugomrdias/agents/blob/main/docs/agent-cli/guidelines.md). The [architecture](../../docs/filecoin/architecture.md) describes the modules and flows.
+`filecoin` calls [synapse-core](https://github.com/FilOzone/synapse-sdk/tree/master/packages/synapse-core) directly. It uses [clipact](https://github.com/hugomrdias/agents/blob/main/packages/clipact/README.md) for the agent output contract, its folder, and its configuration store. The design follows the [CLI interface research](../../docs/filecoin/interface-research.md) and the [CLI guidelines for agents](https://github.com/hugomrdias/agents/blob/main/docs/agent-cli/guidelines.md). The [architecture](../../docs/filecoin/architecture.md) describes the modules and flows.
 
 Releases publish to npm as [`filecoin`](https://www.npmjs.com/package/filecoin). It needs Node.js 24 or newer. Install it, or run it without installing with `npx -y filecoin`:
 
@@ -41,7 +41,7 @@ For CI, set `FILECOIN_SESSION_KEY` and `FILECOIN_ROOT_ADDRESS` instead of runnin
 
 The session key cannot fund the account. `filecoin status` reports the expiry of each scope, the USDFC funds, and the Warm Storage (FWSS) approval. When the account needs a deposit or the Warm Storage approval, `filecoin status` also returns a funding link to the console's setup page, which asks for both.
 
-`filecoin doctor` shows the network, RPC, Filecoin Pay console origin (`console`), filecoin-api origin (`api`), and state directory that `filecoin` resolved, with the source of each value. It also checks the database and the RPC.
+`filecoin doctor` shows the network, RPC, Filecoin Pay console origin (`console`), filecoin-api origin (`api`), and folder that `filecoin` resolved, with the source of each value. It also checks the database and the RPC.
 
 ## Store and retrieve
 
@@ -49,11 +49,10 @@ The session key cannot fund the account. `filecoin status` reports the expiry of
 filecoin put ./report.pdf          # raw piece   → <api>/get/<pieceCid>
 filecoin put ./site                # UnixFS CAR  → <api>/get/<rootCid>?browser=true
 filecoin put ./site --dry-run      # size, provider, cost, and authorization; stores nothing
-filecoin publish ./site            # alias of put
 filecoin get res_… --output ./copy # verifies the PieceCID and extracts folders
 filecoin ls                        # add --all to include resources pending removal
 filecoin inspect res_… --check     # sends a HEAD request to the piece URL
-filecoin delete res_… --yes        # alias rm; schedules removal
+filecoin delete res_… --yes        # schedules removal
 ```
 
 `filecoin` stores a file as its exact bytes. It packs a folder into a UnixFS CAR with the IPIP-499 `unixfs-v1-2025` profile, the same way as [Filecoin Pin](https://github.com/filecoin-project/filecoin-pin). The CAR goes into a data set with `withIPFSIndexing`, so Curio serves it at `/ipfs/<rootCid>/`. Curio's `/ipfs` endpoint is a trustless gateway. It returns blocks and CARs, not rendered pages.
@@ -127,14 +126,15 @@ Ctrl+C, SIGTERM, or SIGHUP stops the work at the next step. `filecoin` returns a
 | --- | --- |
 | `FILECOIN_NETWORK` | `mainnet` or `calibration`. `--network` takes precedence, then `FILECOIN_NETWORK`, then the config file, then `calibration` |
 | `FILECOIN_SESSION_KEY`, `FILECOIN_ROOT_ADDRESS` | Session key and wallet address, used instead of `filecoin login` |
-| `FILECOIN_CONFIG_DIR` | Config directory. Default: the platform config directory for `filecoin` |
-| `FILECOIN_STATE_DIR` | SQLite state and staged CARs. Default: the platform data directory for `filecoin` |
+| `FILECOIN_CONFIG_DIR` | Absolute path of the folder that holds `config.json`, `state.db`, and staged folders. Default: `~/Library/Application Support/filecoin` on macOS, `%LOCALAPPDATA%\filecoin` on Windows, and `$XDG_DATA_HOME/filecoin` (`~/.local/share/filecoin`) elsewhere |
 | `FILECOIN_RPC_URL` | RPC endpoint. Default: synapse-core's fallback transport for the chain |
 | `FILECOIN_CONSOLE_URL` | Filecoin Pay console origin for approval, funding, and revoke links, such as `https://filecoin-pay-explorer-staging.vercel.app` for staging. Default: `https://pay.filecoin.cloud` |
 | `FILECOIN_API_URL` | filecoin-api origin for retrieval links, such as `http://localhost:8787` for a local API. Default: `https://api.filecoin.io` |
 | `FILECOIN_OUTPUT`, `FILECOIN_AGENT` | Override clipact's output mode and agent detection |
 
-The prototype saves the session private key in the config file with mode 0600, so only its owner can read it. `filecoin logout` deletes the local key. The key stays authorized on chain until it expires or the owner revokes it, so `logout` returns the console's revoke link for an approved key.
+`FILECOIN_RPC_URL`, `FILECOIN_CONSOLE_URL`, `FILECOIN_API_URL`, and `FILECOIN_CONFIG_DIR` apply to every command and have no flags. `filecoin --help` lists them under Environment, `filecoin schema --list` publishes the three URLs under `globals`, and `filecoin doctor` shows each value and its source. An invalid URL, or a relative `FILECOIN_CONFIG_DIR`, fails with `invalid_input` that names the variable. clipact creates the folder with mode 0700 the first time a command needs it.
+
+The prototype saves the session private key in `config.json` with mode 0600, so only its owner can read it. `filecoin logout` deletes the local key. The key stays authorized on chain until it expires or the owner revokes it, so `logout` returns the console's revoke link for an approved key.
 
 ## Development
 

@@ -237,11 +237,8 @@ importers:
         specifier: 'catalog:'
         version: 26.5.1
       clipact:
-        specifier: 0.4.0
-        version: 0.4.0
-      env-paths:
-        specifier: ^4.0.0
-        version: 4.0.0
+        specifier: 0.7.0
+        version: 0.7.0
       esbuild:
         specifier: 0.28.2
         version: 0.28.2
@@ -252,8 +249,8 @@ importers:
         specifier: ^17.1.1
         version: 17.1.1(supports-color@10.2.2)
       iso-conf:
-        specifier: ^0.4.2
-        version: 0.4.2
+        specifier: 1.0.0
+        version: 1.0.0
       multiformats:
         specifier: ^14.0.5
         version: 14.0.5
@@ -1575,9 +1572,6 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
-  '@standard-schema/utils@0.3.0':
-    resolution: {integrity: sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==}
-
   '@tailwindcss/node@4.3.3':
     resolution: {integrity: sha512-/T8IKEsf9VTU6tLjgC7+sv2mOPtQxzE2jMw7u4Tt40Tx+QSZxpzh95/H6cMKoja9XuW7iMdLJYBB0o9G1CaAgg==}
 
@@ -2332,8 +2326,8 @@ packages:
     resolution: {integrity: sha512-ywqV+5MmyL4E7ybXgKys4DugZbX0FC6LnwrhjuykIjnK9k8OQacQ7axGKnjDXWNhns0xot3bZI5h55H8yo9cJg==}
     engines: {node: '>=6'}
 
-  clipact@0.4.0:
-    resolution: {integrity: sha512-srTAawC+rI+iaDA305eEczv0QOdsCPn2GwQ/3MeVaV5lcNG+kVdStYZldRSIxc9+eIbXq8ekAUF+PCSgYWJhTQ==}
+  clipact@0.7.0:
+    resolution: {integrity: sha512-lDc/5mcexk3eRCh+/0Vj9GyhrKC8Rc7TuraBbc7Pdc+NGlVqPyRalpfGztdBZionQzylwGCFcBO7QhLwdz3VjQ==}
     engines: {node: '>=24'}
 
   clsx@2.1.1:
@@ -2541,10 +2535,6 @@ packages:
   env-paths@3.0.0:
     resolution: {integrity: sha512-dtJUTepzMW3Lm/NPxRf3wP4642UWhjL2sQxc+ym2YMj1m/H2zDNQOlezafzkHwn6sMstjHTwG6iQQsctDW/b1A==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
-
-  env-paths@4.0.0:
-    resolution: {integrity: sha512-pxP8eL2SwwaTRi/KHYwLYXinDs7gL3jxFcBYmEdYfZmZXbaVDvdppd0XBU8qVz03rDfKZMXg1omHCbsJjZrMsw==}
-    engines: {node: '>=20'}
 
   error-ex@1.3.4:
     resolution: {integrity: sha512-sqQamAnR14VgCr1A618A3sGrygcpK+HEbenA/HiEAkkUwcZIIB/tgWqHFxWgOyDh4nB4JCRimh79dR5Ywc9MDQ==}
@@ -2902,10 +2892,6 @@ packages:
     resolution: {integrity: sha512-rbku49cWloU5bSMI+zaRaXdQHXnthP6DZ/vLnfdSKyL4zUzuWnomtOEiZZOd+ioQ+avFo/qau3KPTc7Fjy1uPA==}
     engines: {node: '>=12'}
 
-  is-safe-filename@0.1.1:
-    resolution: {integrity: sha512-4SrR7AdnY11LHfDKTZY1u6Ga3RuxZdl3YKWWShO5iyuG5h8QS4GD2tOb04peBJ5I7pXbR+CGBNEhTcwK+FzN3g==}
-    engines: {node: '>=20'}
-
   is-stream@2.0.1:
     resolution: {integrity: sha512-hFoiJiTl63nn+kstHGBtewWSKnQLpyb155KHheA1l39uvtO9nWIop1p3udqPcUd/xbF1VLMO4n7OI6p7RbngDg==}
     engines: {node: '>=8'}
@@ -2944,8 +2930,8 @@ packages:
   iso-base@4.4.0:
     resolution: {integrity: sha512-W4BJbRDBi66wcBFJ23ZlGnFOZ874CIut4y9PlsScMSYu7ckCX+MWNAaEoE0efTSYDoVEn1qy0FDVSjE8q0ieHw==}
 
-  iso-conf@0.4.2:
-    resolution: {integrity: sha512-vXGMZZOtm6jfq3CI1kcok48ETGcXy+ZZYFnz/OE9qOPvd7/UAvCuOCiekdG4Qxw+qMl9JvK591sH8/42zoDnHw==}
+  iso-conf@1.0.0:
+    resolution: {integrity: sha512-zReeNnX3YB/3LV4nB/3qPGpAGaf5wqEYfigZAWq/fRqhBtQmQq/ymdbFfDE6XErO9ZU/0rmjLxsYGQhs9zP75w==}
 
   iso-filecoin@7.4.7:
     resolution: {integrity: sha512-whLO1m0OskzOFGc+CB8WPr2gsR/asj/8MA7pQXYOtB9mPGay4askXLTJfIBY1AJh4/RaBUeIeGDMX6lpaj5TtA==}
@@ -5611,8 +5597,6 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@standard-schema/utils@0.3.0': {}
-
   '@tailwindcss/node@4.3.3':
     dependencies:
       '@jridgewell/remapping': 2.3.5
@@ -6330,9 +6314,10 @@ snapshots:
 
   cli-spinners@2.9.2: {}
 
-  clipact@0.4.0:
+  clipact@0.7.0:
     dependencies:
       '@standard-schema/spec': 1.1.0
+      iso-conf: 1.0.0
 
   clsx@2.1.1: {}
 
@@ -6506,10 +6491,6 @@ snapshots:
   env-paths@2.2.1: {}
 
   env-paths@3.0.0: {}
-
-  env-paths@4.0.0:
-    dependencies:
-      is-safe-filename: 0.1.1
 
   error-ex@1.3.4:
     dependencies:
@@ -6936,8 +6917,6 @@ snapshots:
 
   is-regexp@3.1.0: {}
 
-  is-safe-filename@0.1.1: {}
-
   is-stream@2.0.1: {}
 
   is-stream@4.0.1: {}
@@ -6964,12 +6943,9 @@ snapshots:
     dependencies:
       bigint-mod-arith: 3.3.1
 
-  iso-conf@0.4.2:
+  iso-conf@1.0.0:
     dependencies:
       '@standard-schema/spec': 1.1.0
-      '@standard-schema/utils': 0.3.0
-      dot-prop: 10.2.0
-      env-paths: 4.0.0
       iso-base: 4.4.0
 
   iso-filecoin@7.4.7(typescript@7.0.2):

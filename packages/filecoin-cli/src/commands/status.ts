@@ -1,5 +1,6 @@
 import { defineCommand } from 'clipact'
 import * as z from 'zod'
+import { STORAGE_ERRORS } from '../errors.ts'
 import { account, accountEnv } from './shared.ts'
 
 /** `filecoin status`: session, scope expiries, and funding readiness. */
@@ -36,6 +37,7 @@ export const status = defineCommand({
       })
       .optional(),
   }),
+  errors: [...STORAGE_ERRORS],
   readOnly: true,
   human: ({ network, session, account }) => {
     const lines = [`network: ${network}`, `session: ${session.state}`]

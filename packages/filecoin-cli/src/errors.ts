@@ -135,6 +135,14 @@ export const errors = {
   },
 } satisfies ErrorRegistry
 
+/**
+ * clipact's built-in errors for the CLI's folder and its `config.json` store,
+ * which every command that builds an app opens.
+ *
+ * @see https://github.com/hugomrdias/agents/tree/main/packages/clipact#storage
+ */
+export const STORAGE_ERRORS = ['state_unwritable', 'config_invalid'] as const
+
 /** Errors a command that signs with the session key can return. */
 const SESSION_ERRORS = [
   ErrorCodes.authRequired,
@@ -144,6 +152,7 @@ const SESSION_ERRORS = [
 
 /** Errors any put or delete job can return, including when resumed. */
 export const JOB_ERRORS = [
+  ...STORAGE_ERRORS,
   ...SESSION_ERRORS,
   ErrorCodes.notFound,
   ErrorCodes.insufficientFunds,

@@ -1,6 +1,6 @@
 import { defineCommand } from 'clipact'
 import * as z from 'zod'
-import { ErrorCodes } from '../errors.ts'
+import { ErrorCodes, STORAGE_ERRORS } from '../errors.ts'
 import { account, accountEnv, formatBytes } from './shared.ts'
 
 /**
@@ -36,6 +36,7 @@ export const get = defineCommand({
     url: z.string(),
   }),
   errors: [
+    ...STORAGE_ERRORS,
     ErrorCodes.authRequired,
     ErrorCodes.loginPending,
     ErrorCodes.notFound,
