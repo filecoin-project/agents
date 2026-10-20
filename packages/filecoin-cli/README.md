@@ -133,6 +133,8 @@ Ctrl+C, SIGTERM, or SIGHUP stops the work at the next step. `filecoin` returns a
 | `FILECOIN_API_URL` | filecoin-api origin for retrieval links, such as `http://localhost:8787` for a local API. Default: `https://api.filecoin.io` |
 | `FILECOIN_OUTPUT`, `FILECOIN_AGENT` | Override clipact's output mode and agent detection |
 
+`FILECOIN_CONFIG_DIR`, `FILECOIN_STATE_DIR`, `FILECOIN_RPC_URL`, `FILECOIN_CONSOLE_URL`, and `FILECOIN_API_URL` apply to every command and have no flags. `filecoin --help` lists them under Environment, `filecoin schema --list` publishes them under `globals`, and `filecoin doctor` shows each value and its source. An invalid URL fails with `invalid_input` that names the variable.
+
 The prototype saves the session private key in the config file with mode 0600, so only its owner can read it. `filecoin logout` deletes the local key. The key stays authorized on chain until it expires or the owner revokes it, so `logout` returns the console's revoke link for an approved key.
 
 ## Development

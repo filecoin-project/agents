@@ -14,13 +14,12 @@ import {
   resolveNetwork,
 } from './config.ts'
 import { abortable } from './errors.ts'
+import {
+  DEFAULT_API_URL,
+  DEFAULT_CONSOLE_URL,
+  type GlobalSettings,
+} from './globals.ts'
 import { openDatabase, stateDir } from './state/db.ts'
-
-/** Default Filecoin Pay console origin, which approves keys and funds accounts. */
-const DEFAULT_CONSOLE_URL = 'https://pay.filecoin.cloud'
-
-/** Default filecoin-api origin, whose `/get/{cid}` route redirects to providers. */
-const DEFAULT_API_URL = 'https://api.filecoin.io'
 
 /**
  * Shared per-invocation context: resolved network, chain client, config, and
@@ -29,7 +28,6 @@ const DEFAULT_API_URL = 'https://api.filecoin.io'
 export type App = {
   network: Network
   chain: FilecoinChain
-  env: NodeJS.ProcessEnv
   config: Config
   /** Session key and owner given as input (`FILECOIN_SESSION_KEY`, `FILECOIN_ROOT_ADDRESS`). */
   credentials: { sessionKey?: string; rootAddress?: string }
@@ -37,6 +35,10 @@ export type App = {
   consoleUrl: string
   /** filecoin-api origin for retrieval links. */
   apiUrl: string
+  /** `FILECOIN_RPC_URL`, which replaces the chain's fallback transport. */
+  rpcUrl: string | undefined
+  /** Directory of the state database and staged input. */
+  stateDir: string
   /** Aborted on SIGINT, SIGTERM, or SIGHUP; cancels chain and provider calls. */
   signal: AbortSignal | undefined
   /** RPC transport for the resolved chain, bound to `signal`. */
@@ -49,16 +51,17 @@ export type App = {
   stagingDir: (operationId: string) => string
 }
 
-/** Options for {@link createApp}: the shared account input of a command. */
-export type CreateAppOptions = {
+/**
+ * Options for {@link createApp}: the shared account input of a command and
+ * the CLI's globals. Omitted globals take their defaults.
+ */
+export type CreateAppOptions = Partial<GlobalSettings> & {
   /** `--network` or `FILECOIN_NETWORK`; falls back to the config file. */
   network?: Network | undefined
   /** `FILECOIN_SESSION_KEY`, for CI without `filecoin login`. */
   sessionKey?: string | undefined
   /** `FILECOIN_ROOT_ADDRESS`, the wallet that authorized `sessionKey`. */
   rootAddress?: string | undefined
-  /** Process environment for state, config, RPC, console, and API overrides. */
-  env?: NodeJS.ProcessEnv
   /** The handler's signal; every RPC request rejects once it aborts. */
   signal?: AbortSignal
 }
@@ -88,31 +91,29 @@ export function withSignal(
 
 /**
  * Build the invocation context from a command's account input. Handlers call
- * this directly; clipact has no middleware. `FILECOIN_RPC_URL` overrides the
- * chain's default fallback transport.
+ * this directly; clipact has no middleware. `rpcUrl` replaces the chain's
+ * default fallback transport.
  */
 export function createApp(options: CreateAppOptions = {}): App {
-  const env = options.env ?? process.env
-  const config = openConfig(env)
+  const config = openConfig(options.configDir)
   const network = resolveNetwork(options.network, config)
   const chain = network === 'mainnet' ? mainnet : calibration
-  const base = env.FILECOIN_RPC_URL
-    ? http(env.FILECOIN_RPC_URL)
-    : getTransport(chain)
+  const base = options.rpcUrl ? http(options.rpcUrl) : getTransport(chain)
   const transport = options.signal ? withSignal(base, options.signal) : base
-  const root = stateDir(env)
+  const root = stateDir(options.stateDir)
   let db: DatabaseSync | undefined
   return {
     network,
     chain,
-    env,
     config,
     credentials: {
       sessionKey: options.sessionKey,
       rootAddress: options.rootAddress,
     },
-    consoleUrl: env.FILECOIN_CONSOLE_URL ?? DEFAULT_CONSOLE_URL,
-    apiUrl: env.FILECOIN_API_URL ?? DEFAULT_API_URL,
+    consoleUrl: options.consoleUrl ?? DEFAULT_CONSOLE_URL,
+    apiUrl: options.apiUrl ?? DEFAULT_API_URL,
+    rpcUrl: options.rpcUrl,
+    stateDir: root,
     signal: options.signal,
     transport,
     client: createPublicClient({ chain, transport }),

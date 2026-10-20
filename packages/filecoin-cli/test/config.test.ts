@@ -5,7 +5,7 @@ import { openConfig, resolveNetwork } from '../src/config.ts'
 import { tempDir } from './helpers.ts'
 
 test('resolveNetwork prefers input, then config, then calibration', async () => {
-  const config = openConfig({ FILECOIN_CONFIG_DIR: await tempDir() })
+  const config = openConfig(await tempDir())
   assert.equal(resolveNetwork(undefined, config), 'calibration')
   config.set('network', 'mainnet')
   assert.equal(resolveNetwork(undefined, config), 'mainnet')
@@ -13,7 +13,7 @@ test('resolveNetwork prefers input, then config, then calibration', async () => 
 })
 
 test('config file is private to the user', async () => {
-  const config = openConfig({ FILECOIN_CONFIG_DIR: await tempDir() })
+  const config = openConfig(await tempDir())
   config.set('sessions.calibration', {
     privateKey: '0x01',
     address: '0x02',

@@ -38,7 +38,8 @@ packages/filecoin-cli/
 ├── skills/               gitignored build copy of plugins/filecoin/skills/, installed by `filecoin skills install`
 └── src/
     ├── main.ts           cli.run()
-    ├── cli.ts            defineCli: name, version, commands, skills, mapError
+    ├── cli.ts            defineCli: name, version, globals, commands, skills, mapError
+    ├── globals.ts        environment-only settings (defineGlobals); imports only zod and clipact
     ├── commands/         one definition per command; imports only zod and clipact
     │   ├── shared.ts     account input fragment, paging, output schemas
     │   ├── login.ts  logout.ts  status.ts  doctor.ts
@@ -77,8 +78,8 @@ packages/filecoin-cli/
 
 The code has three layers:
 
-1. **`commands/`** declares each command once. A definition holds the input schema (flags, positionals, environment fallbacks, and secrets), the output schema, the error codes, and the side effects (`readOnly`, `idempotent`, `confirm`, and `dryRun`). clipact derives parsing, validation, help, `schema`, and completions from it. These modules import only zod, clipact, `commands/shared.ts`, and three local modules that need nothing else: `errors.ts`, `network.ts`, and `auth/scope-ids.ts`. So `--help`, `--version`, and `schema` never load synapse-core or viem.
-2. **`handlers/`** resolve the session and the account scope through plain functions, `appFor` and `jobContext`, and then call into storage or auth. clipact has no middleware, so shared setup is a function that each handler calls.
+1. **`commands/`** declares each command once. A definition holds the input schema (flags, positionals, environment fallbacks, and secrets), the output schema, the error codes, and the side effects (`readOnly`, `idempotent`, `confirm`, and `dryRun`). clipact derives parsing, validation, help, `schema`, and completions from it. These modules and `globals.ts` import only zod, clipact, `commands/shared.ts`, and three local modules that need nothing else: `errors.ts`, `network.ts`, and `auth/scope-ids.ts`. So `--help`, `--version`, and `schema` never load synapse-core or viem.
+2. **`handlers/`** resolve the session and the account scope through plain functions, `appFor` and `jobContext`, and then call into storage or auth. `appFor` reads the CLI's globals with `globals.get(ctx)` and passes them to `createApp`. clipact has no middleware, so shared setup is a function that each handler calls.
 3. **`storage/`, `state/`, and `auth/`** hold the storage, state, and auth logic. `jobs.ts` depends only on the `StorageBackend` interface, so tests replace the provider and the chain with a fake.
 
 `createApp` in `app.ts` builds one `App` per command from the command's account input. The `App` opens the database on first use, so `status` and `logout` never touch the state database.
@@ -108,11 +109,11 @@ We measured startup on Node 26 as the median of 20 runs after 5 warmups, with a 
 }
 ```
 
-`filecoin` resolves the network from `--network`, then `FILECOIN_NETWORK`, then the config file, then `calibration`. clipact has no global flags, so `network` is a field of every command's input, in the `account` fragment of `commands/shared.ts`. The field has `FILECOIN_NETWORK` as its environment fallback and no schema default, so the config file still applies when neither is set. Each network has its own session.
+`filecoin` resolves the network from `--network`, then `FILECOIN_NETWORK`, then the config file, then `calibration`. clipact globals come only from the environment, and `network` also needs a flag, so it is a field of every command's input, in the `account` fragment of `commands/shared.ts`. The field has `FILECOIN_NETWORK` as its environment fallback and no schema default, so the config file still applies when neither is set. Each network has its own session.
 
 `filecoin` takes credentials from `FILECOIN_SESSION_KEY` with `FILECOIN_ROOT_ADDRESS` first, then from the saved session. Both variables are also command input fields. `sessionKey` is a clipact secret. clipact reads it only from the environment, rejects it as a flag, and redacts it in `--debug` and `schema`. `filecoin` reports a pending session as `login_pending`, not as logged out. CI and cloud agents, whose disk does not outlive the session, use the variables with a key exported from the Filecoin Pay console's session keys page ([cloud agents](https://poc.filecoin.cloud/agents#cloud-agents)).
 
-`FILECOIN_CONFIG_DIR`, `FILECOIN_STATE_DIR`, `FILECOIN_RPC_URL`, `FILECOIN_CONSOLE_URL`, and `FILECOIN_API_URL` are process settings, not command input. `filecoin doctor` shows each resolved value and its source.
+`FILECOIN_CONFIG_DIR`, `FILECOIN_STATE_DIR`, `FILECOIN_RPC_URL`, `FILECOIN_CONSOLE_URL`, and `FILECOIN_API_URL` are clipact [globals](https://github.com/hugomrdias/agents/blob/main/packages/clipact/README.md#globals), defined in `globals.ts`, not command input. clipact reads them from the environment of each run, validates them before the command's input (the three URLs must be URLs), and applies the console and API defaults. Root help lists them under Environment, `schema --list` publishes them under `globals`, and `--debug` prints their sources. `filecoin doctor` shows each resolved value and its source. A console or API URL set to its default value reports `default`, because clipact applies schema defaults before the handler runs.
 
 ## Login
 
@@ -343,7 +344,7 @@ The tests use the Node test runner and need no network. `pnpm --filter filecoin 
 | `pack.test.ts` | A deterministic root CID, byte-exact extraction, no unreferenced blocks, empty directories, rejection of a tampered block, the dotfile and symlink rules, and the canonical encoding of a 3 GiB file root built from fake leaves |
 | `jobs.test.ts` | A fake `StorageBackend` that simulates FWSS nonces. It covers new and existing data sets, a lost commit response, a commit that never landed, a rejected commit, a resume of a completed job, insufficient funds, an approval-only funding error, a reverted removal, interruption, dry-run estimates, and the operation ID and resume step on every job error |
 | `urls.test.ts` | The filecoin-api piece and browser URLs for files and folders, an API base path, an unknown chain ID, and the provider URL for `get` |
-| `cli.test.ts` | The whole CLI in process through `clipact/testing` in strict mode. It covers definitions, schemas, auth and pending-login errors, the logout revoke link, confirmation, a dry run without a session, and secrets kept out of flags and output |
+| `cli.test.ts` | The whole CLI in process through `clipact/testing` in strict mode. It covers definitions, schemas, auth and pending-login errors, the logout revoke link, confirmation, a dry run without a session, secrets kept out of flags and output, and the globals in root help, `schema --list`, validation, and `doctor` sources. Globals come from the env passed to `invoke`, not from `process.env` |
 | `contract.test.ts` | The built binary without a TTY. It covers one JSON line on stdout, exit codes, no leaked session key, and a SIGTERM during a hanging RPC call that gives an `interrupted` result and exit 143 |
 | `app.test.ts` | The signal-bound RPC transport and `abortable()`, including a call that fails after the abort |
 | `config.test.ts` | Network resolution and the `0600` mode of the config file |

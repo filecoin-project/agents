@@ -104,11 +104,11 @@ const MIGRATIONS = [
 ]
 
 /**
- * Resolve the CLI state directory: `FILECOIN_STATE_DIR`, or the platform
- * application data directory.
+ * Resolve the CLI state directory: `dir` (the `FILECOIN_STATE_DIR` global),
+ * or the platform application data directory.
  */
-export function stateDir(env: NodeJS.ProcessEnv = process.env): string {
-  return env.FILECOIN_STATE_DIR ?? envPaths('filecoin', { suffix: '' }).data
+export function stateDir(dir?: string): string {
+  return dir ?? envPaths('filecoin', { suffix: '' }).data
 }
 
 /**

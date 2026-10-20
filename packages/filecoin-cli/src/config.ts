@@ -46,16 +46,16 @@ export const ConfigSchema = z.object({
 export type Config = Conf<typeof ConfigSchema>
 
 /**
- * Open the configuration file. `FILECOIN_CONFIG_DIR` overrides the platform
- * config directory. The file is written with mode 0600.
+ * Open the configuration file in `dir` (the `FILECOIN_CONFIG_DIR` global), or
+ * in the platform config directory. The file is written with mode 0600.
  *
  * @see https://github.com/hugomrdias/iso-repo/tree/main/packages/iso-conf
  */
-export function openConfig(env: NodeJS.ProcessEnv = process.env): Config {
+export function openConfig(dir?: string): Config {
   return new Conf({
     projectName: 'filecoin',
     projectSuffix: '',
-    cwd: env.FILECOIN_CONFIG_DIR,
+    cwd: dir,
     schema: ConfigSchema,
   })
 }

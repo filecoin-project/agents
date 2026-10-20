@@ -2,6 +2,7 @@ import { defineCli } from 'clipact'
 import pkg from '../package.json' with { type: 'json' }
 import { commands } from './commands/index.ts'
 import { errors } from './errors.ts'
+import { globals } from './globals.ts'
 
 /**
  * The `filecoin` CLI. This module and the definitions it imports load only zod and
@@ -16,6 +17,7 @@ export const cli = defineCli({
   version: pkg.version,
   description: 'Store files and folders on Filecoin and get retrieval links',
   envPrefix: 'FIL',
+  globals,
   commands,
   skills: new URL('../skills/', import.meta.url),
   mapError: () => import('./map-error.ts'),

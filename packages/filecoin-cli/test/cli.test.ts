@@ -21,6 +21,9 @@ import { tempDir } from './helpers.ts'
 const SESSION_KEY = `0x${'11'.repeat(32)}`
 const ROOT = '0x1111111111111111111111111111111111111111'
 
+/** The config and state directories of every run, as globals. */
+const globalsEnv: Record<string, string> = {}
+
 /** Runs the CLI in process and returns the asserted result and its `data`. */
 async function run(
   args: string[],
@@ -30,7 +33,7 @@ async function run(
   data: Record<string, unknown>
   stderr: string
 }> {
-  const result = await invoke(cli, args, { env })
+  const result = await invoke(cli, args, { env: { ...globalsEnv, ...env } })
   const json = assertContract(result)
   return {
     json,
@@ -44,12 +47,16 @@ function code(json: Record<string, unknown>): string | undefined {
   return (json.error as { code: string } | undefined)?.code
 }
 
+/** The config file every run reads. */
+function config() {
+  return openConfig(globalsEnv.FILECOIN_CONFIG_DIR)
+}
+
 before(async () => {
-  // State and config locations come from the real environment, like the
-  // RPC and console overrides; command input comes from `invoke`'s env.
+  // Globals, like command input, come from `invoke`'s env, not process.env.
   const dir = await tempDir()
-  process.env.FILECOIN_CONFIG_DIR = join(dir, 'config')
-  process.env.FILECOIN_STATE_DIR = join(dir, 'state')
+  globalsEnv.FILECOIN_CONFIG_DIR = join(dir, 'config')
+  globalsEnv.FILECOIN_STATE_DIR = join(dir, 'state')
 })
 
 test('definitions are valid', () => assertDefinitions(cli))
@@ -75,6 +82,55 @@ test('schemas cover every command', async () => {
   const { data } = await run(['schema', 'put'])
   assert.equal(data.command, 'put')
   assert.deepEqual(data.secrets, ['sessionKey'])
+})
+
+test('root help and schema list the globals', async () => {
+  const help = await invoke(cli, ['--help'])
+  const environment = help.stdout.slice(help.stdout.indexOf('Environment'))
+  for (const variable of [
+    'FILECOIN_RPC_URL',
+    'FILECOIN_CONSOLE_URL',
+    'FILECOIN_API_URL',
+    'FILECOIN_CONFIG_DIR',
+    'FILECOIN_STATE_DIR',
+  ]) {
+    assert.ok(environment.includes(variable), `${variable} not in help`)
+  }
+  const { data } = await run(['schema', '--list'])
+  const { env } = data.globals as { env: Record<string, string> }
+  assert.deepEqual(env, {
+    rpcUrl: 'FILECOIN_RPC_URL',
+    consoleUrl: 'FILECOIN_CONSOLE_URL',
+    apiUrl: 'FILECOIN_API_URL',
+    configDir: 'FILECOIN_CONFIG_DIR',
+    stateDir: 'FILECOIN_STATE_DIR',
+  })
+})
+
+test('an invalid global is invalid input naming its variable', async () => {
+  const { json } = await run(['status'], { FILECOIN_API_URL: 'not a url' })
+  assert.equal(code(json), 'invalid_input')
+  assert.ok(JSON.stringify(json).includes('FILECOIN_API_URL'))
+})
+
+test('doctor reports where each global came from', async () => {
+  const { data } = await run(['doctor'], {
+    FILECOIN_RPC_URL: 'http://127.0.0.1:1',
+    FILECOIN_CONSOLE_URL: 'http://localhost:3000',
+  })
+  assert.deepEqual(data.rpcUrl, { value: 'http://127.0.0.1:1', source: 'env' })
+  assert.deepEqual(data.consoleUrl, {
+    value: 'http://localhost:3000',
+    source: 'env',
+  })
+  assert.deepEqual(data.apiUrl, {
+    value: 'https://api.filecoin.io',
+    source: 'default',
+  })
+  assert.deepEqual(data.stateDir, {
+    value: globalsEnv.FILECOIN_STATE_DIR,
+    source: 'env',
+  })
 })
 
 test('reads without a session ask the user to log in', async () => {
@@ -157,7 +213,7 @@ test('login rejects unknown scopes and environment credentials', async () => {
 
 test('a pending login is reported with the approval link', async () => {
   const network = 'mainnet'
-  openConfig().set(`sessions.${network}`, {
+  config().set(`sessions.${network}`, {
     privateKey: SESSION_KEY,
     address: '0x2222222222222222222222222222222222222222',
     scopes: ['addPieces'],
@@ -190,7 +246,7 @@ test('a pending login is reported with the approval link', async () => {
 
 test('logout of an approved key returns the console revoke link', async () => {
   const network = 'mainnet'
-  openConfig().set(`sessions.${network}`, {
+  config().set(`sessions.${network}`, {
     privateKey: SESSION_KEY,
     address: '0x2222222222222222222222222222222222222222',
     rootAddress: '0x1111111111111111111111111111111111111111',

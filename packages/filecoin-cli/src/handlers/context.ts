@@ -7,6 +7,7 @@ import {
   resolveCredentials,
 } from '../auth/session.ts'
 import { notFound, resumeStep } from '../errors.ts'
+import { globals } from '../globals.ts'
 import type { Network } from '../network.ts'
 import { getOperation, type Operation } from '../state/operations.ts'
 import {
@@ -31,15 +32,25 @@ export type JobReporter = Pick<
   'signal' | 'progress' | 'checkpoint'>
 
 /**
- * Build the invocation context from a handler's account input and signal.
- * Shared setup is a plain function each handler calls; clipact has no
- * middleware.
+ * Build the invocation context from a handler's account input, the CLI's
+ * globals, and the signal. Shared setup is a plain function each handler
+ * calls; clipact has no middleware.
  *
  * @see https://github.com/hugomrdias/agents/blob/main/docs/agent-cli/framework-design.md#defining-commands
+ * @see https://github.com/hugomrdias/agents/tree/main/packages/clipact#globals
  */
-export function appFor(ctx: { input: AccountInput; signal: AbortSignal }): App {
+export function appFor(
+  // biome-ignore lint/suspicious/noExplicitAny: any command's context
+  ctx: Context<any, any> & { input: AccountInput }
+): App {
   const { network, sessionKey, rootAddress } = ctx.input
-  return createApp({ network, sessionKey, rootAddress, signal: ctx.signal })
+  return createApp({
+    ...globals.get(ctx),
+    network,
+    sessionKey,
+    rootAddress,
+    signal: ctx.signal,
+  })
 }
 
 /**
