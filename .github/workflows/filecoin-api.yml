@@ -92,6 +92,15 @@ jobs:
           done
           exit 1
 
+      # The card must advertise the MCP host itself, from MCP_PUBLIC_URL.
+      - name: Probe MCP server card
+        run: |
+          headers="$(mktemp)"
+          card="$(curl --fail --show-error --silent --dump-header "$headers" "$MCP_URL/server-card")"
+          grep -qi '^content-type: application/mcp-server-card+json' "$headers"
+          printf '%s' "$card" | jq -e --arg url "$MCP_URL" \
+            '.name == "io.filecoin/mcp" and .remotes[0].url == $url'
+
   preview:
     name: Deploy preview
     # Fork pull requests have no access to secrets.
@@ -163,6 +172,7 @@ jobs:
           - Docs: $PREVIEW_URL/docs
           - Health: $PREVIEW_URL/health
           - MCP: \`$PREVIEW_URL/mcp\`
+          - Server card: $PREVIEW_URL/mcp/server-card
           EOF
           )"
           comment_id="$(gh api --paginate "repos/$GH_REPO/issues/$PR_NUMBER/comments" \
