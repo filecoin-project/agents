@@ -18,6 +18,8 @@ Before editing files for a substantial task:
 ## Changes and validation
 
 - Use Conventional Commits: `<type>(<optional scope>): <concise imperative description>`.
+- Keep each commit to one component's directory and scope it with that component, such as `feat(filecoin-cli): ...`. release-please adds a commit to the release pull request of every component whose files it changes; the scope only labels the changelog entry. [CONTRIBUTING.md](.github/CONTRIBUTING.md#write-commit-messages-and-pull-request-titles) lists the components.
+- Prefer **Rebase and merge** for pull requests, so each commit reaches `main` with its own message and lands in its own component's release pull request. A squash merge folds them into one commit under the pull request title.
 - Add a short JSDoc description for every new type, class, function, or method, with links to relevant references.
 - After changes, run the TypeScript, Biome, and existing test checks through `pnpm check` (Turborepo). Run `pnpm build` when changing package exports or compilation settings.
 
