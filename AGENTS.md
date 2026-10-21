@@ -26,3 +26,4 @@ Before editing files for a substantial task:
 
 - Keep [docs/filecoin/README.md](docs/filecoin/README.md) and [docs/filecoin/architecture.md](docs/filecoin/architecture.md) current in the same change as the code, including the open questions a change answers and the follow-ups it completes.
 - When code and these docs disagree, list each inconsistency for the user and let them decide which side is right before you edit either.
+- Before you write or edit docs, READMEs, commit messages, or pull request descriptions, read [`.agents/skills/technical-writing/SKILL.md`](.agents/skills/technical-writing/SKILL.md) and [`.agents/skills/unslop/SKILL.md`](.agents/skills/unslop/SKILL.md), and apply both. Read the files directly, because both skills set `disable-model-invocation: true`, so Claude Code can't load them as skills.
