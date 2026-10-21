@@ -26,6 +26,7 @@ import {
   hasPieceSelector,
   PIECE_SELECTOR_MESSAGE,
 } from '../schemas/queries.ts'
+import { MCP_SERVER_NAME, MCP_SERVER_TITLE } from '../server-card.ts'
 import { activeSpan, setAttributes } from '../tracing.ts'
 import { searchDocs } from './docs-search.ts'
 
@@ -219,7 +220,7 @@ const TOOLS: ToolDef[] = [
  */
 export function buildMcpServer(ctx: McpContext): McpHandle {
   const server = new McpServer(
-    { name: 'filecoin-api', title: 'Filecoin', version: ctx.version },
+    { name: MCP_SERVER_NAME, title: MCP_SERVER_TITLE, version: ctx.version },
     {
       instructions:
         'Read-only Filecoin data: storage providers, data sets, pieces, Filecoin Pay rails and session keys. Every data tool takes a `network` (calibration or mainnet). Large integers are decimal strings. Paginate with `cursor` from `nextCursor`. `search_docs` searches the Filecoin docs at docs.filecoin.io.',

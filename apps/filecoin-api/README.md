@@ -11,12 +11,14 @@ Built with [Hono](https://hono.dev), [`@hono/zod-openapi`](https://github.com/ho
 | `GET /openapi.json` | OpenAPI 3.1 document |
 | `GET /docs` | API reference (Scalar) |
 | `POST /mcp` | MCP server (Streamable HTTP, stateless) |
+| `GET /mcp/server-card` | The MCP server's [server card](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/seps/2127-mcp-server-cards.md), at the location SEP-2127 reserves next to the endpoint (see [Server card](#server-card)) |
+| `GET /.well-known/mcp/server-card.json`, `GET /.well-known/mcp-server-card` | The same card, at the paths of older drafts, which scanners still check |
 | `GET /health` | Latest indexed block per network and indexer; `503` if a configured database fails |
 | `GET /get/{cid}` | Redirect to where a PieceCID or IPFS root CID can be retrieved (see [Retrieval](#retrieval)) |
 
 Every data route is namespaced by network: `/calibration/...` or `/mainnet/...`.
 
-`https://mcp.filecoin.io` and `https://mcp.filecoin.cloud` serve only the MCP server, at `POST /`. [`src/mcp-host.ts`](src/mcp-host.ts) rewrites `/` to `/mcp` for the hostnames in the `MCP_HOSTS` variable, so the MCP host shares the `/mcp` handler, rate limit and CORS, and returns `404` for every other path. `/mcp` keeps working on the API hosts. See [API and MCP domains](../../docs/filecoin/mcp-domains.md).
+`https://mcp.filecoin.io` and `https://mcp.filecoin.cloud` serve only the MCP server, at `POST /`, and its server card. [`src/mcp-host.ts`](src/mcp-host.ts) rewrites `/` to `/mcp` and `/server-card` to `/mcp/server-card` for the hostnames in the `MCP_HOSTS` variable, so the MCP host shares the `/mcp` handler, rate limit and CORS. It also serves the two `.well-known` card paths, and returns `404` for every other path. `/mcp` keeps working on the API hosts. See [API and MCP domains](../../docs/filecoin/mcp-domains.md).
 
 | Route | Filters |
 | --- | --- |
@@ -40,6 +42,20 @@ Conventions:
 - **Big numbers** (ids, amounts, epochs) are returned as decimal strings.
 - **Pagination** uses `limit` (1–200, default 50) and an opaque `cursor`. Each response looks like `{ data, nextCursor }`.
 - **Errors** look like `{ error: { code, message } }`.
+
+### Server card
+
+The card describes the MCP server before a client connects: its name, title, version, and Streamable HTTP endpoint. [`src/server-card.ts`](src/server-card.ts) builds it, and `serverInfo` reads the same name and title from there, so a client sees the same identity before and after it connects:
+
+| Field | Value |
+| --- | --- |
+| `name` | `io.filecoin/mcp`, which is `mcp.filecoin.io` in reverse-DNS form. The MCP registry entry uses the same name ([#75](https://github.com/filecoin-project/agents/issues/75)) |
+| `title` | `Filecoin` |
+| `version` | The filecoin-api version |
+| `remotes[0].url` | `MCP_PUBLIC_URL`, which is `https://mcp.filecoin.io` in production, on every host. Previews and `pnpm dev` set it to an empty string, so the card advertises the endpoint on the request's host: its root on an MCP host, and `/mcp` elsewhere |
+| `remotes[0].supportedProtocolVersions` | The MCP SDK's protocol versions that include Streamable HTTP |
+
+The card is sent as `application/mcp-server-card+json`, with `Cache-Control: public, max-age=3600` and an `ETag`, and shares the REST API's rate limit.
 
 ### Retrieval
 
@@ -81,6 +97,8 @@ Then start the dev server:
 ```bash
 pnpm --filter filecoin-api dev
 ```
+
+The `dev` script passes `--var MCP_PUBLIC_URL:`, so the server card advertises the dev server's own `/mcp` instead of production. Wrangler sets the request host to the first route in `wrangler.jsonc`, so the card's URL, like the OpenAPI document's server URL, shows `http://api.filecoin.cloud` instead of `localhost`.
 
 Scripts:
 - `pnpm test`: vitest in workerd via `@cloudflare/vitest-plugin`, with a fake database. It fails when `openapi.json` differs from the document the Worker serves.
@@ -160,5 +178,5 @@ If the databases move, measure again. A database a few milliseconds from Frankfu
 - **Request ids:** `X-Request-Id` is the Cloudflare Ray ID, the same value as `$metadata.rayId` on every log and span, so one id from a client finds the whole request. Client-sent `X-Request-Id` headers are ignored.
 - **Response headers:** `X-Request-Id`, `Server-Timing` with `db` and `total` metrics, and `RateLimit-Policy` on rate-limited routes.
 - **Unknown paths:** only `/calibration/...` and `/mainnet/...` reach the network middleware and API rate limiter. Other paths, such as crawler requests for `/sitemap.xml`, get a plain `404 not_found`. A valid route under an unsupported network, such as `/filecoin/providers`, gets `404 unknown_network`.
-- **Rate limits:** [Workers Rate Limiting](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/) per client IP, at 120 requests/min for the REST API and `/health`, and 60 requests/min for MCP. Every rate-limited response, including `429`, sends the limit in a `RateLimit-Policy` header in the [IETF RateLimit header fields](https://datatracker.ietf.org/doc/draft-ietf-httpapi-ratelimit-headers/) format: `"api";q=120;w=60` for the REST API and `/health`, and `"mcp";q=60;w=60` for MCP. Workers Rate Limiting does not report remaining requests, so there is no `RateLimit` header. Over the limit, requests get a `429` with `Retry-After`. The policy values in [`src/middleware/rate-limit.ts`](src/middleware/rate-limit.ts) must match the `simple` limits in `wrangler.jsonc`.
-- **Caching:** data responses carry no `max-age`, so browsers and proxies never serve a stored copy and every request reaches the Worker; `/health` sends `no-store`. Indexed data changes every 30-second epoch, and a cached response would show a write as missing after the indexer had it. Data reads are only cached by Hyperdrive's 5-second query cache (see the setup steps). Responses that do not depend on fresh indexer data keep a `max-age`: `/openapi.json` (`300`) only changes on deploy, a `/get/{cid}` redirect to inbrowser.link (`86400`) is built from the request alone, and a redirect to a provider (`60`) is already served from the provider cache. MCP `search_docs` results are cached for an hour, because the docs do not depend on the chain.
+- **Rate limits:** [Workers Rate Limiting](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/) per client IP, at 120 requests/min for the REST API, `/health`, and the server card, and 60 requests/min for MCP. Every rate-limited response, including `429`, sends the limit in a `RateLimit-Policy` header in the [IETF RateLimit header fields](https://datatracker.ietf.org/doc/draft-ietf-httpapi-ratelimit-headers/) format: `"api";q=120;w=60` for the REST API and `/health`, and `"mcp";q=60;w=60` for MCP. Workers Rate Limiting does not report remaining requests, so there is no `RateLimit` header. Over the limit, requests get a `429` with `Retry-After`. The policy values in [`src/middleware/rate-limit.ts`](src/middleware/rate-limit.ts) must match the `simple` limits in `wrangler.jsonc`.
+- **Caching:** data responses carry no `max-age`, so browsers and proxies never serve a stored copy and every request reaches the Worker; `/health` sends `no-store`. Indexed data changes every 30-second epoch, and a cached response would show a write as missing after the indexer had it. Data reads are only cached by Hyperdrive's 5-second query cache (see the setup steps). Responses that do not depend on fresh indexer data keep a `max-age`: `/openapi.json` (`300`) only changes on deploy, the server card (`3600`, with an `ETag`) only changes with a release or `MCP_PUBLIC_URL`, a `/get/{cid}` redirect to inbrowser.link (`86400`) is built from the request alone, and a redirect to a provider (`60`) is already served from the provider cache. MCP `search_docs` results are cached for an hour, because the docs do not depend on the chain.

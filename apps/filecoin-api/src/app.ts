@@ -2,12 +2,14 @@ import { StreamableHTTPTransport } from '@hono/mcp'
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { Scalar } from '@scalar/hono-api-reference'
 import { cors } from 'hono/cors'
+import { etag } from 'hono/etag'
 import { timing } from 'hono/timing'
 import { type DbFactory, hyperdriveDb } from './db.ts'
 import { errorBody, toErrorResponse } from './errors.ts'
 import { checkHealth } from './health.ts'
 import { log } from './log.ts'
 import { buildMcpServer } from './mcp/server.ts'
+import { mcpUrl } from './mcp-host.ts'
 import { rateLimit } from './middleware/rate-limit.ts'
 import { requestId } from './middleware/request-id.ts'
 import { requestTelemetry } from './middleware/telemetry.ts'
@@ -15,6 +17,11 @@ import { NETWORK_NAMES } from './networks.ts'
 import { validationHook } from './routes/hook.ts'
 import { networkRoutes } from './routes/network.ts'
 import { retrievalRoutes } from './routes/retrieval.ts'
+import {
+  mcpServerCard,
+  SERVER_CARD_PATHS,
+  SERVER_CARD_TYPE,
+} from './server-card.ts'
 import { activeSpan, recordError } from './tracing.ts'
 import type { AppEnv } from './types.ts'
 
@@ -65,7 +72,7 @@ export interface AppOptions {
 
 /**
  * Create the filecoin-api Hono app: REST routes under `/{network}`, OpenAPI
- * document, API reference and the MCP endpoint.
+ * document, API reference, the MCP endpoint and its server card.
  *
  * @see https://hono.dev/examples/zod-openapi
  */
@@ -108,6 +115,7 @@ export function createApp(options: AppOptions = {}) {
       openapi: '/openapi.json',
       docs: '/docs',
       mcp: '/mcp',
+      serverCard: '/mcp/server-card',
     })
   )
   // Health queries every network's database, so it shares the API limit.
@@ -152,6 +160,15 @@ export function createApp(options: AppOptions = {}) {
       },
       405
     )
+  })
+  // The card changes only with a release or MCP_PUBLIC_URL, so clients can
+  // cache it for an hour and revalidate it with its ETag.
+  app.on('GET', SERVER_CARD_PATHS, rateLimit('RATE_LIMIT_API'), etag(), (c) => {
+    const card = mcpServerCard(mcpUrl(new URL(c.req.url), c.env), VERSION)
+    return c.body(JSON.stringify(card, null, 2), 200, {
+      'Content-Type': SERVER_CARD_TYPE,
+      'Cache-Control': 'public, max-age=3600',
+    })
   })
   app.post('/mcp', rateLimit('RATE_LIMIT_MCP'), async (c) => {
     const { server, closeDbs } = buildMcpServer({

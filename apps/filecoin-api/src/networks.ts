@@ -38,10 +38,18 @@ export const NETWORK_NAMES = Object.keys(NETWORKS) as [
 
 /**
  * Worker bindings. Every network's Hyperdrive binding is optional so a
- * network can be served before its database is configured.
+ * network can be served before its database is configured. The vars are
+ * plain strings, because `wrangler types` reads only the production values,
+ * and Previews and local dev set others.
  */
-export type Bindings = Omit<Env, Network['binding']> & {
+export type Bindings = Omit<
+  Env,
+  Network['binding'] | 'MCP_HOSTS' | 'MCP_PUBLIC_URL'
+> & {
   [K in Network['binding']]?: Hyperdrive
+} & {
+  MCP_HOSTS: string
+  MCP_PUBLIC_URL: string
 }
 
 /** Whether `name` is a supported network. */
