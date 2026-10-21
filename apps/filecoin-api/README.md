@@ -18,7 +18,7 @@ Built with [Hono](https://hono.dev), [`@hono/zod-openapi`](https://github.com/ho
 
 Every data route is namespaced by network: `/calibration/...` or `/mainnet/...`.
 
-`https://mcp.filecoin.io` and `https://mcp.filecoin.cloud` serve only the MCP server, at `POST /`, and its server card. [`src/mcp-host.ts`](src/mcp-host.ts) rewrites `/` to `/mcp` and `/server-card` to `/mcp/server-card` for the hostnames in the `MCP_HOSTS` variable, so the MCP host shares the `/mcp` handler, rate limit and CORS. It also serves the two `.well-known` card paths, and returns `404` for every other path. `/mcp` keeps working on the API hosts. See [API and MCP domains](../../docs/filecoin/mcp-domains.md).
+`https://mcp.filecoin.io` and `https://mcp.filecoin.cloud` serve only the MCP server, at `POST /`, and its server card. [`src/mcp-host.ts`](src/mcp-host.ts) rewrites `/` to `/mcp` and `/server-card` to `/mcp/server-card` for the hostnames in the `MCP_HOSTS` variable, so the MCP host shares the `/mcp` handler, rate limit and CORS. It also serves the two `.well-known` card paths, and returns `404` for every other path. `/mcp` keeps working on the API hosts. See [Deployments and domains](../../docs/filecoin/deployments.md).
 
 | Route | Filters |
 | --- | --- |
@@ -134,7 +134,7 @@ Both Workers deploy to the FilOz Cloudflare account, which `account_id` in `wran
    wrangler hyperdrive create fil-api-calibration --connection-string="postgresql://user:password@host:5432/indexers" --max-age 5 --swr 0 --origin-connection-limit 60
    ```
    Hyperdrive caches read queries for 60 seconds by default and never invalidates them, which would make the indexer status, and every read after a write, up to 75 seconds stale. Both configs cache for 5 seconds with no stale-while-revalidate. To change an existing config, run `wrangler hyperdrive update <id> --caching-disabled=false --max-age 5 --swr 0`.
-4. Connect `api.filecoin.io` and `mcp.filecoin.io`, whose DNS is on DNSimple, as Cloudflare for SaaS custom hostnames on the `filecoin.cloud` zone. These are one-time dashboard steps, described in [API and MCP domains](../../docs/filecoin/mcp-domains.md#a-domain-on-another-dns-provider). The deploy token can create the Worker routes but not the custom hostnames.
+4. Connect `api.filecoin.io` and `mcp.filecoin.io`, whose DNS is on DNSimple, as Cloudflare for SaaS custom hostnames on the `filecoin.cloud` zone. These are one-time dashboard steps, described in [Deployments and domains](../../docs/filecoin/deployments.md#a-domain-on-another-dns-provider). The deploy token can create the Worker routes but not the custom hostnames.
 
 To deploy manually, run `pnpm --filter filecoin-api deploy`.
 
