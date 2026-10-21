@@ -70,7 +70,6 @@ A new skill must also be listed in the marketplace entry's `skills`; `pnpm check
 | --- | --- |
 | [Filecoin for Agents overview](docs/filecoin/README.md) | The CLI, REST API, MCP server, and app, with the assumptions, compromises, open questions, and follow-up work of the proof of concept |
 | [CLI architecture](docs/filecoin/architecture.md) | Modules, login, put, get, and delete flows, state, recovery, and verification |
-| [CLI interface research](docs/filecoin/interface-research.md) | The historical design research behind the CLI: commands, resources, operations, and local state |
 | [Deployments and domains](docs/filecoin/deployments.md) | Where filecoin-api and filecoin-app run, and the hostnames that serve them |
 | [Agent support on docs.filecoin.io](docs/filecoin/filecoin-docs-agent-support.md) | Research for the Filecoin docs team on what docs.filecoin.io gives agents |
 
