@@ -42,8 +42,8 @@ const MIGRATIONS = [
   CREATE INDEX operations_scope ON operations (chain_id, payer, updated_at);
   CREATE INDEX operations_status ON operations (execution_status, updated_at);
   `,
-  // Rename the `rm` action to `delete`, the research doc's verb. SQLite
-  // cannot change a CHECK constraint in place, so the table is rebuilt.
+  // Rename the `rm` action to `delete`. SQLite cannot change a CHECK
+  // constraint in place, so the table is rebuilt.
   `
   CREATE TABLE operations_next (
     id TEXT PRIMARY KEY,
