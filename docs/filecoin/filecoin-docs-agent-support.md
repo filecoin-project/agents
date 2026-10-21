@@ -76,7 +76,7 @@ The API catalog and `integrations.json` describe an API. They matter only if Fil
 | Copy/View as Markdown | Adds actions that copy or open the page's Markdown |
 | Connect with MCP server | Shows the MCP URL in the menu. It doesn't turn the server on or off |
 
-GitBook makes `.md` pages, `llms.txt`, `llms-full.txt`, content negotiation, sitemaps, `robots.txt`, and the MCP server [with no settings](https://gitbook.com/docs/getting-started/llm-ready-docs.md).
+GitBook makes `.md` pages, `llms.txt`, `llms-full.txt`, content negotiation, sitemaps, and `robots.txt` [with no settings](https://gitbook.com/docs/getting-started/llm-ready-docs.md). It also runs the MCP server by default, but only while **Page actions** is on. Turning off **Page actions** to hide the menu also removes the MCP server, its WebMCP tools, and filecoin-api's `search_docs` tool.
 
 [AI Assistant](https://gitbook.com/docs/ai-for-your-readers/gitbook-ai-assistant.md) is off on docs.filecoin.io. It answers readers' questions in the docs and uses AI credits. The sidebar chat needs the Ultimate site plan. Answers in the search box need the Essential or Ultimate plan. gitbook.com's docs have the Assistant on, and two things differ there. Its MCP server has a fourth tool, `askQuestion`, and its `.md` pages end with the `?ask=` instructions, which return an answer. We expect both to appear on docs.filecoin.io if the team turns the Assistant on, but we haven't confirmed it.
 
