@@ -62,35 +62,18 @@ Worker Previews run on `workers.dev`, which matches no MCP host, and set `MCP_HO
 
 ## A domain on another DNS provider
 
-`filecoin.io`'s DNS is on DNSimple. A Custom Domain needs the hostname to be in a zone on the Cloudflare account, so it can't serve `api.filecoin.io` or `mcp.filecoin.io`. A CNAME alone doesn't work either: if `api.filecoin.io` points to `api.filecoin.cloud`, Cloudflare receives requests for a hostname it doesn't know and rejects them.
+`filecoin.io`'s DNS is on DNSimple. A Custom Domain needs the hostname to be in a zone on the Cloudflare account, so it can't serve `api.filecoin.io` or `mcp.filecoin.io`. A CNAME to `api.filecoin.cloud` alone doesn't work either, because Cloudflare rejects requests for a hostname it doesn't know.
 
-[Cloudflare for SaaS](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/) connects each hostname to the `filecoin.cloud` zone as a custom hostname, and the domain's DNS stays on DNSimple. It is available on the Free plan, which the zone uses; [Plans](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/plans/) lists the hostname limits and prices.
+[Cloudflare for SaaS](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/) connects both hostnames to the `filecoin.cloud` zone as custom hostnames, on the zone's Free plan ([Plans](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/plans/)). The setup is in place:
 
-On Cloudflare, in the `filecoin.cloud` zone, once:
-
-`filecoin.cloud` also serves other FilOz sites, such as `docs.filecoin.cloud` and `pay.filecoin.cloud`, and a zone has one fallback origin for all its custom hostnames. Agree on steps 1 and 2 with whoever manages the zone.
-
-1. Enable Cloudflare for SaaS on **SSL/TLS > Custom Hostnames**.
-2. Create a proxied `fallback.filecoin.cloud AAAA 100::` record and set it as the fallback origin. The Worker is the real origin, so the record only has to exist ([Workers as your fallback origin](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/start/advanced-settings/worker-as-origin/)).
-3. Add `api.filecoin.io` and `mcp.filecoin.io` as custom hostnames, with HTTP certificate validation.
-
-On DNSimple, the owner of `filecoin.io` adds:
-
-| Record | Value |
+| Where | What |
 | --- | --- |
-| `api.filecoin.io CNAME` | `fallback.filecoin.cloud` |
-| `mcp.filecoin.io CNAME` | `fallback.filecoin.cloud` |
+| DNSimple | `api.filecoin.io` and `mcp.filecoin.io` are CNAMEs to `fallback.filecoin.cloud` |
+| `filecoin.cloud` zone, **SSL/TLS > Custom Hostnames** | Both hostnames are custom hostnames. Cloudflare issues and renews their certificates over [HTTP validation](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/security/certificate-management/issue-and-validate/validate-certificates/http/) |
+| `filecoin.cloud` zone, DNS | A proxied `fallback.filecoin.cloud AAAA 100::` record is the fallback origin. The Worker is the real origin, so the record only has to exist ([Workers as your fallback origin](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/start/advanced-settings/worker-as-origin/)) |
+| filecoin-api's `wrangler.jsonc` | Worker routes on the `filecoin.cloud` zone, not Custom Domains, send both hostnames to the Worker |
 
-Once a CNAME resolves, Cloudflare validates the hostname, then issues and renews its certificate over HTTP ([HTTP validation](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/security/certificate-management/issue-and-validate/validate-certificates/http/)). TXT records are optional: they only issue the certificate before the CNAME goes live, which matters when a hostname already serves traffic. `filecoin.io` has no CAA records, so any certificate authority can issue. The owner doesn't move the domain or give anyone access to it.
-
-`wrangler.jsonc` routes the hostnames to the Worker. They are routes on the `filecoin.cloud` zone, not Custom Domains:
-
-```jsonc
-{ "pattern": "api.filecoin.io/*", "zone_name": "filecoin.cloud" },
-{ "pattern": "mcp.filecoin.io/*", "zone_name": "filecoin.cloud" }
-```
-
-`MCP_HOSTS` lists `mcp.filecoin.io`. The deploy token can create Worker routes, but adding custom hostnames would need SSL and certificate permissions, which it doesn't have, so steps 1 to 3 stay in the dashboard.
+The zone has one fallback origin for all its custom hostnames, and it also serves other FilOz sites, such as `docs.filecoin.cloud` and `pay.filecoin.cloud`. Change the fallback origin only with whoever manages the zone. The deploy token can create Worker routes, but not custom hostnames, which need SSL and certificate permissions, so adding a hostname is a dashboard step.
 
 ## Same-zone fetches
 
