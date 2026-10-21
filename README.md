@@ -10,8 +10,8 @@ Packages under `packages/` publish to npm.
 
 | Directory | npm | Contents |
 | --- | --- | --- |
-| [`packages/filecoin-cli`](packages/filecoin-cli/README.md) | [`filecoin`](https://www.npmjs.com/package/filecoin) | `filecoin`, a prototype CLI that stores files and folders on one Curio provider and returns retrieval URLs. People and agents both run it. |
-| [`packages/filecoin-api-client`](packages/filecoin-api-client/README.md) | [`@filecoin-project/api-client`](https://www.npmjs.com/package/@filecoin-project/api-client) | A typed filecoin-api client generated from the API's OpenAPI document. filecoin-app uses it, and the CLI will use it for its reads. |
+| [`packages/filecoin-cli`](packages/filecoin-cli/README.md) | [`filecoin`](https://www.npmjs.com/package/filecoin) | `filecoin`, a CLI that stores files and folders on Filecoin and returns retrieval URLs. People and agents both run it. |
+| [`packages/filecoin-api-client`](packages/filecoin-api-client/README.md) | [`@filecoin-project/api-client`](https://www.npmjs.com/package/@filecoin-project/api-client) | A typed filecoin-api client generated from the API's OpenAPI document. |
 
 ## Apps
 
@@ -20,7 +20,7 @@ Apps under `apps/` are private Cloudflare Workers.
 | Directory | Hosts | Contents |
 | --- | --- | --- |
 | [`apps/filecoin-api`](apps/filecoin-api/README.md) | `api.filecoin.io`, `mcp.filecoin.io` | A REST API and an MCP server for providers, data sets, pieces, Filecoin Pay rails, and session keys. |
-| [`apps/filecoin-app`](apps/filecoin-app/README.md) | `poc.filecoin.cloud` | A React explorer for filecoin-api data, and a wallet dashboard for Filecoin Pay, Warm Storage approval, data sets, and session keys. |
+| [`apps/filecoin-app`](apps/filecoin-app/README.md) | `poc.filecoin.cloud` | A proof-of-concept web app built on the other components here. It reads filecoin-api through the API client, serves the plugin's agent skills, and documents the CLI. |
 
 [API and MCP domains](docs/filecoin/mcp-domains.md) lists every hostname, including the `filecoin.cloud` ones kept for older links.
 
