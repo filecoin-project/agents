@@ -79,7 +79,7 @@ The zone has one fallback origin for all its custom hostnames, and it also serve
 
 filecoin-app runs on the `filecoin.cloud` zone, and its explorer renders detail pages on the server. A Worker's `fetch()` to a hostname on its own zone skips that zone's Worker routes and goes to the zone's origin, but it does reach a Worker on a Custom Domain ([Worker to Worker communication](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/#worker-to-worker-communication)). A server-side fetch to `api.filecoin.io` therefore reached the fallback origin, `fallback.filecoin.cloud`, which answered 522, and filecoin-api never saw it. The rail, data set, and provider pages returned 500 from 14 October, when `api.filecoin.io` became filecoin-app's default, until filecoin-app's API client moved to `api.filecoin.cloud`. The list pages kept working, because they fetch from the browser.
 
-So filecoin-app's API client calls `api.filecoin.cloud`, while its links and discovery files still advertise `api.filecoin.io`. `api.filecoin.cloud` has to stay a Custom Domain until filecoin-app calls filecoin-api through a [service binding](https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/) instead.
+So filecoin-app's API client calls `api.filecoin.cloud`, while its links and discovery files still advertise `api.filecoin.io`. This is the settled design, so `api.filecoin.cloud` stays a Custom Domain.
 
 ## Rejected options
 
@@ -98,8 +98,3 @@ These files advertise `https://api.filecoin.io` or `https://mcp.filecoin.io`:
 - filecoin-app's defaults in [`src/config/env.ts`](../../apps/filecoin-app/src/config/env.ts), which its retrieval links, explorer, discovery files, and `llms.txt` use ([development](../../apps/filecoin-app/README.md#development))
 - filecoin-app's [landing page](../../apps/filecoin-app/src/routes/index.tsx), header and footer links to the API reference, and its content pages
 - The production probes in [`.github/workflows/filecoin-api.yml`](../../.github/workflows/filecoin-api.yml)
-
-## Open questions
-
-- Who keeps the DNSimple records for `filecoin.io` in place?
-- Should filecoin-app call filecoin-api through a service binding? That would remove its dependence on `api.filecoin.cloud`. filecoin-api rate-limits by `cf-connecting-ip`, and both a service binding and a same-zone fetch put every server render into one bucket. So the binding would also need filecoin-api to key the limit on the visitor's IP, which filecoin-app forwards.
