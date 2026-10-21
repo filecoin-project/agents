@@ -1,6 +1,6 @@
 # filecoin CLI architecture
 
-This document describes how the `filecoin` prototype in [`packages/filecoin-cli`](../../packages/filecoin-cli) works. It covers the modules, the login, put, get, and delete flows, local state, and recovery. The [interface research](interface-research.md) explains the design behind the prototype, and the [last section](#differences-from-the-research-design) lists where the prototype differs from it.
+This document describes how the `filecoin` prototype in [`packages/filecoin-cli`](../../packages/filecoin-cli) works. It covers the modules, the login, put, get, and delete flows, local state, and recovery.
 
 ## Overview
 
@@ -361,21 +361,6 @@ The tests use the Node test runner and need no network. `pnpm --filter filecoin 
 - `put ./docs` used provider 9 (`calib.ezpdpz.net`) and created data set 39723 with piece 0, in about 1 minute 20 seconds.
 - `get` matched the PieceCID, and the extracted tree was byte-identical to the source.
 - `/ipfs/<rootCid>/` answered HTTP 200 seconds after the commit. Curio returns a CAR for `Accept: */*` and a raw block for any block CID. A raw request with a path gets HTTP 400. A recheck on 2026-10-06 gave the same results.
-
-## Differences from the research design
-
-| Research | Prototype | Reason |
-| --- | --- | --- |
-| `filecoin files …` and `filecoin artifacts …` groups | Flat `put`, `get`, `ls`, `inspect`, and `delete`, chosen by input type, without aliases | One command set covers files and folders. clipact 0.5 removed command aliases, so `publish` and `rm` went with them |
-| `artifact` resources for IPFS files and folders | Resource kind `file` for a file and `folder` for a folder | The kind names the input type. A migration renames saved `artifact` resources to `folder` |
-| `auth login`, `auth status` | `login`, `logout`, `status` | Flat, like the storage commands |
-| Two copies by default | One copy | Simplicity. synapse-sdk also stores two copies by default |
-| Exact file bytes staged as `input.bin` | Files read from the source. A PieceCID check on resume detects changes | Large inputs are not copied. A change fails the put instead of storing different bytes |
-| `operations inspect --refresh` | Not implemented | Resume already checks the chain before it sends anything |
-| `--events`, `--fields` | Not implemented | clipact does not implement them either |
-| `deleted` and `partial` removal states | `removal_pending` once the removal transaction succeeds | The provider removes the piece later, and nothing tracks that yet |
-| Verified browser URL | filecoin-api `/get/{cid}?browser=true`, which redirects a file to Curio `/piece` and a folder to inbrowser.link | A browser renders a file from `/piece`. Curio's `/ipfs` serves only blocks and CARs, so a folder needs a gateway. inbrowser.link verifies blocks in the browser, but this project does not run it |
-| Keys in credential storage | Session key in `config.json` with mode 0600 | No keychain integration yet |
 
 ## Known limits
 

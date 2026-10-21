@@ -67,7 +67,6 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 | Document | Contents |
 | --- | --- |
 | [CLI architecture](architecture.md) | How the CLI works: modules, login, put, get, delete, local state, recovery, and how the CLI differs from the research |
-| [CLI interface research](interface-research.md) | The historical design research from 2026-09-28 that came before the CLI. The [differences table](architecture.md#differences-from-the-research-design) lists where the CLI differs from it. |
 | [Agent support on docs.filecoin.io](filecoin-docs-agent-support.md) | What GitBook gives agents on docs.filecoin.io, what is missing compared with filecoin-app, and what GitBook lets the docs team change |
 | [Agent discovery on filecoin.io](filecoin-io-agent-support.md) | How www.filecoin.io compares with poc.filecoin.cloud for agent discovery, the Is Agentic scores of both sites, and what filecoin.io should fix and add |
 | [Agent discovery](agent-discovery.md) | Every agent discovery spec that applies to Filecoin for Agents, what each host serves today, what is missing, and which host should serve each file |
@@ -149,7 +148,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 ## Follow-up work
 
 - **Brand.** Apply the Filecoin for Agents brand to the site.
-- **Evaluation.** Run the [acceptance scenarios](interface-research.md#first-release-and-validation) with Claude and ChatGPT. Count duplicate paid mutations, and check that each share link works.
+- **Evaluation.** Have Claude and ChatGPT store a file and a folder, share the links, and resume an interrupted put. Count duplicate paid mutations, and check that each share link works.
 - **Explorer for agents.** Render explorer lists on the server, and serve explorer pages as Markdown, so agents can read them like the docs.
 - **Plugin directories.** Test the plugin in the Claude and ChatGPT desktop apps. Then submit it to Anthropic's plugin directory and to OpenAI's, which needs the MCP server registered as a ChatGPT connector. In Anthropic's [developer portal](https://claude.ai/directory/manage), also submit `https://mcp.filecoin.io` as an MCP connector, so the [Connectors Directory](https://claude.com/docs/connectors/directory) lists it and pairs the listing with the plugin. The connector listing sets its own name, description, one to five categories, icon, and documentation, privacy policy, and support links, and the portal checks that every tool has a `title` and a `readOnlyHint` ([Submit a connector](https://claude.com/docs/connectors/building/submission)).
 - **MCP catalogs.** Publish the MCP server to the [MCP registry](https://registry.modelcontextprotocol.io) as `io.filecoin/mcp`, the server card's name, from the release workflow ([#75](https://github.com/filecoin-project/agents/issues/75)). After filecoin-app deploys its API catalog `item` and `/.well-known/integrations.json`, map poc.filecoin.cloud on [integrations.sh](https://integrations.sh), which feeds `npx add-mcp find` ([#10](https://github.com/filecoin-project/agents/issues/10)).
