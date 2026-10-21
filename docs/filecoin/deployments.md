@@ -12,12 +12,12 @@ This document describes where Filecoin for Agents runs and which hostnames serve
 | [filecoin-app](../../apps/filecoin-app/README.md) | `fil-app` | `poc.filecoin.cloud` | A prototype site for agent discovery, with the explorer and the wallet dashboard |
 
 - **Only two `filecoin.io` hostnames point to Cloudflare.** `filecoin.io`'s DNS is on DNSimple. `www.filecoin.io` is the Filecoin website, a Next.js site on Vercel that this repository doesn't deploy. `api.filecoin.io` and `mcp.filecoin.io` are CNAMEs to `fallback.filecoin.cloud`. Cloudflare for SaaS connects each one to the `filecoin.cloud` zone, and a Worker route sends it to filecoin-api ([Subdomains of filecoin.io](#subdomains-of-filecoinio)).
-- **`api.filecoin.io` and `mcp.filecoin.io` both serve the MCP server.** `api.filecoin.io` serves the REST API, and the MCP server at `/mcp`. `mcp.filecoin.io` reaches the same Worker, which serves the MCP server at `/` ([What the MCP hosts serve](#what-the-mcp-hosts-serve)). `api.filecoin.cloud` and `mcp.filecoin.cloud` are Custom Domains on the same Worker. Releases from before the move to `filecoin.io` still call them, and filecoin-app's server renders need `api.filecoin.cloud` ([Same-zone fetches](#same-zone-fetches)).
+- **`api.filecoin.io` and `mcp.filecoin.io` both serve the MCP server.** `api.filecoin.io` serves the REST API, and the MCP server at `/mcp`. `mcp.filecoin.io` reaches the same Worker, which serves the MCP server at `/` ([MCP hosts](../../apps/filecoin-api/README.md#mcp-hosts)). `api.filecoin.cloud` and `mcp.filecoin.cloud` are Custom Domains on the same Worker. Releases from before the move to `filecoin.io` still call them, and filecoin-app's server renders need `api.filecoin.cloud` ([Same-zone fetches](#same-zone-fetches)).
 - **`poc.filecoin.cloud` is a test site for agent discovery.** filecoin-app runs there, on a Custom Domain. We try agent discovery formats on it first, such as `llms.txt`, Markdown pages, well-known paths, and WebMCP. Then we port what works to the main site, `www.filecoin.io`. [Agent discovery](agent-discovery.md) maps each spec to the host that should serve it, and [Agent discovery on filecoin.io](filecoin-io-agent-support.md) lists what filecoin.io should fix and add.
 
 ## API and MCP hostnames
 
-Four hostnames serve filecoin-api and its MCP server. `api.filecoin.cloud` and `mcp.filecoin.cloud` run the same Worker as the `filecoin.io` hostnames, so links and plugins released before the move to `filecoin.io` keep working. filecoin-app's API client also needs `api.filecoin.cloud` ([Same-zone fetches](#same-zone-fetches)).
+Four hostnames serve filecoin-api and its MCP server:
 
 | Hostname | Serves | How it reaches the Worker |
 | --- | --- | --- |
@@ -28,25 +28,6 @@ Four hostnames serve filecoin-api and its MCP server. `api.filecoin.cloud` and `
 
 We checked the Cloudflare behavior below against the Cloudflare docs on 2026-10-14.
 
-## What the MCP hosts serve
-
-The MCP hosts are the hostnames in the `MCP_HOSTS` variable of `wrangler.jsonc`, separated by commas. Adding one needs no code change. The `filecoin-api` Worker serves them too. [`src/mcp-host.ts`](../../apps/filecoin-api/src/mcp-host.ts) wraps the Hono app in `src/index.ts` and rewrites each request to an MCP host before the app sees it. The MCP hosts therefore reuse the `/mcp` handler, its rate limit, CORS, request ids, and tracing. They serve only the MCP server and its server card:
-
-| Request on an MCP host | Result |
-| --- | --- |
-| `POST /` | The MCP endpoint, the same as `POST https://api.filecoin.io/mcp` |
-| `GET /`, `DELETE /` | `405`, as on `/mcp`, because the server is stateless |
-| `OPTIONS /` | The CORS preflight |
-| `GET /server-card` | The [server card](../../apps/filecoin-api/README.md#server-card), the same as `GET https://api.filecoin.io/mcp/server-card` |
-| `GET /.well-known/mcp/server-card.json`, `GET /.well-known/mcp-server-card` | The same card, at the paths of older drafts |
-| Any other path, such as `/mcp`, `/mcp/server-card`, `/health`, `/docs`, or `/calibration/providers` | `404 not_found` |
-
-Plugins released before the MCP hosts existed, and connectors added by hand, point to `https://api.filecoin.cloud/mcp`. So `/mcp` keeps working on both API hosts.
-
-Every host's server card advertises `https://mcp.filecoin.io`, the value of `MCP_PUBLIC_URL` in `wrangler.jsonc`. Clients and the MCP registry see one endpoint.
-
-Worker Previews run on `workers.dev` and set `MCP_HOSTS` and `MCP_PUBLIC_URL` to empty strings. A Preview serves the MCP server at `/mcp`, and its server card advertises that `/mcp`.
-
 ## Subdomains of filecoin.cloud
 
 `filecoin.cloud` is a zone in the FilOz Cloudflare account, which `account_id` in `wrangler.jsonc` sets. Its hostnames are therefore [Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/) on the Worker:
@@ -56,7 +37,7 @@ Worker Previews run on `workers.dev` and set `MCP_HOSTS` and `MCP_PUBLIC_URL` to
 { "pattern": "mcp.filecoin.cloud", "custom_domain": true },
 ```
 
-`wrangler deploy` creates the DNS records and the certificates. Cloudflare can't create a Custom Domain on a hostname that already has a CNAME record. The deploy token has access to the `filecoin.cloud` zone ([setup](../../apps/filecoin-api/README.md#setup)).
+`wrangler deploy` creates the DNS records and the certificates. Cloudflare can't create a Custom Domain on a hostname that already has a CNAME record.
 
 ## Subdomains of filecoin.io
 
@@ -71,7 +52,7 @@ Worker Previews run on `workers.dev` and set `MCP_HOSTS` and `MCP_PUBLIC_URL` to
 | `filecoin.cloud` zone, DNS | A proxied `fallback.filecoin.cloud AAAA 100::` record is the fallback origin. The Worker is the real origin, so the record only has to exist ([Workers as your fallback origin](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/start/advanced-settings/worker-as-origin/)) |
 | filecoin-api's `wrangler.jsonc` | Worker routes on the `filecoin.cloud` zone send both hostnames to the Worker. They are routes, not Custom Domains |
 
-The `filecoin.cloud` zone also serves other FilOz sites, such as `docs.filecoin.cloud` and `pay.filecoin.cloud`. All custom hostnames on the zone share one fallback origin, so change the fallback origin only with whoever manages the zone. The deploy token can create Worker routes but not custom hostnames, which need SSL and certificate permissions. Add a custom hostname in the dashboard.
+The `filecoin.cloud` zone also serves other FilOz sites, such as `docs.filecoin.cloud` and `pay.filecoin.cloud`. All custom hostnames on the zone share one fallback origin, so change the fallback origin only with whoever manages the zone.
 
 ## Same-zone fetches
 

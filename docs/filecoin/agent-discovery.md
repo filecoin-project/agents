@@ -14,7 +14,7 @@ We checked each host with `curl` on 2026-10-21, after [#76](https://github.com/f
 | `www.filecoin.io` | The Filecoin website, a Next.js site on Vercel. `filecoin.io` redirects to it with a `308`, and its owners plan to remove that redirect | The filecoin.io web team |
 | `docs.filecoin.io` | The Filecoin docs, on GitBook, with GitBook's docs MCP server | The Filecoin docs team, through GitBook |
 
-In this document, "the sites" means `poc.filecoin.cloud`, `www.filecoin.io`, and `docs.filecoin.io`. "filecoin-api's hosts" means `api.filecoin.io` and `mcp.filecoin.io`. `api.filecoin.cloud` and `mcp.filecoin.cloud` run the same Worker as their `filecoin.io` twins, so they serve the same files ([Deployments and domains](deployments.md)).
+In this document, "the sites" means `poc.filecoin.cloud`, `www.filecoin.io`, and `docs.filecoin.io`. "filecoin-api's hosts" means `api.filecoin.io` and `mcp.filecoin.io`. `api.filecoin.cloud` and `mcp.filecoin.cloud` run the same Worker as `api.filecoin.io` and `mcp.filecoin.io`, so they serve the same files ([Deployments and domains](deployments.md)).
 
 ## What goes where
 
