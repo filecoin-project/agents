@@ -299,9 +299,12 @@ export function buildMcpServer(ctx: McpContext): McpHandle {
 }
 
 /**
- * Turn a thrown error into an MCP tool error result. Errors outside the API
- * contract are logged and their details hidden.
+ * Turn a thrown error into an MCP tool error result. `structuredContent`
+ * carries the REST error body, `{ error: { code, message } }`, and the text
+ * item repeats it as `"<code>: <message>"` for clients that read only text.
+ * Errors outside the API contract are logged and their details hidden.
  *
+ * @see https://modelcontextprotocol.io/specification/2025-06-18/server/tools#structured-content
  * @see https://modelcontextprotocol.io/specification/2025-06-18/server/tools#error-handling
  */
 function toolError(
@@ -324,5 +327,6 @@ function toolError(
     content: [
       { type: 'text', text: `${body.error.code}: ${body.error.message}` },
     ],
+    structuredContent: { error: body.error },
   }
 }

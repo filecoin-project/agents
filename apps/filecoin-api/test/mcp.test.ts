@@ -124,6 +124,28 @@ describe('mcp', () => {
     expect(pieces.result.isError).toBe(true)
   })
 
+  it('returns the error body as structured content', async () => {
+    const { request } = testApp(() => [])
+    const body = (await (
+      await request(
+        '/mcp',
+        rpc('tools/call', {
+          name: 'get_piece',
+          arguments: { network: 'calibration', dataSetId: '1', pieceId: '9' },
+        })
+      )
+    ).json()) as RpcResult<{
+      isError: boolean
+      content: { text: string }[]
+      structuredContent: unknown
+    }>
+    expect(body.result.isError).toBe(true)
+    expect(body.result.structuredContent).toEqual({
+      error: { code: 'not_found', message: 'Piece 1/9 not found' },
+    })
+    expect(body.result.content[0]?.text).toBe('not_found: Piece 1/9 not found')
+  })
+
   it('hides unexpected tool errors', async () => {
     const { request } = testApp(() => {
       throw new Error('relation "secret" does not exist')
