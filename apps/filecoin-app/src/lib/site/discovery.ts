@@ -1,7 +1,8 @@
 /**
  * Builders for the files agents use to discover the site: `llms.txt`, the
- * API catalog, and the MCP server card. The
- * `@hugomrdias/vite-plugin-agent-skills` plugin writes the agent skills index.
+ * API catalog, the AI Catalog, and the redirect to filecoin-api's MCP server
+ * card. The `@hugomrdias/vite-plugin-agent-skills` plugin writes the agent
+ * skills index.
  */
 
 /** A page with a Markdown version, as listed in `llms.txt`. */
@@ -155,7 +156,7 @@ export function integrationsJson(
         auth: { status: 'none', basis },
       },
       {
-        slug: 'filecoin-api-mcp',
+        slug: 'filecoin-mcp',
         name: 'filecoin-api MCP server',
         type: 'mcp',
         url: mcpUrl,
@@ -202,33 +203,62 @@ export function integrationsJson(
 }
 
 /**
- * Build the MCP server card for filecoin-api's MCP server, in the SEP-2127
- * format.
+ * URL of filecoin-api's MCP server card: `<streamable-http-url>/server-card`,
+ * the location SEP-2127 reserves.
  *
  * @param mcpUrl - filecoin-api MCP server URL.
- * @param siteUrl - Site origin, used as the website URL.
- * @see https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/seps/2127-mcp-server-cards.md
+ * @see https://github.com/modelcontextprotocol/experimental-ext-server-card/blob/main/docs/discovery.md#hosted-server-card-location
  */
-export function mcpServerCard(mcpUrl: string, siteUrl: string) {
-  return {
-    $schema:
-      'https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json',
-    name: 'dev.hugomrdias/filecoin-api',
-    title: 'filecoin-api',
-    version: '0.0.0',
-    description:
-      'Read-only Filecoin data: storage providers, data sets, pieces, Filecoin Pay rails, and session keys on mainnet and calibration.',
-    websiteUrl: `${siteUrl}/docs/api`,
-    repository: {
-      url: 'https://github.com/filecoin-project/agents',
-      source: 'github',
-      subfolder: 'apps/filecoin-api',
+export function serverCardUrl(mcpUrl: string) {
+  return `${mcpUrl}/server-card`
+}
+
+/**
+ * Redirect a request for the site's MCP server card to filecoin-api's card.
+ * The site keeps the `.well-known` paths of older SEP-2127 drafts, because
+ * scanners still check them. A redirect, not a proxy: a server-side fetch from
+ * the `filecoin.cloud` zone to `mcp.filecoin.io` fails.
+ *
+ * @param mcpUrl - filecoin-api MCP server URL.
+ * @see https://www.rfc-editor.org/rfc/rfc9110#name-308-permanent-redirect
+ */
+export function serverCardRedirect(mcpUrl: string) {
+  return new Response(null, {
+    status: 308,
+    headers: {
+      Location: serverCardUrl(mcpUrl),
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'public, max-age=300',
     },
-    remotes: [
+  })
+}
+
+/** Media type of an AI Catalog. */
+export const AI_CATALOG_TYPE = 'application/ai-catalog+json'
+
+/**
+ * Build `/.well-known/ai-catalog.json`: an AI Catalog that lists
+ * filecoin-api's MCP server card. The entry's identifier maps the card's name,
+ * `io.filecoin/mcp`, to `urn:air:filecoin.io:mcp:mcp`. The entry repeats none
+ * of the card's title, description, or version, so they cannot drift.
+ *
+ * @param mcpUrl - filecoin-api MCP server URL.
+ * @param siteUrl - Site origin, for the host's documentation link.
+ * @see https://ai-catalog.io
+ * @see https://github.com/modelcontextprotocol/experimental-ext-server-card/blob/main/docs/discovery.md#ai-catalog
+ */
+export function aiCatalog(mcpUrl: string, siteUrl: string) {
+  return {
+    specVersion: '1.0',
+    host: {
+      displayName: 'Filecoin for Agents',
+      documentationUrl: `${siteUrl}/agents`,
+    },
+    entries: [
       {
-        type: 'streamable-http',
-        url: mcpUrl,
-        supportedProtocolVersions: ['2025-11-25', '2025-06-18', '2025-03-26'],
+        identifier: 'urn:air:filecoin.io:mcp:mcp',
+        type: 'application/mcp-server-card+json',
+        url: serverCardUrl(mcpUrl),
       },
     ],
   }

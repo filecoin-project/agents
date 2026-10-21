@@ -2,13 +2,15 @@ import { skills } from 'virtual:agent-skills'
 import { env } from '@/config/env'
 import { NETWORKS } from '@/lib/networks'
 import {
+  AI_CATALOG_TYPE,
   API_CATALOG_TYPE,
+  aiCatalog,
   apiCatalog,
   integrationsJson,
   llmsTxt,
   markdownPath,
-  mcpServerCard,
   robotsTxt,
+  serverCardRedirect,
   sitemapXml,
 } from './discovery'
 import { MARKDOWN_TYPE } from './negotiate'
@@ -202,13 +204,25 @@ export function integrationsResponse(request: Request) {
 }
 
 /**
- * Respond with the MCP server card for filecoin-api.
+ * Respond with `/.well-known/ai-catalog.json`, which lists filecoin-api's MCP
+ * server card.
  *
- * @param request - Incoming request, for the site origin.
+ * @param request - Incoming request, for the site origin; `HEAD` gets no body.
+ * @see https://ai-catalog.io
  */
-export function serverCardResponse(request: Request) {
-  const card = mcpServerCard(env.mcpUrl, new URL(request.url).origin)
-  return new Response(JSON.stringify(card, null, 2), {
-    headers: agentHeaders('application/json'),
-  })
+export function aiCatalogResponse(request: Request) {
+  const body =
+    request.method === 'HEAD'
+      ? null
+      : JSON.stringify(
+          aiCatalog(env.mcpUrl, new URL(request.url).origin),
+          null,
+          2
+        )
+  return new Response(body, { headers: agentHeaders(AI_CATALOG_TYPE) })
+}
+
+/** Redirect to filecoin-api's MCP server card. */
+export function serverCardResponse() {
+  return serverCardRedirect(env.mcpUrl)
 }
