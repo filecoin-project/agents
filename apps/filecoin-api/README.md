@@ -18,8 +18,6 @@ Built with [Hono](https://hono.dev), [`@hono/zod-openapi`](https://github.com/ho
 
 Every data route is namespaced by network: `/calibration/...` or `/mainnet/...`.
 
-`https://mcp.filecoin.io` and `https://mcp.filecoin.cloud` serve only the MCP server, at `POST /`, and its server card. [`src/mcp-host.ts`](src/mcp-host.ts) rewrites `/` to `/mcp` and `/server-card` to `/mcp/server-card` for the hostnames in the `MCP_HOSTS` variable, so the MCP host shares the `/mcp` handler, rate limit and CORS. It also serves the two `.well-known` card paths, and returns `404` for every other path. `/mcp` keeps working on the API hosts. See [Deployments and domains](../../docs/filecoin/deployments.md).
-
 | Route | Filters |
 | --- | --- |
 | `/{network}/status` | none |
@@ -42,6 +40,21 @@ Conventions:
 - **Big numbers** (ids, amounts, epochs) are returned as decimal strings.
 - **Pagination** uses `limit` (1–200, default 50) and an opaque `cursor`. Each response looks like `{ data, nextCursor }`.
 - **Errors** look like `{ error: { code, message } }`.
+
+### MCP hosts
+
+The hostnames in the `MCP_HOSTS` variable of `wrangler.jsonc`, separated by commas, serve only the MCP server and its server card. In production, they are `mcp.filecoin.io` and `mcp.filecoin.cloud`. Adding a hostname needs no code change. [`src/mcp-host.ts`](src/mcp-host.ts) wraps the Hono app and rewrites each request to an MCP host before the app sees it. The MCP hosts therefore share the `/mcp` handler, its rate limit, CORS, request ids, and tracing:
+
+| Request on an MCP host | Result |
+| --- | --- |
+| `POST /` | The MCP endpoint, the same as `POST https://api.filecoin.io/mcp` |
+| `GET /`, `DELETE /` | `405`, as on `/mcp`, because the server is stateless |
+| `OPTIONS /` | The CORS preflight |
+| `GET /server-card` | The [server card](#server-card), the same as `GET https://api.filecoin.io/mcp/server-card` |
+| `GET /.well-known/mcp/server-card.json`, `GET /.well-known/mcp-server-card` | The same card, at the paths of older drafts |
+| Any other path, such as `/mcp`, `/mcp/server-card`, `/health`, `/docs`, or `/calibration/providers` | `404 not_found` |
+
+Plugins released before the MCP hosts existed, and connectors added by hand, point to `https://api.filecoin.cloud/mcp`. So `/mcp` keeps working on the API hosts. Previews set `MCP_HOSTS` to an empty string, so they serve the MCP server only at `/mcp`. [Deployments and domains](../../docs/filecoin/deployments.md) lists every hostname and how it reaches the Worker.
 
 ### Server card
 
@@ -112,7 +125,7 @@ Scripts:
 
 | Trigger | Result |
 | --- | --- |
-| Push to `main` | Runs typecheck, tests and lint, then `wrangler deploy` to https://api.filecoin.io and https://mcp.filecoin.io, and to their `filecoin.cloud` twins. Probes `/health` on https://api.filecoin.io, and sends an MCP `initialize` to https://mcp.filecoin.io |
+| Push to `main` | Runs typecheck, tests and lint, then `wrangler deploy` to https://api.filecoin.io and https://mcp.filecoin.io, and to https://api.filecoin.cloud and https://mcp.filecoin.cloud. Probes `/health` on https://api.filecoin.io, and sends an MCP `initialize` to https://mcp.filecoin.io |
 | Pull request opened or updated | `wrangler preview --name pr-<number>` creates a [Worker Preview](https://developers.cloudflare.com/workers/previews/) on `workers.dev`, probes `/health` and comments its URL on the PR |
 | Pull request closed | `wrangler preview delete` removes the preview |
 
