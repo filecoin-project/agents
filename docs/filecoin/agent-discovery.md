@@ -57,7 +57,7 @@ Each cell has one of these values:
 | [AI Catalog](#ai-catalog) | Draft | Served | Not applicable | Not applicable | Theirs, missing | Theirs, served for its own server |
 | [MCP registry `server.json`](#mcp-registry-serverjson) | Preview | Not applicable | Not applicable | Not applicable | Theirs, for the HTTP ownership proof | Not applicable |
 | [Agent skills discovery](#agent-skills-discovery) | Draft | Served | Not applicable | Not applicable | Theirs, missing | Not applicable |
-| [WebMCP](#webmcp) | Draft | Served | Not applicable | Not applicable | Theirs, not served | Theirs, not checked |
+| [WebMCP](#webmcp) | Draft | Served | Not applicable | Not applicable | Theirs, not served | Theirs, served |
 | [OpenAPI document](#openapi-document) | Final (3.1) | Not applicable | Served | Not applicable | Not applicable | Not applicable |
 | [`service-desc` link](#service-desc-link) | Final (RFC 8631) | Missing | Missing | Not applicable | Not applicable | Not applicable |
 | [`robots.txt`](#robotstxt-and-content-signal) | Final (RFC 9309) | Served | Not applicable | Not applicable | Theirs, served | Theirs, served |
@@ -160,7 +160,7 @@ poc.filecoin.cloud builds no card of its own. Its two older paths return a `308`
 
 **What it is.** [WebMCP](https://webmachinelearning.github.io/webmcp/) is a draft report of the W3C Web Machine Learning Community Group. A page registers tools that a browser agent can call.
 
-**What we serve.** poc.filecoin.cloud registers seven tools from its script bundle, six of them on every page ([filecoin-app README](../../apps/filecoin-app/README.md#webmcp)). They work in Chrome 149 and later through an origin trial, whose token expires on 2027-03-30. GitBook's page bundle has a WebMCP component, but we haven't checked which tools it registers on docs.filecoin.io.
+**What we serve.** poc.filecoin.cloud registers seven tools from its script bundle, six of them on every page ([filecoin-app README](../../apps/filecoin-app/README.md#webmcp)). They work in Chrome 149 and later through an origin trial, whose token expires on 2027-03-30. On docs.filecoin.io, GitBook's script connects to its docs MCP server and registers that server's tools as WebMCP tools ([Agent support on docs.filecoin.io](filecoin-docs-agent-support.md#what-works-today)).
 
 **What's missing.** Nobody has tested the tools with real browser agents yet ([#8](https://github.com/filecoin-project/agents/issues/8)). No tool verifies a file in the page yet. The "Browser verification" follow-up in the [README](README.md#follow-up-work) covers that tool.
 
