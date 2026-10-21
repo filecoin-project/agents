@@ -1,6 +1,23 @@
-# API and MCP domains
+# Deployments and domains
 
-This document describes the hostnames that serve filecoin-api and its MCP server. `api.filecoin.io` and `mcp.filecoin.io` are the primary hostnames, and the plugin, the CLI, and the site advertise them. `api.filecoin.cloud` and `mcp.filecoin.cloud` serve the same Worker, so links and plugins released before the switch keep working. filecoin-app's API client also needs `api.filecoin.cloud` ([same-zone fetches](#same-zone-fetches)).
+This document describes where Filecoin for Agents runs and the hostnames that serve it. [Deployments](#deployments) shows how the two apps and their domains relate. The sections after it cover filecoin-api's hostnames in detail.
+
+## Deployments
+
+`filecoin.io` is the primary domain. Both apps are Cloudflare Workers in the FilOz Cloudflare account, and both run on its `filecoin.cloud` zone.
+
+| App | Worker | Hostnames | Purpose |
+| --- | --- | --- | --- |
+| [filecoin-api](../../apps/filecoin-api/README.md) | `fil-api` | `api.filecoin.io`, `mcp.filecoin.io`, and their `filecoin.cloud` twins | The REST API and the MCP server |
+| [filecoin-app](../../apps/filecoin-app/README.md) | `fil-app` | `poc.filecoin.cloud` | A prototype site for agent discovery, with the explorer and the wallet dashboard |
+
+- **`filecoin.io` reaches Cloudflare through two subdomains.** Its DNS is on DNSimple. `www.filecoin.io` is the Filecoin website, a Next.js site on Vercel that this repository doesn't deploy. Only `api.filecoin.io` and `mcp.filecoin.io` point to Cloudflare: each is a CNAME to `fallback.filecoin.cloud`, Cloudflare for SaaS connects it to the `filecoin.cloud` zone, and a Worker route sends it to filecoin-api ([A domain on another DNS provider](#a-domain-on-another-dns-provider)).
+- **Both filecoin-api hostnames serve the MCP server.** `api.filecoin.io` serves the REST API, and the MCP server at `/mcp`. `mcp.filecoin.io` reaches the same Worker, which serves the MCP server at `/` ([What the MCP hosts serve](#what-the-mcp-hosts-serve)). `api.filecoin.cloud` and `mcp.filecoin.cloud` are Custom Domains on the same Worker. They keep older releases working, and filecoin-app's server renders need `api.filecoin.cloud` ([Same-zone fetches](#same-zone-fetches)).
+- **`poc.filecoin.cloud` is a testing prototype.** filecoin-app runs there, on a Custom Domain. We try agent discovery on it first, such as `llms.txt`, Markdown pages, well-known paths, and WebMCP, and then port what we learn to the main site, `www.filecoin.io`. [Agent discovery](agent-discovery.md) maps each spec to the host that should serve it, and [Agent discovery on filecoin.io](filecoin-io-agent-support.md) lists what filecoin.io should fix and add.
+
+## API and MCP hostnames
+
+These hostnames serve filecoin-api and its MCP server. `api.filecoin.io` and `mcp.filecoin.io` are the primary hostnames, and the plugin, the CLI, and the site advertise them. `api.filecoin.cloud` and `mcp.filecoin.cloud` serve the same Worker, so links and plugins released before the switch keep working. filecoin-app's API client also needs `api.filecoin.cloud` ([same-zone fetches](#same-zone-fetches)).
 
 | Hostname | Serves | How it reaches the Worker |
 | --- | --- | --- |
