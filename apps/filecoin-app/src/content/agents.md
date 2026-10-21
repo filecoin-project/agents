@@ -105,7 +105,8 @@ This site describes itself to agents:
 | [`/llms-full.txt`](/llms-full.txt) | Every docs page in one Markdown file |
 | [`/.well-known/api-catalog`](/.well-known/api-catalog) | Links to filecoin-api's OpenAPI document, reference, and MCP server, as an [RFC 9727](https://www.rfc-editor.org/rfc/rfc9727) API catalog |
 | [`/.well-known/integrations.json`](/.well-known/integrations.json) | The REST API, the MCP server, and the CLI, with what each needs to authenticate, for [integrations.sh](https://integrations.sh) |
-| [`/.well-known/mcp/server-card.json`](/.well-known/mcp/server-card.json) | The MCP server card, also at `/.well-known/mcp-server-card` |
+| [`/.well-known/ai-catalog.json`](/.well-known/ai-catalog.json) | The MCP server card's location, as an [AI Catalog](https://ai-catalog.io) |
+| [`/.well-known/mcp/server-card.json`](/.well-known/mcp/server-card.json) | Redirects to the MCP server card, as does `/.well-known/mcp-server-card` |
 | [`/.well-known/agent-skills/index.json`](/.well-known/agent-skills/index.json) | The agent skills index, with the `filecoin` skill |
 | [`/sitemap.xml`](/sitemap.xml) | Every page, also linked from `/robots.txt` |
 

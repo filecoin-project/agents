@@ -272,7 +272,7 @@ function Discovery() {
   const paths = [
     '/llms.txt',
     '/.well-known/api-catalog',
-    '/.well-known/mcp/server-card.json',
+    '/.well-known/ai-catalog.json',
     '/.well-known/agent-skills/index.json',
   ]
   return (

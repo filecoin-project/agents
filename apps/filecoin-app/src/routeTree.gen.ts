@@ -20,6 +20,7 @@ import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as NetworkIndexRouteImport } from './routes/$network/index'
 import { Route as NetworkSearchRouteImport } from './routes/$network/search'
+import { Route as DotwellKnownAiCatalogDotjsonRouteImport } from './routes/[.]well-known/ai-catalog[.]json'
 import { Route as DotwellKnownApiCatalogRouteImport } from './routes/[.]well-known/api-catalog'
 import { Route as DotwellKnownIntegrationsDotjsonRouteImport } from './routes/[.]well-known/integrations[.]json'
 import { Route as DotwellKnownMcpServerCardRouteImport } from './routes/[.]well-known/mcp-server-card'
@@ -100,6 +101,12 @@ const NetworkSearchRoute = NetworkSearchRouteImport.update({
   path: '/search',
   getParentRoute: () => NetworkRouteRoute,
 } as any)
+const DotwellKnownAiCatalogDotjsonRoute =
+  DotwellKnownAiCatalogDotjsonRouteImport.update({
+    id: '/.well-known/ai-catalog.json',
+    path: '/.well-known/ai-catalog.json',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DotwellKnownApiCatalogRoute = DotwellKnownApiCatalogRouteImport.update({
   id: '/.well-known/api-catalog',
   path: '/.well-known/api-catalog',
@@ -235,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/$network/search': typeof NetworkSearchRoute
+  '/.well-known/ai-catalog.json': typeof DotwellKnownAiCatalogDotjsonRoute
   '/.well-known/api-catalog': typeof DotwellKnownApiCatalogRoute
   '/.well-known/integrations.json': typeof DotwellKnownIntegrationsDotjsonRoute
   '/.well-known/mcp-server-card': typeof DotwellKnownMcpServerCardRoute
@@ -269,6 +277,7 @@ export interface FileRoutesByTo {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/$network/search': typeof NetworkSearchRoute
+  '/.well-known/ai-catalog.json': typeof DotwellKnownAiCatalogDotjsonRoute
   '/.well-known/api-catalog': typeof DotwellKnownApiCatalogRoute
   '/.well-known/integrations.json': typeof DotwellKnownIntegrationsDotjsonRoute
   '/.well-known/mcp-server-card': typeof DotwellKnownMcpServerCardRoute
@@ -307,6 +316,7 @@ export interface FileRoutesById {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/$network/search': typeof NetworkSearchRoute
+  '/.well-known/ai-catalog.json': typeof DotwellKnownAiCatalogDotjsonRoute
   '/.well-known/api-catalog': typeof DotwellKnownApiCatalogRoute
   '/.well-known/integrations.json': typeof DotwellKnownIntegrationsDotjsonRoute
   '/.well-known/mcp-server-card': typeof DotwellKnownMcpServerCardRoute
@@ -346,6 +356,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sitemap.xml'
     | '/$network/search'
+    | '/.well-known/ai-catalog.json'
     | '/.well-known/api-catalog'
     | '/.well-known/integrations.json'
     | '/.well-known/mcp-server-card'
@@ -380,6 +391,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sitemap.xml'
     | '/$network/search'
+    | '/.well-known/ai-catalog.json'
     | '/.well-known/api-catalog'
     | '/.well-known/integrations.json'
     | '/.well-known/mcp-server-card'
@@ -417,6 +429,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sitemap.xml'
     | '/$network/search'
+    | '/.well-known/ai-catalog.json'
     | '/.well-known/api-catalog'
     | '/.well-known/integrations.json'
     | '/.well-known/mcp-server-card'
@@ -454,6 +467,7 @@ export interface RootRouteChildren {
   LlmsDottxtRoute: typeof LlmsDottxtRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  DotwellKnownAiCatalogDotjsonRoute: typeof DotwellKnownAiCatalogDotjsonRoute
   DotwellKnownApiCatalogRoute: typeof DotwellKnownApiCatalogRoute
   DotwellKnownIntegrationsDotjsonRoute: typeof DotwellKnownIntegrationsDotjsonRoute
   DotwellKnownMcpServerCardRoute: typeof DotwellKnownMcpServerCardRoute
@@ -538,6 +552,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/$network/search'
       preLoaderRoute: typeof NetworkSearchRouteImport
       parentRoute: typeof NetworkRouteRoute
+    }
+    '/.well-known/ai-catalog.json': {
+      id: '/.well-known/ai-catalog.json'
+      path: '/.well-known/ai-catalog.json'
+      fullPath: '/.well-known/ai-catalog.json'
+      preLoaderRoute: typeof DotwellKnownAiCatalogDotjsonRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/.well-known/api-catalog': {
       id: '/.well-known/api-catalog'
@@ -794,6 +815,7 @@ const rootRouteChildren: RootRouteChildren = {
   LlmsDottxtRoute: LlmsDottxtRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  DotwellKnownAiCatalogDotjsonRoute: DotwellKnownAiCatalogDotjsonRoute,
   DotwellKnownApiCatalogRoute: DotwellKnownApiCatalogRoute,
   DotwellKnownIntegrationsDotjsonRoute: DotwellKnownIntegrationsDotjsonRoute,
   DotwellKnownMcpServerCardRoute: DotwellKnownMcpServerCardRoute,

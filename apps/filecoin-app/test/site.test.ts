@@ -2,13 +2,15 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { describe, it } from 'node:test'
 import {
+  AI_CATALOG_TYPE,
+  aiCatalog,
   apiCatalog,
   integrationsJson,
   llmsTxt,
   markdownPath,
-  mcpServerCard,
   robotsTxt,
   scriptJson,
+  serverCardRedirect,
   sitemapXml,
   softwareApplication,
 } from '../src/lib/site/discovery.ts'
@@ -303,19 +305,35 @@ describe('discovery documents', () => {
     }
     const [api, mcp, cli] = doc.surfaces
     assert.equal(api?.spec, 'https://api.example/openapi.json')
+    assert.equal(mcp?.slug, 'filecoin-mcp')
     assert.equal(mcp?.url, 'https://mcp.example')
     assert.equal(cli?.packages?.[0]?.identifier, 'filecoin')
     const used = cli?.auth.entries?.[0]?.use[0]?.id
     assert.ok(used !== undefined && used in doc.credentials)
   })
 
-  it('builds a server card with one Streamable HTTP remote', () => {
-    const card = mcpServerCard('https://mcp.example', 'https://site.example')
-    assert.equal(card.name.split('/').length, 2)
-    assert.deepEqual(
-      card.remotes.map((remote) => [remote.type, remote.url]),
-      [['streamable-http', 'https://mcp.example']]
+  it("lists filecoin-api's MCP server card in the AI Catalog", () => {
+    const catalog = aiCatalog('https://mcp.example', 'https://site.example')
+    assert.equal(AI_CATALOG_TYPE, 'application/ai-catalog+json')
+    assert.equal(catalog.specVersion, '1.0')
+    assert.equal(catalog.host.displayName, 'Filecoin for Agents')
+    assert.deepEqual(catalog.entries, [
+      {
+        identifier: 'urn:air:filecoin.io:mcp:mcp',
+        type: 'application/mcp-server-card+json',
+        url: 'https://mcp.example/server-card',
+      },
+    ])
+  })
+
+  it("redirects the site card paths to filecoin-api's card", () => {
+    const response = serverCardRedirect('https://mcp.example')
+    assert.equal(response.status, 308)
+    assert.equal(
+      response.headers.get('Location'),
+      'https://mcp.example/server-card'
     )
+    assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*')
   })
 
   it('lists absolute URLs in the sitemap and links it from robots.txt', () => {
