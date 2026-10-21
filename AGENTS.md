@@ -13,7 +13,6 @@ Before editing files for a substantial task:
 <!-- intent-skills:end -->
 
 - Cloudflare: before changing `apps/filecoin-api` or `apps/filecoin-app` server code, `wrangler.jsonc`, or Cloudflare resources, load the `workers-best-practices` and `wrangler` skills.
-- Development: read the [root README](README.md#build-and-check) when setting up the local environment or running validation.
 
 ## Changes and validation
 
@@ -21,7 +20,7 @@ Before editing files for a substantial task:
 - Keep each commit to at most one component's directory and scope it with that component, such as `feat(filecoin-cli): ...`. A commit that touches only root files, such as `.github/`, `scripts/`, or `docs/`, belongs to no component and takes no scope. release-please adds a commit to the release pull request of every component whose files it changes; the scope only labels the changelog entry. [CONTRIBUTING.md](.github/CONTRIBUTING.md#write-commit-messages-and-pull-request-titles) lists the components.
 - Prefer **Rebase and merge** for pull requests, so each commit reaches `main` with its own message and lands in its own component's release pull request. A squash merge folds them into one commit under the pull request title.
 - Add a short JSDoc description for every new type, class, function, or method, with links to relevant references.
-- After changes, run the TypeScript, Biome, and existing test checks through `pnpm check` (Turborepo). Run `pnpm build` when changing package exports or compilation settings.
+- After changes, run the TypeScript, Biome, and existing test checks through `pnpm check` (Turborepo); `pnpm check:fix` applies Biome fixes. Each package's and app's README covers its own development commands. Run `pnpm build` when changing package exports or compilation settings.
 
 ## Documentation
 
