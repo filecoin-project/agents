@@ -4,7 +4,7 @@ This guide covers how to set up the repository, make a change, open a pull reque
 
 ## Set up
 
-Use Node.js 24 or newer and pnpm 11.24.0, which provisions the configured Node.js 24 runtime. Run commands from the repository root:
+Use Node.js 24 or newer and pnpm 12.14.0, which provisions the configured Node.js 24 runtime. Run commands from the repository root:
 
 ```sh
 pnpm install --frozen-lockfile
@@ -61,20 +61,6 @@ release-please reads these messages to pick each release's version and write its
 3. The [CI workflow](workflows/ci.yml) runs `pnpm build` and `pnpm check`.
 4. A pull request that changes `apps/filecoin-api` or `apps/filecoin-app` gets a Cloudflare preview deployment, and a comment links to it. Fork pull requests have no access to the Cloudflare secret, so they get no preview. Closing the pull request deletes the preview.
 5. After approval, rebase-merge the pull request, or squash-merge it when its commits belong together as one. Pushing to `main` deploys filecoin-api or filecoin-app to production when the merged change touches that app or the root workspace files, such as `pnpm-lock.yaml`.
-
-## FOC project tracking
-
-The [FOC workflow](workflows/foc-project.yml) labels new issues and pull requests with `team/fs-wg`, the existing FOC tracking label, then adds them to the [FOC project](https://github.com/orgs/FilOzone/projects/14). Applying `team/fs-wg` manually also adds an existing issue or pull request. Reapplying it or rerunning the workflow keeps the existing project item.
-
-Repository setup:
-
-- Create the `team/fs-wg` label before enabling the workflow.
-- Make `FILOZZY_CI_ADD_TO_PROJECT` available as a repository or organization Actions secret. Its owner needs write access to the FOC project and access to this public repository. A classic PAT needs `project` and `public_repo` scopes. `GITHUB_TOKEN` applies labels; the PAT is used only for the project API.
-- Keep `FILOZZY_RELEASE_PLEASE_PAT` available so release pull requests trigger this workflow as well as CI.
-
-The workflow runs on `issues` and `pull_request_target`, including fork pull requests. It never checks out or executes pull request code. Labeling and project addition run in sequence, so the workflow does not depend on label events created by `GITHUB_TOKEN` starting another run. Missing credentials and API failures fail the run.
-
-After setup and merge, open an issue and a fork pull request, verify the tracking label and the linked FOC project items, then remove and reapply `team/fs-wg` to verify that no duplicate item appears. Existing items are added when the label is applied; the workflow does not scan the backlog.
 
 ## Release
 

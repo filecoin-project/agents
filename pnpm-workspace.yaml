@@ -2,6 +2,13 @@ packages:
   - 'apps/*'
   - 'packages/*'
 
+# Keeps pnpm-lock.yaml a single YAML document. Otherwise pnpm 12 writes the
+# pinned pnpm in a leading document, and GitHub's dependency graph reads only
+# that one, so Dependabot sees no dependencies. pnpm no longer switches to the
+# packageManager version itself; CI still installs it through pnpm/setup.
+# https://github.com/pnpm/pnpm/issues/13805
+pmOnFail: ignore
+
 allowBuilds:
   '@biomejs/biome': true
   esbuild: true
