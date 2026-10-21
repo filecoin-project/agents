@@ -53,7 +53,7 @@ Each cell says whether the host serves the file or header:
 | [`integrations.json`](#integrationsjson) | Vendor format | Served | n/a | n/a | Theirs: missing | n/a |
 | [MCP server card](#mcp-server-card) | Final (SEP-2127) | Served, an outdated copy | Served | Served | n/a | Theirs: served, for its own server |
 | [AI Catalog](#ai-catalog) | Draft | Missing | n/a | n/a | Theirs: missing | Theirs: served, for its own server |
-| [MCP registry `server.json`](#mcp-registry-serverjson) | Preview | n/a | Missing | Missing | Theirs: ownership proof, if HTTP | n/a |
+| [MCP registry `server.json`](#mcp-registry-serverjson) | Preview | n/a | n/a | n/a | Theirs: ownership proof, if HTTP | n/a |
 | [Agent skills discovery](#agent-skills-discovery) | Draft | Served | n/a | n/a | Theirs: missing | n/a |
 | [WebMCP](#webmcp) | Draft | Served | n/a | n/a | Theirs: none | Theirs: not verified |
 | [OpenAPI document](#openapi-document) | Final (3.1) | Linked | Served | n/a | n/a | n/a |
@@ -65,6 +65,8 @@ Each cell says whether the host serves the file or header:
 | [Open Graph and canonical URLs](#sitemap-json-ld-and-open-graph) | Stable | Served | n/a | n/a | Theirs: served | Theirs: served |
 | [`RateLimit-Policy`](#ratelimit-policy) | Draft | n/a | Served | Served | n/a | n/a |
 | [`Deprecation` and `Sunset`](#deprecation-and-sunset) | Final (RFC 9745, RFC 8594) | n/a | Missing | n/a | n/a | n/a |
+
+No host serves the MCP registry's `server.json`. We publish it to the registry, and that entry is missing ([#75](https://github.com/filecoin-project/agents/issues/75)). The row shows only where the ownership proof would go.
 
 ## Specs
 
