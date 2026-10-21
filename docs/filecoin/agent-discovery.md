@@ -14,7 +14,7 @@ We checked each host with `curl` on 2026-10-21, after [#76](https://github.com/f
 | `www.filecoin.io` | The Filecoin website, a Next.js site on Vercel. `filecoin.io` redirects to it with a `308`, and its owners plan to remove that redirect | The filecoin.io web team |
 | `docs.filecoin.io` | The Filecoin docs, on GitBook, with GitBook's docs MCP server | The Filecoin docs team, through GitBook |
 
-In this document, "the sites" means `poc.filecoin.cloud`, `www.filecoin.io`, and `docs.filecoin.io`. "filecoin-api's hosts" means `api.filecoin.io` and `mcp.filecoin.io`. `api.filecoin.cloud` and `mcp.filecoin.cloud` run the same Worker as their `filecoin.io` twins, so they serve the same files ([Deployments and domains](mcp-domains.md)).
+In this document, "the sites" means `poc.filecoin.cloud`, `www.filecoin.io`, and `docs.filecoin.io`. "filecoin-api's hosts" means `api.filecoin.io` and `mcp.filecoin.io`. `api.filecoin.cloud` and `mcp.filecoin.cloud` run the same Worker as their `filecoin.io` twins, so they serve the same files ([Deployments and domains](deployments.md)).
 
 ## What goes where
 
@@ -120,7 +120,7 @@ docs.filecoin.io serves `.md` URLs, answers `Accept: text/markdown`, and has the
 
 **What we serve.** filecoin-api serves the card at `https://mcp.filecoin.io/server-card` and `https://api.filecoin.io/mcp/server-card`. It also serves the card at both older paths on each of its hosts, because scanners still check them. The response is `application/mcp-server-card+json`, with `max-age=3600` and an `ETag`. The card's `name` and the server's `serverInfo.name` are both `io.filecoin/mcp`, which is `mcp.filecoin.io` in reverse. Every production card advertises `https://mcp.filecoin.io`, from the `MCP_PUBLIC_URL` variable ([filecoin-api README](../../apps/filecoin-api/README.md#server-card)).
 
-poc.filecoin.cloud builds no card of its own. Its two older paths return a `308` to `https://mcp.filecoin.io/server-card`, with `Access-Control-Allow-Origin: *`. They redirect instead of proxying, because a server-side fetch from the `filecoin.cloud` zone to `mcp.filecoin.io` fails ([same-zone fetches](mcp-domains.md#same-zone-fetches)). docs.filecoin.io serves the card of GitBook's docs MCP server at `/~gitbook/mcp/server-card` and `/.well-known/mcp/server-card.json`.
+poc.filecoin.cloud builds no card of its own. Its two older paths return a `308` to `https://mcp.filecoin.io/server-card`, with `Access-Control-Allow-Origin: *`. They redirect instead of proxying, because a server-side fetch from the `filecoin.cloud` zone to `mcp.filecoin.io` fails ([same-zone fetches](deployments.md#same-zone-fetches)). docs.filecoin.io serves the card of GitBook's docs MCP server at `/~gitbook/mcp/server-card` and `/.well-known/mcp/server-card.json`.
 
 **What's missing.** Nothing is missing on our hosts.
 
