@@ -4,7 +4,7 @@ This guide covers how to set up the repository, make a change, open a pull reque
 
 ## Set up
 
-Use Node.js 24 or newer and pnpm 11.24.0, which provisions the configured Node.js 24 runtime. Run commands from the repository root:
+Use Node.js 24 or newer and pnpm 12.14.0, which provisions the configured Node.js 24 runtime. Run commands from the repository root:
 
 ```sh
 pnpm install --frozen-lockfile
