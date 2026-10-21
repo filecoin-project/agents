@@ -11,7 +11,6 @@ import { globals } from './globals.ts'
  * handler is imported when its command runs.
  *
  * @see https://github.com/hugomrdias/agents/blob/main/docs/agent-cli/framework-design.md
- * @see ../../../docs/filecoin/interface-research.md
  */
 export const cli = defineCli({
   name: 'filecoin',

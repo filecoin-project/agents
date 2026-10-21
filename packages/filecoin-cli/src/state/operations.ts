@@ -71,7 +71,7 @@ export type Checkpoint = {
  * A saved `put` or `delete` job with enough progress to continue after an
  * interruption.
  *
- * @see ../../../../docs/filecoin/interface-research.md#operations
+ * @see ../../../../docs/filecoin/architecture.md#phases-and-checkpoints
  */
 export type Operation = {
   id: string

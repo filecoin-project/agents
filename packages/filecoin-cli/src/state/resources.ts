@@ -20,7 +20,7 @@ export type ResourceStatus = 'active' | 'removal_pending'
  * A file or folder managed by this CLI. A file stores original bytes; a
  * folder stores a UnixFS CAR and adds an IPFS root CID.
  *
- * @see ../../../../docs/filecoin/interface-research.md#resources
+ * @see ../../../../docs/filecoin/architecture.md#local-state
  */
 export type Resource = {
   ref: string
