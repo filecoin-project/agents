@@ -51,7 +51,7 @@ export function mcpUrl(url: URL, env: Bindings) {
  * share its handler, rate limit, CORS, request ids and tracing. Other paths
  * on those hosts get `404`. Every other host reaches the app unchanged.
  *
- * @see ../../../docs/filecoin/mcp-domains.md
+ * @see ../../../docs/filecoin/deployments.md
  * @see https://developers.cloudflare.com/workers/configuration/routing/custom-domains/
  */
 export function withMcpHosts(app: FetchApp) {

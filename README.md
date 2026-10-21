@@ -22,7 +22,7 @@ Apps under `apps/` are private Cloudflare Workers.
 | [`apps/filecoin-api`](apps/filecoin-api/README.md) | `api.filecoin.io`, `mcp.filecoin.io` | A REST API and an MCP server for providers, data sets, pieces, Filecoin Pay rails, and session keys. |
 | [`apps/filecoin-app`](apps/filecoin-app/README.md) | `poc.filecoin.cloud` | A proof-of-concept web app built on the other components here. It reads filecoin-api through the API client, serves the plugin's agent skills, and documents the CLI. |
 
-[API and MCP domains](docs/filecoin/mcp-domains.md) lists every hostname, including the `filecoin.cloud` ones kept for older links.
+[Deployments and domains](docs/filecoin/deployments.md) shows how the apps and their domains relate, and lists every hostname, including the `filecoin.cloud` ones kept for older links.
 
 ## Plugins
 
@@ -71,7 +71,7 @@ A new skill must also be listed in the marketplace entry's `skills`; `pnpm check
 | [Filecoin for Agents overview](docs/filecoin/README.md) | The CLI, REST API, MCP server, and app, with the assumptions, compromises, open questions, and follow-up work of the proof of concept |
 | [CLI architecture](docs/filecoin/architecture.md) | Modules, login, put, get, and delete flows, state, recovery, and verification |
 | [CLI interface research](docs/filecoin/interface-research.md) | The historical design research behind the CLI: commands, resources, operations, and local state |
-| [API and MCP domains](docs/filecoin/mcp-domains.md) | The hostnames that serve filecoin-api and its MCP server |
+| [Deployments and domains](docs/filecoin/deployments.md) | Where filecoin-api and filecoin-app run, and the hostnames that serve them |
 | [Agent support on docs.filecoin.io](docs/filecoin/filecoin-docs-agent-support.md) | Research for the Filecoin docs team on what docs.filecoin.io gives agents |
 
 ## Build and check
