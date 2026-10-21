@@ -2,7 +2,7 @@
 
 `filecoin` is a prototype command-line interface for Filecoin. It stores a file or a folder as one copy on one Curio provider and returns retrieval URLs on [filecoin-api](../../apps/filecoin-api/README.md#retrieval). It runs on the calibration network unless you choose mainnet.
 
-`filecoin` calls [synapse-core](https://github.com/FilOzone/synapse-sdk/tree/master/packages/synapse-core) directly. It uses [clipact](https://github.com/hugomrdias/agents/blob/main/packages/clipact/README.md) for the agent output contract, its folder, and its configuration store. The design follows the [CLI interface research](../../docs/filecoin/interface-research.md) and the [CLI guidelines for agents](https://github.com/hugomrdias/agents/blob/main/docs/agent-cli/guidelines.md). The [architecture](../../docs/filecoin/architecture.md) describes the modules and flows.
+`filecoin` calls [synapse-core](https://github.com/FilOzone/synapse-sdk/tree/master/packages/synapse-core) directly. It uses [clipact](https://github.com/hugomrdias/agents/blob/main/packages/clipact/README.md) for the agent output contract, its folder, and its configuration store. The design follows the [CLI guidelines for agents](https://github.com/hugomrdias/agents/blob/main/docs/agent-cli/guidelines.md). The [architecture](../../docs/filecoin/architecture.md) describes the modules and flows.
 
 Releases publish to npm as [`filecoin`](https://www.npmjs.com/package/filecoin). It needs Node.js 24 or newer. Install it, or run it without installing with `npx -y filecoin`:
 

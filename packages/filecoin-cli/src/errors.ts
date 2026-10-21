@@ -190,7 +190,7 @@ const OPERATION_CODES: ReadonlySet<string> = new Set(
  * delete errors are never retryable, because repeating the original command
  * starts a new paid operation; resuming continues the saved one.
  *
- * @see ../../../docs/filecoin/interface-research.md#the-agent-execution-contract
+ * @see ../../../docs/filecoin/architecture.md#output-and-errors
  */
 export function operationError(error: unknown, operationId: string): CliError {
   const resume = resumeStep(operationId)
