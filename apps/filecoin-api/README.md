@@ -134,7 +134,7 @@ Both Workers deploy to the FilOz Cloudflare account, which `account_id` in `wran
    wrangler hyperdrive create fil-api-calibration --connection-string="postgresql://user:password@host:5432/indexers" --max-age 5 --swr 0 --origin-connection-limit 60
    ```
    Hyperdrive caches read queries for 60 seconds by default and never invalidates them, which would make the indexer status, and every read after a write, up to 75 seconds stale. Both configs cache for 5 seconds with no stale-while-revalidate. To change an existing config, run `wrangler hyperdrive update <id> --caching-disabled=false --max-age 5 --swr 0`.
-4. Connect `api.filecoin.io` and `mcp.filecoin.io`, whose DNS is on DNSimple, as Cloudflare for SaaS custom hostnames on the `filecoin.cloud` zone. These are one-time dashboard steps, described in [Deployments and domains](../../docs/filecoin/deployments.md#a-domain-on-another-dns-provider). The deploy token can create the Worker routes but not the custom hostnames.
+4. Connect `api.filecoin.io` and `mcp.filecoin.io`, whose DNS is on DNSimple, as Cloudflare for SaaS custom hostnames on the `filecoin.cloud` zone. These are one-time dashboard steps, described in [Deployments and domains](../../docs/filecoin/deployments.md#subdomains-of-filecoinio). The deploy token can create the Worker routes but not the custom hostnames.
 
 To deploy manually, run `pnpm --filter filecoin-api deploy`.
 
