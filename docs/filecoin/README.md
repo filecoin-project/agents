@@ -66,7 +66,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 
 | Document | Contents |
 | --- | --- |
-| [CLI architecture](architecture.md) | How the CLI works: modules, login, put, get, delete, local state, recovery, and how the CLI differs from the research |
+| [CLI architecture](architecture.md) | How the CLI works: modules, login, put, get, delete, local state, and recovery |
 | [Agent support on docs.filecoin.io](filecoin-docs-agent-support.md) | What GitBook gives agents on docs.filecoin.io, what is missing compared with filecoin-app, and what GitBook lets the docs team change |
 | [Agent discovery on filecoin.io](filecoin-io-agent-support.md) | How www.filecoin.io compares with poc.filecoin.cloud for agent discovery, the Is Agentic scores of both sites, and what filecoin.io should fix and add |
 | [Agent discovery](agent-discovery.md) | Every agent discovery spec that applies to Filecoin for Agents, what each host serves today, what is missing, and which host should serve each file |
@@ -92,7 +92,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 
 ### CLI
 
-- **Flat commands.** The research proposed separate `files` and `artifacts` groups. Instead, `put`, `get`, `ls`, `inspect`, and `delete` handle both and pick the handling from the input.
+- **Flat commands.** `put`, `get`, `ls`, `inspect`, and `delete` handle both files and folders and pick the handling from the input. There are no separate command groups for files and folders.
 - **Plain-text session key.** `filecoin` stores the key in `config.json` with mode `0600`, not in an OS keychain.
 - **`logout` leaves the key valid on chain.** It deletes the key on this machine and returns the console's revoke link, but the owner must sign the revocation.
 - **Local view only.** `filecoin ls` lists only the resources in this machine's state database. It cannot see content stored from another machine, from a cloud sandbox that was reset, or from the app. [Retrieve and verify](https://poc.filecoin.cloud/docs/retrieve#find-stored-content) shows how to find that content by wallet.
@@ -100,7 +100,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **Every transfer hashes the whole content.** `put`, `operations resume`, and `get` each compute the PieceCID of all of it, at about 6 seconds per GiB.
 - **Shallow folder check.** `inspect --check` probes only the piece URL, not each file of a folder.
 - **Result links wait for the indexer.** The piece link and a file's browser link in the `put` result return 404 until filecoin-api's indexer has the new piece. Before that, `put` reports an early link on stderr. A file's early link carries a provider hint and works once the provider has parked the piece. A folder's link goes through inbrowser.link, which works only after Curio indexes the CAR and announces it to IPNI. Curio starts that when it receives the commit, before the transaction confirms. `filecoin get` downloads from the provider directly.
-- **No `--events`, `--fields`, or `operations inspect --refresh`.** The research proposed all three.
+- **No `--events`, `--fields`, or `operations inspect --refresh`.** clipact doesn't implement `--events` or `--fields`. `operations resume` already checks the chain before it sends anything.
 
 ### REST API and MCP server
 
@@ -143,7 +143,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - Should the remote MCP server get upload and delete tools? If so, what authentication and upload transport does it use? Or should a local MCP server wrap the CLI instead?
 - What do we need before we recommend mainnet to agents? Candidates are spending limits and keychain storage.
 - Who runs the indexer, and what availability do we promise? The Cloudflare deployment is in FilOz's account.
-- Do mutable names, custom domains, private content, or content over 1 GiB belong in the first release? The research deferred all four.
+- Do mutable names, custom domains, private content, or content over 1 GiB belong in the first release?
 
 ## Follow-up work
 
