@@ -19,17 +19,26 @@ import { dataSetPiecesInfinite, dataSetQuery } from '@/lib/api/queries'
 import { CHAINS } from '@/lib/networks'
 import { assertId, orNotFound } from '@/lib/route-helpers'
 import { zBool } from '@/lib/search-schemas'
+import { awaitOnServer } from '@/lib/server-prefetch'
 
 export const Route = createFileRoute('/$network/data-sets/$id')({
   validateSearch: z.object({ removed: zBool }),
   loaderDeps: ({ search }) => ({ removed: search.removed }),
-  loader: ({ context: { queryClient }, params: { network, id }, deps }) => {
+  loader: async ({
+    context: { queryClient },
+    params: { network, id },
+    deps,
+  }) => {
     assertId(id)
-    // Warm the pieces table without blocking on it.
-    void queryClient.prefetchInfiniteQuery(
-      dataSetPiecesInfinite(network, id, deps.removed)
-    )
-    return orNotFound(queryClient.ensureQueryData(dataSetQuery(network, id)))
+    await Promise.all([
+      orNotFound(queryClient.ensureQueryData(dataSetQuery(network, id))),
+      // Warm the pieces table; only the server waits for it.
+      awaitOnServer(
+        queryClient.prefetchInfiniteQuery(
+          dataSetPiecesInfinite(network, id, deps.removed)
+        )
+      ),
+    ])
   },
   component: DataSetPage,
 })
