@@ -108,7 +108,6 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **No authentication.** The only control is a per-IP rate limit of 120 requests a minute for the REST API and 60 for MCP. Responses state the limit in a `RateLimit-Policy` header, but not how many requests remain, because Workers Rate Limiting doesn't report it.
 - **Data trails the chain.** The REST API and the MCP server return what the indexer has stored so far. `/health` reports the latest indexed block.
 - **Docs search depends on GitBook.** `search_docs` forwards to the `searchDocumentation` tool of docs.filecoin.io's GitBook MCP server, which GitBook doesn't document as a stable API. If GitBook changes or removes it, the tool returns `docs_unavailable` until cached results expire. Results are cached for an hour, so docs edits take up to an hour to show up.
-- **Unindexed owner queries.** An `owner` filter scans every data set until the indexer adds an index ([#6](https://github.com/filecoin-project/agents/issues/6)).
 - **Best-effort browser links for folders.** For a folder, `/get/{cid}?browser=true` redirects to inbrowser.link, which this project does not operate. For a file, it redirects to the provider's `/piece` URL.
 
 ### App
