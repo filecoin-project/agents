@@ -2,7 +2,7 @@
 
 A Cloudflare Worker that serves a read-only REST API and an MCP server for Filecoin data: storage providers, data sets, pieces, Filecoin Pay rails and session keys. Data comes from the `ozone` schema that the [FilOzone indexer](https://github.com/FilOzone/indexer) writes to Postgres, read through [Hyperdrive](https://developers.cloudflare.com/hyperdrive/).
 
-Built with [Hono](https://hono.dev), [`@hono/zod-openapi`](https://github.com/honojs/middleware/tree/main/packages/zod-openapi), [`@hono/mcp`](https://github.com/honojs/middleware/tree/main/packages/mcp) and [postgres.js](https://github.com/porsager/postgres).
+Built with [Hono](https://hono.dev), [`@hono/zod-openapi`](https://github.com/honojs/middleware/tree/main/packages/zod-openapi), the MCP TypeScript SDK's [`@modelcontextprotocol/server`](https://ts.sdk.modelcontextprotocol.io/v2/) and [postgres.js](https://github.com/porsager/postgres).
 
 ## Routes
 
@@ -66,7 +66,7 @@ The card describes the MCP server before a client connects: its name, title, ver
 | `title` | `Filecoin` |
 | `version` | The filecoin-api version |
 | `remotes[0].url` | `MCP_PUBLIC_URL`, which is `https://mcp.filecoin.io` in production, on every host. Previews and `pnpm dev` set it to an empty string, so the card advertises the endpoint on the request's host: its root on an MCP host, and `/mcp` elsewhere |
-| `remotes[0].supportedProtocolVersions` | The MCP SDK's protocol versions that include Streamable HTTP |
+| `remotes[0].supportedProtocolVersions` | `2026-07-28`, then the MCP SDK's `initialize` versions that include Streamable HTTP, from `2025-03-26` |
 
 The card is sent as `application/mcp-server-card+json`, with `Cache-Control: public, max-age=3600` and an `ETag`, and shares the REST API's rate limit.
 
@@ -94,6 +94,8 @@ Resolved providers are cached per network and CID in the [Workers Cache API](htt
 The MCP server offers one tool per data route: `get_status`, `list_providers`, `get_provider`, `list_data_sets`, `get_data_set`, `list_data_set_pieces`, `get_piece`, `list_pieces`, `list_rails`, `get_rail`, `list_rail_settlements`, `list_session_keys` and `list_session_key_events`. Each of these requires a `network` argument.
 
 The server reports itself as `io.filecoin/mcp`, titled `Filecoin`, the same name and title as its [server card](#server-card), with the release version from [`src/app.ts`](src/app.ts), which release-please updates along with `openapi.json`. Every tool has a display `title`, such as `List storage providers`, and the `readOnlyHint`, `idempotentHint` and `openWorldHint` annotations. Clients match permission rules on the tool names, so renaming a tool breaks them; change its `title` instead.
+
+The server serves two protocol eras over stateless Streamable HTTP. [`src/mcp/http.ts`](src/mcp/http.ts) sends a request without the per-request `_meta` of `2026-07-28`, such as `initialize`, to a transport for the `initialize` versions, which answers with plain JSON. Other requests go to the SDK's `createMcpHandler`, which serves `2026-07-28`. An unknown tool and a `tools/call` without a `name` return a JSON-RPC error with code `-32602`. Invalid arguments and failed calls return a tool result with `isError: true` and one `<code>: <message>` text item. Transport errors return a JSON-RPC error body instead of the REST API's error body. Examples are `400` for an unsupported `MCP-Protocol-Version` and `406` for a client that doesn't accept both `application/json` and `text/event-stream`. The server accepts every `Origin`. The spec asks servers to check `Origin` against DNS rebinding of local servers, and this server is public and reads no credentials.
 
 `search_docs` searches the Filecoin docs at [docs.filecoin.io](https://docs.filecoin.io). It forwards the `query` to the `searchDocumentation` tool of GitBook's [hosted MCP server](https://gitbook.com/docs/ai-for-your-readers/mcp-servers-for-published-docs) for the site, `https://docs.filecoin.io/~gitbook/mcp`, with one stateless `tools/call`, and returns GitBook's page excerpts unchanged. [`src/mcp/docs-search.ts`](src/mcp/docs-search.ts) caches results in `caches.default`, keyed by the query trimmed, with whitespace collapsed and lowercased. A result is fresh for an hour and served stale for up to 24 hours while it is refreshed in the background. Failed searches are not cached and return a `docs_unavailable` tool error. The root span gets a `filecoin.docs_search.cache` attribute: `hit`, `stale` or `miss`.
 
