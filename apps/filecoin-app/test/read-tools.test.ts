@@ -117,6 +117,9 @@ describe('results', () => {
         withCdn: null,
         withIpfsIndexing: null,
         pdpEndEpoch: null,
+        pdpRailId: '12',
+        cacheMissRailId: null,
+        cdnRailId: null,
         deleted: null,
         createdAtBlock: '100',
         updatedAtBlock: '100',
@@ -174,7 +177,6 @@ describe('results', () => {
           active: true,
           origin: 'filecoin-cli',
           blockNumber: '4132387',
-          txHash: '0xabc',
         },
         {
           permission: '0x5415',
@@ -183,7 +185,6 @@ describe('results', () => {
           active: false,
           origin: null,
           blockNumber: '4132387',
-          txHash: '0xabc',
         },
       ],
     })
