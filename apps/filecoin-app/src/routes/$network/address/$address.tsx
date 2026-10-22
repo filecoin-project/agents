@@ -29,6 +29,7 @@ import {
   sessionKeysInfinite,
 } from '@/lib/api/queries'
 import { addressUrl, type Network } from '@/lib/networks'
+import { awaitOnServer } from '@/lib/server-prefetch'
 
 const TAB_OPTIONS = [
   { value: 'data-sets', label: 'Data sets' },
@@ -83,22 +84,25 @@ export const Route = createFileRoute('/$network/address/$address')({
     tab: z.enum(TABS).optional().catch(undefined),
   }),
   loaderDeps: ({ search }) => ({ tab: search.tab ?? 'data-sets' }),
-  // Not awaited: the tables render their own pending state.
+  // The tables render their own pending state; only the server waits.
   loader: ({ context: { queryClient }, params, deps }) => {
     const queries = tabQueries(params.network, params.address)
     // Narrowed per tab: a union of option types does not type-check.
     switch (deps.tab) {
       case 'data-sets':
-        void queryClient.prefetchInfiniteQuery(queries['data-sets'])
-        break
+        return awaitOnServer(
+          queryClient.prefetchInfiniteQuery(queries['data-sets'])
+        )
       case 'pieces':
-        void queryClient.prefetchInfiniteQuery(queries.pieces)
-        break
+        return awaitOnServer(queryClient.prefetchInfiniteQuery(queries.pieces))
       case 'session-keys':
-        void queryClient.prefetchInfiniteQuery(queries['session-keys'])
-        break
+        return awaitOnServer(
+          queryClient.prefetchInfiniteQuery(queries['session-keys'])
+        )
       default:
-        void queryClient.prefetchInfiniteQuery(queries[deps.tab])
+        return awaitOnServer(
+          queryClient.prefetchInfiniteQuery(queries[deps.tab])
+        )
     }
   },
   component: AddressPage,

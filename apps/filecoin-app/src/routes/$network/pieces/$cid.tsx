@@ -9,12 +9,14 @@ import { PageHeader } from '@/components/page-header'
 import { piecesInfinite } from '@/lib/api/queries'
 import { formatBytes } from '@/lib/format'
 import { useFlatPages } from '@/lib/route-helpers'
+import { awaitOnServer } from '@/lib/server-prefetch'
 
 export const Route = createFileRoute('/$network/pieces/$cid')({
-  // Not awaited: the page renders its own pending state.
-  loader: ({ context: { queryClient }, params: { network, cid } }) => {
-    void queryClient.prefetchInfiniteQuery(piecesInfinite(network, { cid }))
-  },
+  // The page renders its own pending state; only the server waits.
+  loader: ({ context: { queryClient }, params: { network, cid } }) =>
+    awaitOnServer(
+      queryClient.prefetchInfiniteQuery(piecesInfinite(network, { cid }))
+    ),
   component: PiecePage,
 })
 

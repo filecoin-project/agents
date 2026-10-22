@@ -52,7 +52,7 @@ Any module can run in the Worker as well as in the browser:
 
 - Use browser APIs such as `window`, `localStorage`, and `navigator` only in effects, in event handlers, or under `/dashboard`, which sets `ssr: false`.
 - The server cannot know the visitor's time zone, locale, platform, or clock. `LocalTime` in `src/components/local-time.tsx` formats timestamps in UTC until the page hydrates, then in local time. Render other values that depend on the browser after hydration with `useHydrated`, or React reports a hydration mismatch.
-- Loaders run on the server for the first request and in the browser after that. `@tanstack/react-router-ssr-query` sends the queries fetched during server rendering to the browser with the page.
+- Loaders run on the server for the first request and in the browser after that. `@tanstack/react-router-ssr-query` sends the queries fetched during server rendering to the browser with the page. It streams a query that is still pending when the server renders, and that data can reach the browser before the page hydrates. The browser then renders rows where the server HTML has a skeleton, and React reports error #418. To prefetch a table without blocking client-side navigation, wrap the prefetch in `awaitOnServer` from `src/lib/server-prefetch.ts`. The loader then waits for the table on the server only.
 - The server renders the dark theme. An inline script in `<head>` applies a stored light theme before the first paint.
 
 ## Website

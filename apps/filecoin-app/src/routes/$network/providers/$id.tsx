@@ -14,18 +14,25 @@ import {
   providerQuery,
 } from '@/lib/api/queries'
 import { assertId, orNotFound } from '@/lib/route-helpers'
+import { awaitOnServer } from '@/lib/server-prefetch'
 
 export const Route = createFileRoute('/$network/providers/$id')({
-  loader: ({ context: { queryClient }, params: { network, id } }) => {
+  loader: async ({ context: { queryClient }, params: { network, id } }) => {
     assertId(id)
-    // Warm the tab tables without blocking on them.
-    void queryClient.prefetchInfiniteQuery(
-      dataSetsInfinite(network, { provider_id: id })
-    )
-    void queryClient.prefetchInfiniteQuery(
-      piecesInfinite(network, { provider_id: id })
-    )
-    return orNotFound(queryClient.ensureQueryData(providerQuery(network, id)))
+    await Promise.all([
+      orNotFound(queryClient.ensureQueryData(providerQuery(network, id))),
+      // Warm the tab tables; only the server waits for them.
+      awaitOnServer(
+        queryClient.prefetchInfiniteQuery(
+          dataSetsInfinite(network, { provider_id: id })
+        )
+      ),
+      awaitOnServer(
+        queryClient.prefetchInfiniteQuery(
+          piecesInfinite(network, { provider_id: id })
+        )
+      ),
+    ])
   },
   component: ProviderPage,
 })
