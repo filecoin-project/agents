@@ -9,7 +9,7 @@ import {
   zeroAddress,
 } from 'viem'
 import { Address } from '@/components/address'
-import { settlementColumns } from '@/components/columns'
+import { DataSetLink, settlementColumns } from '@/components/columns'
 import { DataTable } from '@/components/data-table'
 import { type DetailItem, Details } from '@/components/details'
 import { ErrorState, NotFound } from '@/components/empty-state'
@@ -17,7 +17,6 @@ import { LocalTime } from '@/components/local-time'
 import { PageHeader } from '@/components/page-header'
 import { RailStateBadge } from '@/components/status-badge'
 import { TokenAmount } from '@/components/token-amount'
-import { TxLink } from '@/components/tx-link'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useRail } from '@/hooks-synapse/use-rail'
@@ -257,11 +256,16 @@ function RailPage(props: { network: Network; rail: Rail }) {
             label: 'Terminated by',
             value: <Address network={network} value={rail.terminatedBy} />,
           },
-          { label: 'Created', value: <LocalTime seconds={rail.createdAt} /> },
           {
-            label: 'Creation tx',
-            value: <TxLink hash={rail.txHash} network={network} />,
+            label: 'Data set',
+            value: rail.dataSetId ? (
+              <DataSetLink id={rail.dataSetId} network={network} />
+            ) : (
+              '—'
+            ),
           },
+          { label: 'Created', value: <LocalTime seconds={rail.createdAt} /> },
+          { label: 'Created at block', value: rail.createdAtBlock },
         ]}
       />
       <section className="flex flex-col gap-3">
