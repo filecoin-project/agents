@@ -3,8 +3,7 @@ import { parseRetrievalCid, type RetrievalCid } from '../cid.ts'
 import { type Db, type DbFactory, type DbStats, openNetworkDb } from '../db.ts'
 import { networkUnavailable, notFound } from '../errors.ts'
 import { rateLimit } from '../middleware/rate-limit.ts'
-import type { Schemas } from '../networks.ts'
-import { NETWORKS, type NetworkName } from '../networks.ts'
+import { NETWORKS, type Network, type NetworkName } from '../networks.ts'
 import {
   findHintedProvider,
   findIpfsRootProvider,
@@ -123,13 +122,13 @@ interface LookupOptions {
 /** Look up a provider with `find` in one network's database. */
 async function lookupProvider(
   options: LookupOptions,
-  find: (db: Db, schemas: Schemas) => Promise<PieceProvider | undefined>
+  find: (db: Db, network: Network) => Promise<PieceProvider | undefined>
 ): Promise<PieceProvider | undefined> {
   const { env, network, dbFactory, stats } = options
   const opened = openNetworkDb(env, network, dbFactory, stats)
   if (!opened) throw networkUnavailable(network)
   try {
-    return await find(opened.db, opened.network.schemas)
+    return await find(opened.db, opened.network)
   } finally {
     if (options.waitUntil) options.waitUntil(opened.close())
     else await opened.close()
@@ -139,7 +138,7 @@ async function lookupProvider(
 /** Find the indexed provider serving a CID. */
 function indexedProvider(cid: RetrievalCid) {
   const find = cid.kind === 'piece' ? findPieceProvider : findIpfsRootProvider
-  return (db: Db, schemas: Schemas) => find(db, schemas, cid.cid)
+  return (db: Db, network: Network) => find(db, network, cid.cid)
 }
 
 /**
@@ -193,8 +192,8 @@ export function retrievalRoutes(dbFactory: DbFactory) {
       indexed ??
       (hint === undefined
         ? undefined
-        : await lookupProvider(inRequest, (db, schemas) =>
-            findHintedProvider(db, schemas, hint)
+        : await lookupProvider(inRequest, (db, network) =>
+            findHintedProvider(db, network, hint)
           ))
     setAttributes(span, {
       'filecoin.cache': status,

@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { logIndex } from '../src/db.ts'
 import { ApiError } from '../src/errors.ts'
 import { NETWORKS } from '../src/networks.ts'
 import {
@@ -25,7 +24,7 @@ import { getStatus, parseCheckpoint } from '../src/queries/status.ts'
 import { ident, join, raw, render, sql, where } from '../src/sql.ts'
 import { fakeDb, rows } from './helpers.ts'
 
-const schemas = NETWORKS.calibration.schemas
+const network = NETWORKS.calibration
 
 describe('sql helpers', () => {
   it('quotes identifiers', () => {
@@ -63,11 +62,6 @@ describe('sql helpers', () => {
       text: '$1, x, $2',
       params: [1, 2],
     })
-  })
-
-  it('orders same-block events by numeric log index', () => {
-    expect(render(logIndex('x')).text).toBe("split_part(x.id, '-', 2)::int")
-    expect(render(logIndex()).text).toBe("split_part(id, '-', 2)::int")
   })
 })
 
@@ -141,13 +135,13 @@ describe('parseCheckpoint', () => {
 describe('owner filters', () => {
   it('filters data sets by owner (payer)', async () => {
     const { db, queries } = fakeDb()
-    await listDataSets(db, schemas, {
+    await listDataSets(db, network, {
       owner: '0x480c51fe9fc90e01fa742c51300cc29e151a71cd',
       provider_id: '2',
       limit: 10,
     })
     const [q] = queries
-    expect(q?.text).toContain('from "early-repair".data_sets')
+    expect(q?.text).toContain('from "ozone".data_sets')
     expect(q?.text).toContain('payer = $1')
     expect(q?.text).toContain('provider_id = $2::bigint')
     expect(q?.params).toEqual([
@@ -159,17 +153,17 @@ describe('owner filters', () => {
 
   it('scans pieces of the owner data sets with a keyset cursor', async () => {
     const { db, queries } = fakeDb()
-    await listPieces(db, schemas, {
+    await listPieces(db, network, {
       owner: '0x305025d07c1dee47f25a4990179eff2becddca0b',
       cursor: encodeCursor(['40938', '0']),
       limit: 5,
     })
     const [q] = queries
     expect(q?.text).toContain(
-      'join "early-repair".data_sets d on d.data_set_id = p.data_set_id'
+      'join "ozone".data_sets d on d.data_set_id = p.data_set_id'
     )
     expect(q?.text).toMatch(
-      /p\.data_set_id = any\(array\(select data_set_id\s+from "early-repair"\.data_sets where payer = \$1 and data_set_id <= \$2::bigint\)\)/
+      /p\.data_set_id = any\(array\(select data_set_id\s+from "ozone"\.data_sets where payer = \$1 and data_set_id <= \$2::bigint\)\)/
     )
     expect(q?.text).toContain(
       '(p.data_set_id, p.piece_id) < ($3::bigint, $4::bigint)'
@@ -185,7 +179,7 @@ describe('owner filters', () => {
 
   it('filters pieces by CID without a data set lookup', async () => {
     const { db, queries } = fakeDb()
-    await listPieces(db, schemas, { cid: 'bafk', removed: false, limit: 5 })
+    await listPieces(db, network, { cid: 'bafk', removed: false, limit: 5 })
     const [q] = queries
     expect(q?.text).toContain('where p.cid = $1 and p.removed = $2')
     expect(q?.text).not.toContain('any(array(')
@@ -194,35 +188,33 @@ describe('owner filters', () => {
 })
 
 describe('rails', () => {
-  it('filters by state from folded events', async () => {
+  it('filters by state on the rails table', async () => {
     const { db, queries } = fakeDb()
-    await listRails(db, schemas, { state: 'terminated', limit: 1 })
-    expect(queries[0]?.text).toContain('from "foc-observer".fp_rail_created c')
+    await listRails(db, network, { state: 'terminated', limit: 1 })
+    expect(queries[0]?.text).toContain('from "ozone".rails')
     expect(queries[0]?.text).toContain(
-      't.end_epoch is not null and f.finalized is null'
+      'where end_epoch is not null and not finalized'
     )
   })
 
-  it('picks the latest same-block event by log index', async () => {
-    const { db, queries } = fakeDb(() => [rows.rail])
-    await getRail(db, schemas, '1')
-    const text = queries[0]?.text ?? ''
-    expect(text).toContain(
-      `order by x.block_number + 0 desc, ${render(logIndex('x')).text} desc`
-    )
-    expect(text).not.toContain('x.block_number desc')
-    expect(text).not.toContain('x.id desc')
-  })
-
-  it('limits the page before aggregating settlements', async () => {
+  it('limits the page before looking up data sets', async () => {
     const { db, queries } = fakeDb()
-    await listRails(db, schemas, { state: 'finalized', limit: 2 })
+    await listRails(db, network, { payer: '0xabc', limit: 2 })
     const text = queries[0]?.text ?? ''
-    const limit = text.indexOf('order by c.rail_id desc limit $1')
-    const settled = text.indexOf('fp_rail_settled')
+    const limit = text.indexOf('order by rail_id desc limit $2')
+    const dataSets = text.indexOf('"ozone".data_sets')
     expect(limit).toBeGreaterThan(-1)
-    expect(settled).toBeGreaterThan(limit)
-    expect(text).toContain('where x.rail_id = page.rail_id')
+    expect(dataSets).toBeGreaterThan(limit)
+    expect(text).toContain('where payer = $1')
+    expect(text).toContain('or x.cdn_rail_id = r.rail_id')
+  })
+
+  it('computes the creation time from the block', async () => {
+    const { db } = fakeDb(() => [rows.rail])
+    const rail = await getRail(db, network, '12818')
+    expect(rail.createdAt).toBe(1667326380 + 3435668 * 30)
+    expect(rail.dataSetId).toBe('14015')
+    expect(rail.settledUpTo).toBe('4121831')
   })
 
   it('pages settlements by block and log index', async () => {
@@ -230,7 +222,7 @@ describe('rails', () => {
       { ...rows.settlement, log_index: 12 },
       { ...rows.settlement, log_index: 3 },
     ])
-    const page = await listRailSettlements(db, schemas, {
+    const page = await listRailSettlements(db, network, {
       railId: '12818',
       limit: 1,
     })
@@ -238,32 +230,33 @@ describe('rails', () => {
       '4121949',
       '12',
     ])
-    await listRailSettlements(db, schemas, {
+    await listRailSettlements(db, network, {
       railId: '12818',
       limit: 1,
       cursor: page.nextCursor ?? '',
     })
+    expect(queries[1]?.text).toContain('from "ozone".rail_settlements')
     expect(queries[1]?.text).toContain(
-      `(block_number, ${render(logIndex()).text}) < ($2::numeric, $3::int)`
+      '(block_number, log_index) < ($2::bigint, $3::int)'
     )
     expect(queries[1]?.params).toEqual(['12818', '4121949', '12', 2])
   })
 
   it('throws 404 for a missing rail and lowercases addresses', async () => {
-    await expect(getRail(fakeDb().db, schemas, '9')).rejects.toMatchObject({
+    await expect(getRail(fakeDb().db, network, '9')).rejects.toMatchObject({
       status: 404,
       code: 'not_found',
     })
     const { db } = fakeDb(() => [
       { ...rows.rail, payer: '0x290C51F674ECF478E7EC20810B600BB6526622B4' },
     ])
-    const rail = await getRail(db, schemas, '1')
+    const rail = await getRail(db, network, '1')
     expect(rail.payer).toBe('0x290c51f674ecf478e7ec20810b600bb6526622b4')
   })
 
   it('derives the rail state', () => {
-    expect(railState({ end_epoch: null, finalized: null })).toBe('active')
-    expect(railState({ end_epoch: '5', finalized: null })).toBe('terminated')
+    expect(railState({ end_epoch: null, finalized: false })).toBe('active')
+    expect(railState({ end_epoch: '5', finalized: false })).toBe('terminated')
     expect(railState({ end_epoch: '5', finalized: true })).toBe('finalized')
   })
 })
@@ -302,14 +295,15 @@ describe('session keys', () => {
 
   it('applies the active filter in HAVING', async () => {
     const { db, queries } = fakeDb()
-    await listSessionKeys(db, schemas, {
+    await listSessionKeys(db, network, {
       identity: '0x44f08d1befe61255b3c3a349c392c560fa333759',
       active: true,
       now: 100,
       limit: 2,
     })
     const [q] = queries
-    expect(q?.text).toContain('s.identity = $1')
+    expect(q?.text).toContain('from "ozone".session_key_permissions')
+    expect(q?.text).toContain('where identity = $1')
     expect(q?.text).toContain('having (max(expiry) > $2::numeric) = $3')
     expect(q?.params).toEqual([
       '0x44f08d1befe61255b3c3a349c392c560fa333759',
@@ -321,12 +315,12 @@ describe('session keys', () => {
 })
 
 describe('status', () => {
-  it('reads checkpoints from every schema', async () => {
+  it('reads the indexer checkpoint', async () => {
     const { db, queries } = fakeDb(() => [rows.checkpoint])
     const status = await getStatus(db, NETWORKS.calibration)
-    expect(queries[0]?.text).toContain('"foc-observer"._ponder_checkpoint')
-    expect(queries[0]?.text).toContain('"early-repair"._ponder_checkpoint')
+    expect(queries[0]?.text).toContain('from "ozone"._ponder_checkpoint')
     expect(status.indexers[0]).toMatchObject({
+      schema: 'ozone',
       chainId: 314159,
       latest: { blockNumber: 4121900 },
       finalized: null,
@@ -334,27 +328,26 @@ describe('status', () => {
   })
 })
 
-describe('session key ordering', () => {
-  it('folds the latest authorization by log index within a block', async () => {
-    const { db, queries } = fakeDb()
-    await listSessionKeys(db, schemas, { now: 0, limit: 1 })
-    expect(queries[0]?.text).toContain(
-      `s.block_number desc,\n         ${render(logIndex('s')).text} desc`
-    )
-  })
-
+describe('session key events', () => {
   it('pages events by block and log index', async () => {
     const { db, queries } = fakeDb(() => [
       { ...rows.sessionKeyEvent, log_index: 7 },
       { ...rows.sessionKeyEvent, log_index: 2 },
     ])
-    const page = await listSessionKeyEvents(db, schemas, { limit: 1 })
+    const page = await listSessionKeyEvents(db, network, { limit: 1 })
     expect(decodeCursor(page.nextCursor ?? '', ['int8', 'int8'])).toEqual([
       '3187939',
       '7',
     ])
+    expect(queries[0]?.text).toContain('from "ozone".session_key_events')
     expect(queries[0]?.text).toContain(
       'order by block_number desc, log_index desc'
     )
+    expect(page.data[0]).toMatchObject({
+      permissions: [
+        '0x25ebf20299107c91b4624d5bac3a16d32cabf0db23b450ee09ab7732983b1dc9',
+      ],
+      timestamp: 1667326380 + 3187939 * 30,
+    })
   })
 })

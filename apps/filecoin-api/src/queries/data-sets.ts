@@ -1,9 +1,9 @@
-import type { Db } from '../db.ts'
+import { type Db, table } from '../db.ts'
 import { notFound } from '../errors.ts'
-import type { Schemas } from '../networks.ts'
+import type { Network } from '../networks.ts'
 import { decodeCursor, type Page, toPage } from '../pagination.ts'
 import type { DataSet } from '../schemas/resources.ts'
-import { ident, raw, sql, where } from '../sql.ts'
+import { raw, sql, where } from '../sql.ts'
 import { addr } from './map.ts'
 
 /**
@@ -29,6 +29,9 @@ interface DataSetRow {
   with_cdn: boolean
   with_ipfs_indexing: boolean
   pdp_end_epoch: string | null
+  pdp_rail_id: string
+  cache_miss_rail_id: string | null
+  cdn_rail_id: string | null
   deleted: boolean
   created_at_block: string
   updated_at_block: string
@@ -36,13 +39,8 @@ interface DataSetRow {
 
 const COLUMNS =
   raw(`data_set_id, provider_id, payer, source, metadata, with_cdn,
-  with_ipfs_indexing, pdp_end_epoch, deleted, created_at_block,
-  updated_at_block`)
-
-/** Schema-qualified `data_sets` view. */
-function table(schemas: Schemas) {
-  return sql`${ident(schemas.repair)}.data_sets`
-}
+  with_ipfs_indexing, pdp_end_epoch, pdp_rail_id, cache_miss_rail_id,
+  cdn_rail_id, deleted, created_at_block, updated_at_block`)
 
 /** Map a `data_sets` row to the API shape. */
 function mapDataSet(row: DataSetRow): DataSet {
@@ -55,6 +53,9 @@ function mapDataSet(row: DataSetRow): DataSet {
     withCdn: row.with_cdn,
     withIpfsIndexing: row.with_ipfs_indexing,
     pdpEndEpoch: row.pdp_end_epoch,
+    pdpRailId: row.pdp_rail_id,
+    cacheMissRailId: row.cache_miss_rail_id,
+    cdnRailId: row.cdn_rail_id,
     deleted: row.deleted,
     createdAtBlock: row.created_at_block,
     updatedAtBlock: row.updated_at_block,
@@ -64,12 +65,12 @@ function mapDataSet(row: DataSetRow): DataSet {
 /** List data sets, newest id first. `owner` matches the paying client. */
 export async function listDataSets(
   db: Db,
-  schemas: Schemas,
+  network: Network,
   params: ListDataSetsParams
 ): Promise<Page<DataSet>> {
   const [id] = params.cursor ? decodeCursor(params.cursor, ['int8']) : []
   const rows = await db.query<DataSetRow>(
-    sql`select ${COLUMNS} from ${table(schemas)} ${where([
+    sql`select ${COLUMNS} from ${table(network, 'data_sets')} ${where([
       params.owner !== undefined && sql`payer = ${params.owner}`,
       params.provider_id !== undefined &&
         sql`provider_id = ${params.provider_id}::bigint`,
@@ -85,11 +86,11 @@ export async function listDataSets(
 /** Get one data set by id; throws 404 when it does not exist. */
 export async function getDataSet(
   db: Db,
-  schemas: Schemas,
+  network: Network,
   dataSetId: string
 ): Promise<DataSet> {
   const rows = await db.query<DataSetRow>(
-    sql`select ${COLUMNS} from ${table(schemas)}
+    sql`select ${COLUMNS} from ${table(network, 'data_sets')}
      where data_set_id = ${dataSetId}::bigint`
   )
   if (!rows[0]) throw notFound('Data set', dataSetId)

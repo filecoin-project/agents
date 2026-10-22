@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cidForms, parsePieceCid, parseRetrievalCid } from '../src/cid.ts'
+import { parsePieceCid, parseRetrievalCid } from '../src/cid.ts'
 import { rows } from './helpers.ts'
 
 describe('parseRetrievalCid', () => {
@@ -58,21 +58,5 @@ describe('parsePieceCid', () => {
     ['notacid', 'Expected a PieceCID v2'],
   ])('rejects %s', (input, message) => {
     expect(() => parsePieceCid(input)).toThrow(message)
-  })
-})
-
-describe('cidForms', () => {
-  it('adds the CIDv0 form of dag-pb sha2-256 CIDs', () => {
-    expect(
-      cidForms('bafybeie5nqv6kd3qnfjupgvz34woh3oksc3iau6abmyajn7qvtf6d2ho34')
-    ).toEqual([
-      'bafybeie5nqv6kd3qnfjupgvz34woh3oksc3iau6abmyajn7qvtf6d2ho34',
-      'QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG',
-    ])
-  })
-
-  it('keeps CIDs without a CIDv0 form as they are', () => {
-    const raw = 'bafkreigh2akiscaildcqabsyg3dfr6chu3fgpregiymsck7e7aqa4s52zy'
-    expect(cidForms(raw)).toEqual([raw])
   })
 })

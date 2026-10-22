@@ -1,17 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { rows, testApp } from './helpers.ts'
 
-const observer = rows.checkpoint
-const repair = {
-  ...rows.checkpoint,
-  schema: 'early-repair',
-  latest_checkpoint:
-    '179098338000000000003141590000000004121950999999999999999999999999999999999',
-}
+const checkpoint = rows.checkpoint
 
 describe('health', () => {
-  it('reports the latest block per network and indexer', async () => {
-    const { request, fake } = testApp(() => [observer, repair])
+  it('reports the latest block per network', async () => {
+    const { request, fake } = testApp(() => [checkpoint])
     const res = await request('/health')
     expect(res.status).toBe(200)
     expect(res.headers.get('cache-control')).toBe('no-store')
@@ -22,13 +16,13 @@ describe('health', () => {
           status: 'ok',
           chainId: 314159,
           blockNumber: 4121900,
-          indexers: { 'foc-observer': 4121900, 'early-repair': 4121950 },
+          indexers: { ozone: 4121900 },
         },
         mainnet: {
           status: 'ok',
           chainId: 314,
           blockNumber: 4121900,
-          indexers: { 'foc-observer': 4121900, 'early-repair': 4121950 },
+          indexers: { ozone: 4121900 },
         },
       },
     })
@@ -36,7 +30,7 @@ describe('health', () => {
   })
 
   it('marks unconfigured networks unavailable without failing', async () => {
-    const { request } = testApp(() => [observer, repair], {
+    const { request } = testApp(() => [checkpoint], {
       HYPERDRIVE_MAINNET: undefined,
     })
     const res = await request('/health')

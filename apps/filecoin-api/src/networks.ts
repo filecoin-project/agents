@@ -1,8 +1,17 @@
-/** Indexer schemas; every network's database uses the same names. */
-const SCHEMAS = { observer: 'foc-observer', repair: 'early-repair' } as const
+import { calibration, mainnet } from '@filoz/synapse-core/chains'
 
 /**
- * Filecoin networks served by the API and the indexer schemas behind each.
+ * Schema the FilOzone indexer writes to; every network's database uses the
+ * same name.
+ *
+ * @see https://github.com/FilOzone/indexer
+ */
+const SCHEMA = 'ozone'
+
+/**
+ * Filecoin networks served by the API and the indexer schema behind each.
+ * `genesisTimestamp` turns a block number into a Unix time: Filecoin epochs
+ * are exactly 30 seconds, so the indexer stores no timestamps.
  *
  * @see https://docs.filecoin.io/networks
  */
@@ -11,13 +20,15 @@ export const NETWORKS = {
     name: 'calibration',
     chainId: 314159,
     binding: 'HYPERDRIVE_CALIBRATION',
-    schemas: SCHEMAS,
+    schema: SCHEMA,
+    genesisTimestamp: calibration.genesisTimestamp,
   },
   mainnet: {
     name: 'mainnet',
     chainId: 314,
     binding: 'HYPERDRIVE_MAINNET',
-    schemas: SCHEMAS,
+    schema: SCHEMA,
+    genesisTimestamp: mainnet.genesisTimestamp,
   },
 } as const
 
@@ -26,9 +37,6 @@ export type NetworkName = keyof typeof NETWORKS
 
 /** Static configuration of one network. */
 export type Network = (typeof NETWORKS)[NetworkName]
-
-/** Indexer schema names for one network. */
-export type Schemas = Network['schemas']
 
 /** Every supported network name, in display order. */
 export const NETWORK_NAMES = Object.keys(NETWORKS) as [

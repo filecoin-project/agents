@@ -338,6 +338,27 @@
             "description": "Unsigned integer as a decimal string",
             "example": "1"
           },
+          "pdpRailId": {
+            "type": "string",
+            "description": "Filecoin Pay storage rail",
+            "example": "1"
+          },
+          "cacheMissRailId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "CDN cache-miss rail; null without CDN",
+            "example": "1"
+          },
+          "cdnRailId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "CDN rail; null without CDN",
+            "example": "1"
+          },
           "deleted": {
             "type": [
               "boolean",
@@ -370,6 +391,9 @@
           "withCdn",
           "withIpfsIndexing",
           "pdpEndEpoch",
+          "pdpRailId",
+          "cacheMissRailId",
+          "cdnRailId",
           "deleted",
           "createdAtBlock",
           "updatedAtBlock"
@@ -652,10 +676,7 @@
             "example": "0x480c51fe9fc90e01fa742c51300cc29e151a71cd"
           },
           "settledUpTo": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": "string",
             "description": "Unsigned integer as a decimal string",
             "example": "1"
           },
@@ -669,6 +690,24 @@
             "description": "Unsigned integer as a decimal string",
             "example": "1"
           },
+          "totalOneTimeAmount": {
+            "type": "string",
+            "description": "Sum of one-time payments, such as Warm Storage CDN usage",
+            "example": "1"
+          },
+          "totalOneTimeNetPayeeAmount": {
+            "type": "string",
+            "description": "Unsigned integer as a decimal string",
+            "example": "1"
+          },
+          "dataSetId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Warm Storage data set the rail pays for; null for other operators",
+            "example": "1"
+          },
           "createdAtBlock": {
             "type": "string",
             "description": "Unsigned integer as a decimal string",
@@ -677,9 +716,6 @@
           "createdAt": {
             "type": "integer",
             "description": "Unix timestamp"
-          },
-          "txHash": {
-            "type": "string"
           }
         },
         "required": [
@@ -700,9 +736,11 @@
           "settledUpTo",
           "totalSettledAmount",
           "totalNetPayeeAmount",
+          "totalOneTimeAmount",
+          "totalOneTimeNetPayeeAmount",
+          "dataSetId",
           "createdAtBlock",
-          "createdAt",
-          "txHash"
+          "createdAt"
         ]
       },
       "RailResponse": {
@@ -889,11 +927,8 @@
           },
           "blockNumber": {
             "type": "string",
-            "description": "Unsigned integer as a decimal string",
+            "description": "Block of the event that last set this permission",
             "example": "1"
-          },
-          "txHash": {
-            "type": "string"
           }
         },
         "required": [
@@ -902,8 +937,7 @@
           "expiry",
           "active",
           "origin",
-          "blockNumber",
-          "txHash"
+          "blockNumber"
         ]
       },
       "SessionKeyEventPage": {

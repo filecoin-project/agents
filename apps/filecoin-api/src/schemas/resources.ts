@@ -38,6 +38,13 @@ export const DataSetSchema = z
     withCdn: z.boolean().nullable(),
     withIpfsIndexing: z.boolean().nullable(),
     pdpEndEpoch: Uint.nullable(),
+    pdpRailId: Uint.openapi({ description: 'Filecoin Pay storage rail' }),
+    cacheMissRailId: Uint.nullable().openapi({
+      description: 'CDN cache-miss rail; null without CDN',
+    }),
+    cdnRailId: Uint.nullable().openapi({
+      description: 'CDN rail; null without CDN',
+    }),
     deleted: z.boolean().nullable(),
     createdAtBlock: Uint.nullable(),
     updatedAtBlock: Uint.nullable(),
@@ -80,7 +87,8 @@ export const RailStateSchema = z
   .openapi({ description: 'Rail lifecycle state' })
 
 /**
- * Filecoin Pay payment rail, derived from rail events.
+ * Filecoin Pay payment rail, derived from rail events. A finalized rail keeps
+ * its last terms, though the contract zeroes them.
  *
  * @see https://github.com/FilOzone/filecoin-pay
  */
@@ -102,12 +110,19 @@ export const RailSchema = z
     lockupFixed: Uint,
     endEpoch: Uint.nullable(),
     terminatedBy: AddressOut.nullable(),
-    settledUpTo: Uint.nullable(),
+    settledUpTo: Uint,
     totalSettledAmount: Uint,
     totalNetPayeeAmount: Uint,
+    totalOneTimeAmount: Uint.openapi({
+      description: 'Sum of one-time payments, such as Warm Storage CDN usage',
+    }),
+    totalOneTimeNetPayeeAmount: Uint,
+    dataSetId: Uint.nullable().openapi({
+      description:
+        'Warm Storage data set the rail pays for; null for other operators',
+    }),
     createdAtBlock: Uint,
     createdAt: z.number().int().openapi({ description: 'Unix timestamp' }),
-    txHash: z.string(),
   })
   .openapi('Rail')
 
@@ -145,8 +160,9 @@ export const SessionKeyPermissionSchema = z
     expiry: Uint.openapi({ description: 'Unix timestamp; 0 when revoked' }),
     active: z.boolean(),
     origin: z.string().nullable(),
-    blockNumber: Uint,
-    txHash: z.string(),
+    blockNumber: Uint.openapi({
+      description: 'Block of the event that last set this permission',
+    }),
   })
   .openapi('SessionKeyPermission')
 

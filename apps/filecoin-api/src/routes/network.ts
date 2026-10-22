@@ -256,32 +256,32 @@ export function networkRoutes(dbFactory: DbFactory) {
 
   api.openapi(routes.listProviders, async (c) => {
     const q = c.req.valid('query')
-    const page = await listProviders(c.var.db, c.var.network.schemas, q)
+    const page = await listProviders(c.var.db, c.var.network, q)
     return c.json(page, 200)
   })
 
   api.openapi(routes.getProvider, async (c) => {
     const { providerId } = c.req.valid('param')
-    const data = await getProvider(c.var.db, c.var.network.schemas, providerId)
+    const data = await getProvider(c.var.db, c.var.network, providerId)
     return c.json({ data }, 200)
   })
 
   api.openapi(routes.listDataSets, async (c) => {
     const q = c.req.valid('query')
-    const page = await listDataSets(c.var.db, c.var.network.schemas, q)
+    const page = await listDataSets(c.var.db, c.var.network, q)
     return c.json(page, 200)
   })
 
   api.openapi(routes.getDataSet, async (c) => {
     const { dataSetId } = c.req.valid('param')
-    const data = await getDataSet(c.var.db, c.var.network.schemas, dataSetId)
+    const data = await getDataSet(c.var.db, c.var.network, dataSetId)
     return c.json({ data }, 200)
   })
 
   api.openapi(routes.listDataSetPieces, async (c) => {
     const { dataSetId } = c.req.valid('param')
     const q = c.req.valid('query')
-    const page = await listDataSetPieces(c.var.db, c.var.network.schemas, {
+    const page = await listDataSetPieces(c.var.db, c.var.network, {
       ...q,
       dataSetId,
     })
@@ -290,37 +290,32 @@ export function networkRoutes(dbFactory: DbFactory) {
 
   api.openapi(routes.getPiece, async (c) => {
     const { dataSetId, pieceId } = c.req.valid('param')
-    const data = await getPiece(
-      c.var.db,
-      c.var.network.schemas,
-      dataSetId,
-      pieceId
-    )
+    const data = await getPiece(c.var.db, c.var.network, dataSetId, pieceId)
     return c.json({ data }, 200)
   })
 
   api.openapi(routes.listPieces, async (c) => {
     const q = c.req.valid('query')
-    const page = await listPieces(c.var.db, c.var.network.schemas, q)
+    const page = await listPieces(c.var.db, c.var.network, q)
     return c.json(page, 200)
   })
 
   api.openapi(routes.listRails, async (c) => {
     const q = c.req.valid('query')
-    const page = await listRails(c.var.db, c.var.network.schemas, q)
+    const page = await listRails(c.var.db, c.var.network, q)
     return c.json(page, 200)
   })
 
   api.openapi(routes.getRail, async (c) => {
     const { railId } = c.req.valid('param')
-    const data = await getRail(c.var.db, c.var.network.schemas, railId)
+    const data = await getRail(c.var.db, c.var.network, railId)
     return c.json({ data }, 200)
   })
 
   api.openapi(routes.listRailSettlements, async (c) => {
     const { railId } = c.req.valid('param')
     const q = c.req.valid('query')
-    const page = await listRailSettlements(c.var.db, c.var.network.schemas, {
+    const page = await listRailSettlements(c.var.db, c.var.network, {
       ...q,
       railId,
     })
@@ -329,13 +324,13 @@ export function networkRoutes(dbFactory: DbFactory) {
 
   api.openapi(routes.listSessionKeys, async (c) => {
     const q = c.req.valid('query')
-    const page = await listSessionKeys(c.var.db, c.var.network.schemas, q)
+    const page = await listSessionKeys(c.var.db, c.var.network, q)
     return c.json(page, 200)
   })
 
   api.openapi(routes.listSessionKeyEvents, async (c) => {
     const q = c.req.valid('query')
-    const page = await listSessionKeyEvents(c.var.db, c.var.network.schemas, q)
+    const page = await listSessionKeyEvents(c.var.db, c.var.network, q)
     return c.json(page, 200)
   })
 
