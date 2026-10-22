@@ -1,10 +1,9 @@
-import { cidForms } from '../cid.ts'
-import type { Db } from '../db.ts'
+import { type Db, table } from '../db.ts'
 import { notFound } from '../errors.ts'
-import type { Schemas } from '../networks.ts'
+import type { Network } from '../networks.ts'
 import { decodeCursor, type Page, toPage } from '../pagination.ts'
 import type { Piece, PieceWithDataSet } from '../schemas/resources.ts'
-import { ident, join, raw, type Sql, sql, where } from '../sql.ts'
+import { raw, type Sql, sql, where } from '../sql.ts'
 import { addr } from './map.ts'
 
 /** Filters for {@link listDataSetPieces}. */
@@ -50,21 +49,6 @@ interface PieceWithDataSetRow extends PieceRow {
 const COLUMNS = raw(`p.data_set_id, p.piece_id, p.cid, p.raw_size, p.metadata,
   p.removed, p.added_at_block, p.removed_at_block, p.updated_at_block`)
 
-/** Schema-qualified `pieces` view. */
-function pieces(schemas: Schemas) {
-  return sql`${ident(schemas.repair)}.pieces`
-}
-
-/** Schema-qualified `data_sets` view. */
-function dataSets(schemas: Schemas) {
-  return sql`${ident(schemas.repair)}.data_sets`
-}
-
-/** Schema-qualified `providers` view. */
-function providers(schemas: Schemas) {
-  return sql`${ident(schemas.repair)}.providers`
-}
-
 /** Map a `pieces` row to the API shape. */
 function mapPiece(row: PieceRow): Piece {
   return {
@@ -92,12 +76,12 @@ function mapPieceWithDataSet(row: PieceWithDataSetRow): PieceWithDataSet {
 /** List pieces in one data set, newest piece first. */
 export async function listDataSetPieces(
   db: Db,
-  schemas: Schemas,
+  network: Network,
   params: ListDataSetPiecesParams
 ): Promise<Page<Piece>> {
   const [id] = params.cursor ? decodeCursor(params.cursor, ['int8']) : []
   const rows = await db.query<PieceRow>(
-    sql`select ${COLUMNS} from ${pieces(schemas)} p ${where([
+    sql`select ${COLUMNS} from ${table(network, 'pieces')} p ${where([
       sql`p.data_set_id = ${params.dataSetId}::bigint`,
       params.removed !== undefined && sql`p.removed = ${params.removed}`,
       id !== undefined && sql`p.piece_id < ${id}::bigint`,
@@ -110,12 +94,12 @@ export async function listDataSetPieces(
 /** Get one piece by data set and piece id; throws 404 when missing. */
 export async function getPiece(
   db: Db,
-  schemas: Schemas,
+  network: Network,
   dataSetId: string,
   pieceId: string
 ): Promise<Piece> {
   const rows = await db.query<PieceRow>(
-    sql`select ${COLUMNS} from ${pieces(schemas)} p
+    sql`select ${COLUMNS} from ${table(network, 'pieces')} p
      where p.data_set_id = ${dataSetId}::bigint
        and p.piece_id = ${pieceId}::bigint`
   )
@@ -129,7 +113,7 @@ export async function getPiece(
  */
 export async function listPieces(
   db: Db,
-  schemas: Schemas,
+  network: Network,
   params: ListPiecesParams
 ): Promise<Page<PieceWithDataSet>> {
   const [dataSetId, pieceId] = params.cursor
@@ -141,7 +125,7 @@ export async function listPieces(
   const inDataSets =
     (params.owner !== undefined || params.provider_id !== undefined) &&
     sql`p.data_set_id = any(array(select data_set_id
-         from ${dataSets(schemas)} ${where([
+         from ${table(network, 'data_sets')} ${where([
            params.owner !== undefined && sql`payer = ${params.owner}`,
            params.provider_id !== undefined &&
              sql`provider_id = ${params.provider_id}::bigint`,
@@ -149,8 +133,8 @@ export async function listPieces(
          ])}))`
   const rows = await db.query<PieceWithDataSetRow>(
     sql`select ${COLUMNS}, d.payer, d.provider_id
-     from ${pieces(schemas)} p
-     join ${dataSets(schemas)} d on d.data_set_id = p.data_set_id
+     from ${table(network, 'pieces')} p
+     join ${table(network, 'data_sets')} d on d.data_set_id = p.data_set_id
      ${where([
        params.cid !== undefined && sql`p.cid = ${params.cid}`,
        params.removed !== undefined && sql`p.removed = ${params.removed}`,
@@ -172,8 +156,8 @@ export interface PieceProvider {
   /** PDP service URL (Curio) of the provider. */
   serviceUrl: string
   /**
-   * The copy's `ipfsRootCID` metadata when its data set is IPFS-indexed, so
-   * the provider announces the content to the IPFS network. Unvalidated.
+   * The copy's `ipfsRootCID` metadata as a base32 CIDv1 when its data set is
+   * IPFS-indexed, so the provider announces the content to the IPFS network.
    */
   ipfsRootCid: string | null
 }
@@ -193,16 +177,16 @@ interface PieceProviderRow {
  */
 async function findProvider(
   db: Db,
-  schemas: Schemas,
+  network: Network,
   match: Sql
 ): Promise<PieceProvider | undefined> {
   const rows = await db.query<PieceProviderRow>(
     sql`select pr.provider_id, pr.service_url,
-       case when d.with_ipfs_indexing then p.metadata->>'ipfsRootCID' end
+       case when d.with_ipfs_indexing then p.ipfs_root_cid end
          as ipfs_root_cid
-     from ${pieces(schemas)} p
-     join ${dataSets(schemas)} d on d.data_set_id = p.data_set_id
-     join ${providers(schemas)} pr on pr.provider_id = d.provider_id
+     from ${table(network, 'pieces')} p
+     join ${table(network, 'data_sets')} d on d.data_set_id = p.data_set_id
+     join ${table(network, 'providers')} pr on pr.provider_id = d.provider_id
      where ${match}
        and not p.removed and not d.deleted
        and pr.provider_active and pr.pdp_product_active
@@ -227,12 +211,12 @@ async function findProvider(
  */
 export async function findHintedProvider(
   db: Db,
-  schemas: Schemas,
+  network: Network,
   providerId: string
 ): Promise<PieceProvider | undefined> {
   const rows = await db.query<PieceProviderRow>(
     sql`select provider_id, service_url, null as ipfs_root_cid
-     from ${providers(schemas)}
+     from ${table(network, 'providers')}
      where provider_id = ${providerId}::bigint
        and provider_active and pdp_product_active
        and service_url ~ '^https?://'`
@@ -250,33 +234,28 @@ export async function findHintedProvider(
 /** Find the provider to retrieve a PieceCID from, if any serves it. */
 export function findPieceProvider(
   db: Db,
-  schemas: Schemas,
+  network: Network,
   cid: string
 ): Promise<PieceProvider | undefined> {
-  return findProvider(db, schemas, sql`p.cid = ${cid}`)
+  return findProvider(db, network, sql`p.cid = ${cid}`)
 }
 
 /**
  * Find the provider to retrieve IPFS content from by the `ipfsRootCID` piece
- * metadata key, matching CIDv0 and CIDv1 forms of the same root. Only
- * IPFS-indexed data sets are searched, and they are looked up first so the
- * metadata filter scans just their pieces.
+ * metadata key. The indexer stores it normalized to a base32 CIDv1, so
+ * `rootCid` must be in that form too; CIDv0 and other bases of the same root
+ * then match. Only IPFS-indexed data sets count.
  *
  * @see https://github.com/filecoin-project/curio/blob/main/documentation/en/curio-market/retrievals.md
  */
 export function findIpfsRootProvider(
   db: Db,
-  schemas: Schemas,
+  network: Network,
   rootCid: string
 ): Promise<PieceProvider | undefined> {
   return findProvider(
     db,
-    schemas,
-    sql`p.data_set_id = any(array(select data_set_id
-         from ${dataSets(schemas)} where with_ipfs_indexing and not deleted))
-       and p.metadata->>'ipfsRootCID' in (${join(
-         cidForms(rootCid).map((form) => sql`${form}`),
-         ', '
-       )})`
+    network,
+    sql`p.ipfs_root_cid = ${rootCid} and d.with_ipfs_indexing`
   )
 }

@@ -5,7 +5,7 @@ import {
   type Network,
   type NetworkName,
 } from './networks.ts'
-import { raw, render, type Sql } from './sql.ts'
+import { ident, raw, render, type Sql, sql } from './sql.ts'
 import { withSpan } from './tracing.ts'
 
 /** A database row keyed by column name. */
@@ -103,13 +103,9 @@ export function withStats(
   }
 }
 
-/**
- * SQL expression for an event's position in its block. Ponder event ids are
- * `<blockHash>-<logIndex>`, so same-block events order by the numeric suffix,
- * not the id text (where `-9` sorts after `-10`).
- */
-export function logIndex(alias?: string): Sql {
-  return raw(`split_part(${alias ? `${alias}.` : ''}id, '-', 2)::int`)
+/** Schema-qualified indexer table of a network, such as `"ozone".rails`. */
+export function table(network: Network, name: string): Sql {
+  return sql`${ident(network.schema)}.${raw(name)}`
 }
 
 /** A network with an open database client. */
@@ -135,10 +131,10 @@ export function openNetworkDb(
   const network = NETWORKS[name]
   const hyperdrive = env[network.binding]
   if (!hyperdrive) return undefined
-  const raw = dbFactory(hyperdrive)
+  const client = dbFactory(hyperdrive)
   return {
     network,
-    db: withStats(raw, stats, { 'filecoin.network': name }),
-    close: () => raw.close(),
+    db: withStats(client, stats, { 'filecoin.network': name }),
+    close: () => client.close(),
   }
 }

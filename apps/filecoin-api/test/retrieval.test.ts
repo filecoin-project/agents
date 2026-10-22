@@ -83,7 +83,7 @@ describe('GET /get/{cid}', () => {
     )
     expect(res.headers.get('x-cache')).toBe('miss')
     expect(fake.queries[0]?.text).toContain(
-      `case when d.with_ipfs_indexing then p.metadata->>'ipfsRootCID' end`
+      'case when d.with_ipfs_indexing then p.ipfs_root_cid end'
     )
 
     // The cached entry keeps the root, and plain requests still get bytes.
@@ -119,29 +119,23 @@ describe('GET /get/{cid}', () => {
     expect(res.headers.get('location')).toBe(
       `${SERVICE_URL}/ipfs/${cid}?format=car`
     )
-    expect(fake.queries[0]?.text).toContain('with_ipfs_indexing')
     expect(fake.queries[0]?.text).toContain(
-      `p.metadata->>'ipfsRootCID' in ($1)`
+      'p.ipfs_root_cid = $1 and d.with_ipfs_indexing'
     )
     expect(fake.queries[0]?.params).toEqual([cid])
   })
 
-  it('matches IPFS roots recorded as CIDv0 or CIDv1', async () => {
-    const { request, fake } = testApp((_text, params) =>
-      params.includes('QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG')
-        ? [providerRow]
-        : []
-    )
+  it('looks up CIDv0 roots as base32 CIDv1, as the indexer stores them', async () => {
     const v1 = 'bafybeie5nqv6kd3qnfjupgvz34woh3oksc3iau6abmyajn7qvtf6d2ho34'
+    const { request, fake } = testApp((_text, params) =>
+      params.includes(v1) ? [providerRow] : []
+    )
     const res = await request(
       '/get/QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG?network=calibration'
     )
     expect(res.status).toBe(302)
     expect(res.headers.get('location')).toBe(`${SERVICE_URL}/ipfs/${v1}`)
-    expect(fake.queries[0]?.params).toEqual([
-      v1,
-      'QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG',
-    ])
+    expect(fake.queries[0]?.params).toEqual([v1])
   })
 
   it('redirects IPFS CIDs to inbrowser.link with browser=true', async () => {

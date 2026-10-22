@@ -120,7 +120,7 @@ const TOOLS: ToolDef[] = [
     'List storage providers',
     'List storage providers registered in the ServiceProviderRegistry.',
     input({ ...filters.providers(bool), ...page }),
-    (db, network, q) => listProviders(db, network.schemas, q)
+    (db, network, q) => listProviders(db, network, q)
   ),
   defineTool(
     'get_provider',
@@ -128,7 +128,7 @@ const TOOLS: ToolDef[] = [
     'Get one storage provider by id.',
     input({ providerId: UintInput }),
     async (db, network, q) => ({
-      data: await getProvider(db, network.schemas, q.providerId),
+      data: await getProvider(db, network, q.providerId),
     })
   ),
   defineTool(
@@ -136,7 +136,7 @@ const TOOLS: ToolDef[] = [
     'List data sets',
     'List Warm Storage data sets, filtered by owner (paying client), provider, deleted or CDN.',
     input({ ...filters.dataSets(bool), ...page }),
-    (db, network, q) => listDataSets(db, network.schemas, q)
+    (db, network, q) => listDataSets(db, network, q)
   ),
   defineTool(
     'get_data_set',
@@ -144,7 +144,7 @@ const TOOLS: ToolDef[] = [
     'Get one data set by id.',
     input({ dataSetId: UintInput }),
     async (db, network, q) => ({
-      data: await getDataSet(db, network.schemas, q.dataSetId),
+      data: await getDataSet(db, network, q.dataSetId),
     })
   ),
   defineTool(
@@ -152,7 +152,7 @@ const TOOLS: ToolDef[] = [
     'List data set pieces',
     'List pieces in one data set, newest first.',
     input({ dataSetId: UintInput, ...filters.dataSetPieces(bool), ...page }),
-    (db, network, q) => listDataSetPieces(db, network.schemas, q)
+    (db, network, q) => listDataSetPieces(db, network, q)
   ),
   defineTool(
     'get_piece',
@@ -160,7 +160,7 @@ const TOOLS: ToolDef[] = [
     'Get one piece by data set id and piece id.',
     input({ dataSetId: UintInput, pieceId: UintInput }),
     async (db, network, q) => ({
-      data: await getPiece(db, network.schemas, q.dataSetId, q.pieceId),
+      data: await getPiece(db, network, q.dataSetId, q.pieceId),
     })
   ),
   defineTool(
@@ -170,14 +170,14 @@ const TOOLS: ToolDef[] = [
     input({ ...filters.pieces(bool), ...page }).refine(hasPieceSelector, {
       message: PIECE_SELECTOR_MESSAGE,
     }),
-    (db, network, q) => listPieces(db, network.schemas, q)
+    (db, network, q) => listPieces(db, network, q)
   ),
   defineTool(
     'list_rails',
     'List payment rails',
     'List Filecoin Pay payment rails with current rate, lockup, state and settlement totals.',
     input({ ...filters.rails, ...page }),
-    (db, network, q) => listRails(db, network.schemas, q)
+    (db, network, q) => listRails(db, network, q)
   ),
   defineTool(
     'get_rail',
@@ -185,7 +185,7 @@ const TOOLS: ToolDef[] = [
     'Get one payment rail by id with its current state.',
     input({ railId: UintInput }),
     async (db, network, q) => ({
-      data: await getRail(db, network.schemas, q.railId),
+      data: await getRail(db, network, q.railId),
     })
   ),
   defineTool(
@@ -193,21 +193,21 @@ const TOOLS: ToolDef[] = [
     'List rail settlements',
     'List settlements of one payment rail, newest first.',
     input({ railId: UintInput, ...page }),
-    (db, network, q) => listRailSettlements(db, network.schemas, q)
+    (db, network, q) => listRailSettlements(db, network, q)
   ),
   defineTool(
     'list_session_keys',
     'List session keys',
     'List session keys with the latest expiry of each permission per (identity, signer).',
     input({ ...filters.sessionKeys(bool), ...page }),
-    (db, network, q) => listSessionKeys(db, network.schemas, q)
+    (db, network, q) => listSessionKeys(db, network, q)
   ),
   defineTool(
     'list_session_key_events',
     'List session key events',
     'List raw session key authorization events, newest first.',
     input({ ...filters.sessionKeyEvents, ...page }),
-    (db, network, q) => listSessionKeyEvents(db, network.schemas, q)
+    (db, network, q) => listSessionKeyEvents(db, network, q)
   ),
 ]
 

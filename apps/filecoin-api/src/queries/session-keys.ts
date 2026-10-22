@@ -1,9 +1,9 @@
-import { type Db, logIndex } from '../db.ts'
-import type { Schemas } from '../networks.ts'
+import { type Db, table } from '../db.ts'
+import type { Network } from '../networks.ts'
 import { decodeCursor, type Page, toPage } from '../pagination.ts'
 import type { SessionKey, SessionKeyEvent } from '../schemas/resources.ts'
-import { ident, sql, where } from '../sql.ts'
-import { reqAddr } from './map.ts'
+import { sql, where } from '../sql.ts'
+import { blockTime, reqAddr } from './map.ts'
 
 /**
  * Names of known Warm Storage EIP-712 typehashes used as session key
@@ -59,9 +59,8 @@ export interface ListSessionKeyEventsParams {
 interface PermissionRow {
   permission: string
   expiry: string
-  origin: string | null
+  origin: string
   blockNumber: string
-  txHash: string
 }
 
 /** A session key folded by {@link listSessionKeys}' SQL. */
@@ -73,17 +72,16 @@ interface SessionKeyRow {
   permissions: PermissionRow[]
 }
 
-/** An `skr_authorizations_updated` row with its log index. */
+/** A `session_key_events` row. */
 interface SessionKeyEventRow {
+  block_number: string
   log_index: number
   identity: string
   signer: string
   expiry: string
-  /** JSON-encoded array of permission typehashes. */
-  permissions: string | null
+  /** `text[]` sent as `jsonb`, which the driver parses without type fetching. */
+  permissions: string[]
   origin: string
-  block_number: string
-  timestamp: string
   tx_hash: string
 }
 
@@ -96,7 +94,6 @@ export function mapSessionKey(row: SessionKeyRow, now: number): SessionKey {
     active: Number(p.expiry) > now,
     origin: p.origin || null,
     blockNumber: p.blockNumber,
-    txHash: p.txHash,
   }))
   return {
     identity: reqAddr(row.identity),
@@ -109,44 +106,34 @@ export function mapSessionKey(row: SessionKeyRow, now: number): SessionKey {
 }
 
 /**
- * List session keys with the latest expiry of each permission, folded from
- * `AuthorizationsUpdated` events per (identity, signer, permission).
+ * List session keys with the latest expiry of each permission, grouped by
+ * (identity, signer).
  */
 export async function listSessionKeys(
   db: Db,
-  schemas: Schemas,
+  network: Network,
   params: ListSessionKeysParams
 ): Promise<Page<SessionKey>> {
   const now = params.now ?? Math.floor(Date.now() / 1000)
-  // Pages split on (identity, signer), so the cursor can filter events
-  // before they are folded.
+  // Pages split on (identity, signer), so the cursor can filter permissions
+  // before they are grouped.
   const [identity, signer] = params.cursor
     ? decodeCursor(params.cursor, ['address', 'address'])
     : []
   const rows = await db.query<SessionKeyRow>(
-    sql`with latest as (
-       select distinct on (s.identity, s.signer, p.permission)
-         s.identity, s.signer, p.permission, s.expiry, s.origin,
-         s.block_number, s.tx_hash
-       from ${ident(schemas.observer)}.skr_authorizations_updated s
-       cross join lateral jsonb_array_elements_text(s.permissions::jsonb)
-         as p(permission)
-       ${where([
-         params.identity !== undefined && sql`s.identity = ${params.identity}`,
-         params.signer !== undefined && sql`s.signer = ${params.signer}`,
-         identity !== undefined &&
-           sql`(s.identity, s.signer) > (${identity}, ${signer})`,
-       ])}
-       order by s.identity, s.signer, p.permission, s.block_number desc,
-         ${logIndex('s')} desc
-     )
-     select identity, signer, max(expiry)::text as expiry,
-       max(block_number)::text as updated_at_block,
+    sql`select identity, signer, max(expiry)::text as expiry,
+       max(updated_at_block)::text as updated_at_block,
        jsonb_agg(jsonb_build_object(
          'permission', permission, 'expiry', expiry::text, 'origin', origin,
-         'blockNumber', block_number::text, 'txHash', tx_hash
+         'blockNumber', updated_at_block::text
        ) order by permission) as permissions
-     from latest
+     from ${table(network, 'session_key_permissions')}
+     ${where([
+       params.identity !== undefined && sql`identity = ${params.identity}`,
+       params.signer !== undefined && sql`signer = ${params.signer}`,
+       identity !== undefined &&
+         sql`(identity, signer) > (${identity}, ${signer})`,
+     ])}
      group by identity, signer
      ${where(
        [
@@ -165,26 +152,19 @@ export async function listSessionKeys(
   )
 }
 
-/** Parse the JSON-encoded permissions column. */
-function parsePermissions(value: string | null): string[] {
-  try {
-    const parsed: unknown = JSON.parse(value ?? '')
-    return Array.isArray(parsed) ? parsed.map(String) : []
-  } catch {
-    return []
-  }
-}
-
-/** Map an `skr_authorizations_updated` row to the API shape. */
-function mapSessionKeyEvent(row: SessionKeyEventRow): SessionKeyEvent {
+/** Map a `session_key_events` row to the API shape. */
+function mapSessionKeyEvent(
+  network: Network,
+  row: SessionKeyEventRow
+): SessionKeyEvent {
   return {
     identity: reqAddr(row.identity),
     signer: reqAddr(row.signer),
     expiry: row.expiry,
-    permissions: parsePermissions(row.permissions),
+    permissions: row.permissions,
     origin: row.origin || null,
     blockNumber: row.block_number,
-    timestamp: Number(row.timestamp),
+    timestamp: blockTime(network, row.block_number),
     txHash: row.tx_hash,
   }
 }
@@ -192,25 +172,27 @@ function mapSessionKeyEvent(row: SessionKeyEventRow): SessionKeyEvent {
 /** List raw session key authorization events, newest first. */
 export async function listSessionKeyEvents(
   db: Db,
-  schemas: Schemas,
+  network: Network,
   params: ListSessionKeyEventsParams
 ): Promise<Page<SessionKeyEvent>> {
   const [block, index] = params.cursor
     ? decodeCursor(params.cursor, ['int8', 'int8'])
     : []
   const rows = await db.query<SessionKeyEventRow>(
-    sql`select ${logIndex()} as log_index, identity, signer, expiry, permissions,
-       origin, block_number, timestamp, tx_hash
-     from ${ident(schemas.observer)}.skr_authorizations_updated ${where([
+    sql`select block_number, log_index, identity, signer, expiry,
+       to_jsonb(permissions) as permissions, origin, tx_hash
+     from ${table(network, 'session_key_events')} ${where([
        params.identity !== undefined && sql`identity = ${params.identity}`,
        params.signer !== undefined && sql`signer = ${params.signer}`,
        block !== undefined &&
-         sql`(block_number, ${logIndex()}) < (${block}::numeric, ${index}::int)`,
+         sql`(block_number, log_index) < (${block}::bigint, ${index}::int)`,
      ])}
      order by block_number desc, log_index desc limit ${params.limit + 1}`
   )
-  return toPage(rows, params.limit, mapSessionKeyEvent, (r) => [
-    r.block_number,
-    String(r.log_index),
-  ])
+  return toPage(
+    rows,
+    params.limit,
+    (r) => mapSessionKeyEvent(network, r),
+    (r) => [r.block_number, String(r.log_index)]
+  )
 }

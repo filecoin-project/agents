@@ -1,9 +1,9 @@
-import type { Db } from '../db.ts'
+import { type Db, table } from '../db.ts'
 import { notFound } from '../errors.ts'
-import type { Schemas } from '../networks.ts'
+import type { Network } from '../networks.ts'
 import { decodeCursor, type Page, toPage } from '../pagination.ts'
 import type { Provider } from '../schemas/resources.ts'
-import { ident, raw, sql, where } from '../sql.ts'
+import { raw, sql, where } from '../sql.ts'
 import { reqAddr } from './map.ts'
 
 /** Filters for {@link listProviders}. */
@@ -33,11 +33,6 @@ const COLUMNS = raw(`provider_id, provider_address, name, service_url,
   provider_active, pdp_product_active, approved, endorsed,
   created_at_block, updated_at_block`)
 
-/** Schema-qualified `providers` view. */
-function table(schemas: Schemas) {
-  return sql`${ident(schemas.repair)}.providers`
-}
-
 /** Map a `providers` row to the API shape. */
 function mapProvider(row: ProviderRow): Provider {
   return {
@@ -57,12 +52,12 @@ function mapProvider(row: ProviderRow): Provider {
 /** List storage providers, newest id first. */
 export async function listProviders(
   db: Db,
-  schemas: Schemas,
+  network: Network,
   params: ListProvidersParams
 ): Promise<Page<Provider>> {
   const [id] = params.cursor ? decodeCursor(params.cursor, ['int8']) : []
   const rows = await db.query<ProviderRow>(
-    sql`select ${COLUMNS} from ${table(schemas)} ${where([
+    sql`select ${COLUMNS} from ${table(network, 'providers')} ${where([
       params.approved !== undefined && sql`approved = ${params.approved}`,
       params.active !== undefined && sql`provider_active = ${params.active}`,
       params.endorsed !== undefined && sql`endorsed = ${params.endorsed}`,
@@ -76,11 +71,11 @@ export async function listProviders(
 /** Get one storage provider by id; throws 404 when it does not exist. */
 export async function getProvider(
   db: Db,
-  schemas: Schemas,
+  network: Network,
   providerId: string
 ): Promise<Provider> {
   const rows = await db.query<ProviderRow>(
-    sql`select ${COLUMNS} from ${table(schemas)}
+    sql`select ${COLUMNS} from ${table(network, 'providers')}
      where provider_id = ${providerId}::bigint`
   )
   if (!rows[0]) throw notFound('Provider', providerId)
