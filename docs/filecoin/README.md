@@ -85,7 +85,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **Content fits in one piece.** A file, or the CAR of a folder, must be between 127 and 1,065,353,216 bytes.
 - **Browsers render files from Curio and folders through a gateway.** Curio's `/piece` endpoint serves a file inline with a detected content type, so a browser renders it. Its `/ipfs` endpoint returns only blocks and CARs, so browser links to folders go to [inbrowser.link](https://inbrowser.link), a public gateway that runs in a service worker.
 - **filecoin-api serves most reads.** The CLI will read most data from filecoin-api. It will fall back to chain reads through synapse-core only where filecoin-api cannot serve a read. Today the CLI reads all chain data through synapse-core.
-- **The indexer runs outside this repository.** filecoin-api reads the `early-repair` and `foc-observer` schemas of a Ponder Postgres database. It never writes to the database. The databases run in Helsinki, and filecoin-api runs in Frankfurt, next to Hyperdrive's connection pool ([placement](../../apps/filecoin-api/README.md#placement)).
+- **The indexer runs outside this repository.** filecoin-api reads the `ozone` schema that the [FilOzone indexer](https://github.com/FilOzone/indexer) writes to Postgres. It never writes to the database. The databases run in Helsinki, and filecoin-api runs in Frankfurt, next to Hyperdrive's connection pool ([placement](../../apps/filecoin-api/README.md#placement)).
 - **Calibration first.** The CLI defaults to calibration. Every part also supports mainnet, but the only recorded end-to-end run of the CLI was on calibration, on 2026-09-29.
 
 ## Compromises in the proof of concept
@@ -161,5 +161,5 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **CLI state.** Track a removal until the provider deletes the piece. Check every file of a folder in `inspect --check`.
 - **Old hosts.** Delete the `fil-api` and `fil-app` Workers and their `hugomrdias.dev` domains from the personal Cloudflare account. Since `filecoin` 0.5.0 and the plugin 0.2.0, released CLIs and plugins point at `filecoin.cloud` or `filecoin.io` hosts. Only earlier releases still call the old hosts.
 - **MCP servers.** Review the [foc-observer](https://github.com/FilOzone/foc-observer) MCP server. Merge its tools into the filecoin-api MCP server.
-- **Indexer.** Index `data_sets(payer)` in the early-repair schema ([#6](https://github.com/filecoin-project/agents/issues/6)). Consider moving the databases near Frankfurt, where Hyperdrive pools their connections, to cut each query from about 30 ms to an estimated 5–10 ms ([placement](../../apps/filecoin-api/README.md#placement)).
+- **Indexer.** Consider moving the databases near Frankfurt, where Hyperdrive pools their connections, to cut each query from about 30 ms to an estimated 5–10 ms ([placement](../../apps/filecoin-api/README.md#placement)).
 - **Upstream.** Move the rest of `hooks-synapse` into synapse-react, starting with the gaps listed in its README.
