@@ -1,6 +1,5 @@
 import { z } from '@hono/zod-openapi'
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
+import { type CallToolResult, McpServer } from '@modelcontextprotocol/server'
 import {
   type Db,
   type DbFactory,

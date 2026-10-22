@@ -41,8 +41,8 @@ export interface ErrorResponse {
 
 /**
  * Map any thrown error to a response. {@link ApiError} and Hono's
- * `HTTPException` (also thrown by `@hono/mcp`) keep their status; anything
- * else becomes a 500 whose details stay out of the body.
+ * `HTTPException` keep their status; anything else becomes a 500 whose
+ * details stay out of the body.
  */
 export function toErrorResponse(error: unknown): ErrorResponse {
   if (error instanceof ApiError) {

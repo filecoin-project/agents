@@ -1,4 +1,3 @@
-import { StreamableHTTPTransport } from '@hono/mcp'
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { Scalar } from '@scalar/hono-api-reference'
 import { cors } from 'hono/cors'
@@ -8,7 +7,8 @@ import { type DbFactory, hyperdriveDb } from './db.ts'
 import { errorBody, toErrorResponse } from './errors.ts'
 import { checkHealth } from './health.ts'
 import { log } from './log.ts'
-import { buildMcpServer } from './mcp/server.ts'
+import { handleMcp } from './mcp/http.ts'
+import { buildMcpServer, type McpHandle } from './mcp/server.ts'
 import { mcpUrl } from './mcp-host.ts'
 import { rateLimit } from './middleware/rate-limit.ts'
 import { requestId } from './middleware/request-id.ts'
@@ -94,6 +94,8 @@ export function createApp(options: AppOptions = {}) {
         'Authorization',
         'Mcp-Session-Id',
         'Mcp-Protocol-Version',
+        'Mcp-Method',
+        'Mcp-Name',
         'Last-Event-ID',
       ],
       exposeHeaders: [
@@ -170,26 +172,35 @@ export function createApp(options: AppOptions = {}) {
       'Cache-Control': 'public, max-age=3600',
     })
   })
+  // Every Origin is valid. The spec asks servers to validate Origin against
+  // DNS rebinding of local servers; this server is public and reads no
+  // credentials, so a rebinding page gets nothing a direct request can't.
+  // See "Security & Endpoint" in
+  // https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http
   app.post('/mcp', rateLimit('RATE_LIMIT_MCP'), async (c) => {
-    const { server, closeDbs } = buildMcpServer({
-      env: c.env,
-      dbFactory,
-      dbStats: c.var.dbStats,
-      version: VERSION,
-      requestId: c.var.requestId,
-      origin: new URL(c.req.url).origin,
-      docsFetch,
-      waitUntil: (p) => c.executionCtx.waitUntil(p),
-    })
-    const transport = new StreamableHTTPTransport({
-      sessionIdGenerator: undefined,
-      enableJsonResponse: true,
-    })
+    const handles: McpHandle[] = []
+    const factory = () => {
+      const handle = buildMcpServer({
+        env: c.env,
+        dbFactory,
+        dbStats: c.var.dbStats,
+        version: VERSION,
+        requestId: c.var.requestId,
+        origin: new URL(c.req.url).origin,
+        docsFetch,
+        waitUntil: (p) => c.executionCtx.waitUntil(p),
+      })
+      handles.push(handle)
+      return handle.server
+    }
     try {
-      await server.connect(transport)
-      return await transport.handleRequest(c)
+      return await handleMcp(c.req.raw, factory)
     } finally {
-      c.executionCtx.waitUntil(closeDbs().then(() => server.close()))
+      c.executionCtx.waitUntil(
+        Promise.all(
+          handles.map((h) => h.closeDbs().then(() => h.server.close()))
+        )
+      )
     }
   })
 

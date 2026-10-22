@@ -1,14 +1,25 @@
-import { SUPPORTED_PROTOCOL_VERSIONS } from '@modelcontextprotocol/sdk/types.js'
+import { SUPPORTED_PROTOCOL_VERSIONS } from '@modelcontextprotocol/server'
 
 /**
- * Protocol versions the SDK negotiates that include Streamable HTTP, which
- * arrived in `2025-03-26`. Versions are dates, so they compare as strings.
+ * Protocol revision served without the `initialize` handshake. The SDK keeps
+ * its list of these revisions internal, so the card names it here; the MCP
+ * tests check that `/mcp` serves it.
+ *
+ * @see https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning
+ */
+export const MODERN_PROTOCOL_VERSION = '2026-07-28'
+
+/**
+ * Protocol versions served over Streamable HTTP, newest first: the modern
+ * revision, then the SDK's `initialize` versions from `2025-03-26`, when
+ * Streamable HTTP arrived. Versions are dates, so they compare as strings.
  *
  * @see https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http
  */
-const STREAMABLE_HTTP_VERSIONS = SUPPORTED_PROTOCOL_VERSIONS.filter(
-  (version) => version >= '2025-03-26'
-)
+const STREAMABLE_HTTP_VERSIONS = [
+  MODERN_PROTOCOL_VERSION,
+  ...SUPPORTED_PROTOCOL_VERSIONS.filter((version) => version >= '2025-03-26'),
+]
 
 /**
  * Name of the MCP server:`mcp.filecoin.io` in reverse-DNS form. `serverInfo`,
