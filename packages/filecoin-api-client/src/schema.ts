@@ -356,6 +356,21 @@ export interface components {
              * @example 1
              */
             pdpEndEpoch: string | null;
+            /**
+             * @description Filecoin Pay storage rail
+             * @example 1
+             */
+            pdpRailId: string;
+            /**
+             * @description CDN cache-miss rail; null without CDN
+             * @example 1
+             */
+            cacheMissRailId: string | null;
+            /**
+             * @description CDN rail; null without CDN
+             * @example 1
+             */
+            cdnRailId: string | null;
             deleted: boolean | null;
             /**
              * @description Unsigned integer as a decimal string
@@ -495,7 +510,7 @@ export interface components {
              * @description Unsigned integer as a decimal string
              * @example 1
              */
-            settledUpTo: string | null;
+            settledUpTo: string;
             /**
              * @description Unsigned integer as a decimal string
              * @example 1
@@ -507,13 +522,27 @@ export interface components {
              */
             totalNetPayeeAmount: string;
             /**
+             * @description Sum of one-time payments, such as Warm Storage CDN usage
+             * @example 1
+             */
+            totalOneTimeAmount: string;
+            /**
+             * @description Unsigned integer as a decimal string
+             * @example 1
+             */
+            totalOneTimeNetPayeeAmount: string;
+            /**
+             * @description Warm Storage data set the rail pays for; null for other operators
+             * @example 1
+             */
+            dataSetId: string | null;
+            /**
              * @description Unsigned integer as a decimal string
              * @example 1
              */
             createdAtBlock: string;
             /** @description Unix timestamp */
             createdAt: number;
-            txHash: string;
         };
         RailResponse: {
             data: components["schemas"]["Rail"];
@@ -602,11 +631,10 @@ export interface components {
             active: boolean;
             origin: string | null;
             /**
-             * @description Unsigned integer as a decimal string
+             * @description Block of the event that last set this permission
              * @example 1
              */
             blockNumber: string;
-            txHash: string;
         };
         SessionKeyEventPage: {
             data: components["schemas"]["SessionKeyEvent"][];
