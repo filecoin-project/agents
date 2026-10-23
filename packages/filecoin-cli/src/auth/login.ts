@@ -240,6 +240,7 @@ export async function findAuthorizer(
   const latest = await getBlockNumber(client, { cacheTime: 0 })
   let found: Address | undefined
   for (let from = options.fromBlock; from <= latest; from += LOG_WINDOW + 1n) {
+    // biome-ignore lint/complexity/useMathMinMax: Math.min throws on bigint
     const to = from + LOG_WINDOW > latest ? latest : from + LOG_WINDOW
     const logs = await getLogs(client, {
       address: client.chain.contracts.sessionKeyRegistry.address,
