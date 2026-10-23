@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.8.0](https://github.com/filecoin-project/agents/compare/filecoin-app-v0.7.0...filecoin-app-v0.8.0) (2026-10-22)
+
+
+### Features
+
+* **cli:** link the Filecoin Pay console home in status ([#73](https://github.com/filecoin-project/agents/issues/73)) ([44bc192](https://github.com/filecoin-project/agents/commit/44bc1920885d5f3673a111f65b7e5a73a47d80c8))
+* **cli:** report balances, runway, and storage in status ([#68](https://github.com/filecoin-project/agents/issues/68)) ([5092654](https://github.com/filecoin-project/agents/commit/5092654be8c25a3b397d980194ffaf6a0d0bdf92))
+* **filecoin-api:** send the rate-limit policy in a RateLimit-Policy header ([#67](https://github.com/filecoin-project/agents/issues/67)) ([b419939](https://github.com/filecoin-project/agents/commit/b419939ff24a8b54e41431243d0463cf4429b84d)), closes [#59](https://github.com/filecoin-project/agents/issues/59)
+* **filecoin-app:** serve an AI Catalog and redirect the server card ([#80](https://github.com/filecoin-project/agents/issues/80)) ([a05fa2e](https://github.com/filecoin-project/agents/commit/a05fa2edd5661532bcb08a34059476c36bc5a0ed))
+* **filecoin-app:** show a rail's data set and creation block ([3279651](https://github.com/filecoin-project/agents/commit/32796510647399501c92214950cbbf588256c361))
+
+
+### Bug Fixes
+
+* **filecoin-app:** await table prefetches on the server to stop hydration errors ([e424dff](https://github.com/filecoin-project/agents/commit/e424dff0d4f57d9e263e7eb63f35ba12461b8460))
+
 ## [0.7.0](https://github.com/filecoin-project/agents/compare/filecoin-app-v0.6.0...filecoin-app-v0.7.0) (2026-10-20)
 
 
