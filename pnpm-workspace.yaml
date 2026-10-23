@@ -1,6 +1,6 @@
 packages:
-  - 'apps/*'
-  - 'packages/*'
+  - "apps/*"
+  - "packages/*"
 
 # Keeps pnpm-lock.yaml a single YAML document. Otherwise pnpm 12 writes the
 # pinned pnpm in a leading document, and GitHub's dependency graph reads only
@@ -10,23 +10,23 @@ packages:
 pmOnFail: ignore
 
 allowBuilds:
-  '@biomejs/biome': true
+  "@biomejs/biome": true
   esbuild: true
   workerd: true
 
 catalog:
   # One synapse-core for the app, the API and the CLI. The CLI bundles it, so
   # a bump that only edits this line ships with the CLI's next release.
-  '@filoz/synapse-core': 0.10.2
-  '@types/node': 26.5.1
+  "@filoz/synapse-core": 0.10.2
+  "@types/node": 26.5.1
   typescript: 7.0.2
 
 minimumReleaseAgeExclude:
   - iso-conf@1.0.0
   - clipact@0.7.0
-  - '@filoz/synapse-core@0.10.2'
-  - '@filoz/synapse-react@0.5.1'
-  - '@hugomrdias/commp-wasm@0.1.4'
+  - "@filoz/synapse-core@0.10.2"
+  - "@filoz/synapse-react@0.5.1"
+  - "@hugomrdias/commp-wasm@0.1.4"
 
 patchedDependencies:
   protons-runtime@8.0.1: patches/protons-runtime@8.0.1.patch

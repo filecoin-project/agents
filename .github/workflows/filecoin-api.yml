@@ -24,7 +24,7 @@ permissions:
 # Cloudflare credentials are set only on the steps that call wrangler, so
 # dependency install scripts never see them.
 env:
-  WRANGLER_SEND_METRICS: 'false'
+  WRANGLER_SEND_METRICS: "false"
   PRODUCTION_URL: https://api.filecoin.io
   MCP_URL: https://mcp.filecoin.io
 
