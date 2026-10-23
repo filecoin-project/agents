@@ -31,7 +31,7 @@ import type { AppEnv } from './types.ts'
  *
  * @see https://github.com/googleapis/release-please/blob/main/docs/customizing.md#updating-arbitrary-files
  */
-export const VERSION = '0.4.1' // x-release-please-version
+export const VERSION = '0.5.0' // x-release-please-version
 
 /**
  * OpenAPI document settings for a server origin. `/openapi.json` serves the

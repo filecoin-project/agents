@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0](https://github.com/filecoin-project/agents/compare/filecoin-api-v0.4.1...filecoin-api-v0.5.0) (2026-10-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* **filecoin-api:** `Rail.txHash` and the `txHash` of each session key permission are removed, because the indexer's summary tables store no transaction hash. `Rail.settledUpTo` is never null. `/status` and `/health` report one indexer, `ozone`.
+
+### Features
+
+* **filecoin-api:** move the MCP server to MCP SDK v2 ([8def2ed](https://github.com/filecoin-project/agents/commit/8def2ed63849d65bd718ed4265affec7557c02d3)), closes [#88](https://github.com/filecoin-project/agents/issues/88)
+* **filecoin-api:** read the indexer's ozone schema and drop foc-observer ([7a58f0b](https://github.com/filecoin-project/agents/commit/7a58f0beaf445df39fa7a7aded1fee70ffb537fa))
+* **filecoin-api:** send the rate-limit policy in a RateLimit-Policy header ([#67](https://github.com/filecoin-project/agents/issues/67)) ([b419939](https://github.com/filecoin-project/agents/commit/b419939ff24a8b54e41431243d0463cf4429b84d)), closes [#59](https://github.com/filecoin-project/agents/issues/59)
+* **filecoin-api:** serve the MCP server card ([#76](https://github.com/filecoin-project/agents/issues/76)) ([674eb77](https://github.com/filecoin-project/agents/commit/674eb779f0e765360ad39c6c7d67ff6fbd7dbc40))
+
 ## [0.4.1](https://github.com/filecoin-project/agents/compare/filecoin-api-v0.4.0...filecoin-api-v0.4.1) (2026-10-20)
 
 
