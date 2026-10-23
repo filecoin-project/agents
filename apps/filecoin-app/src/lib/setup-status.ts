@@ -120,6 +120,7 @@ export function unlimitedApprovalTerms(current: OperatorApprovalTerms) {
     rateAllowance: maxUint256,
     lockupAllowance: maxUint256,
     maxLockupPeriod:
+      // biome-ignore lint/complexity/useMathMinMax: Math.max throws on bigint
       current.maxLockupPeriod > REQUIRED_MAX_LOCKUP_PERIOD
         ? current.maxLockupPeriod
         : REQUIRED_MAX_LOCKUP_PERIOD,
