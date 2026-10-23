@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.0](https://github.com/filecoin-project/agents/compare/filecoin-cli-v0.6.0...filecoin-cli-v0.7.0) (2026-10-23)
+
+
+### Features
+
+* **cli:** link the Filecoin Pay console home in status ([#73](https://github.com/filecoin-project/agents/issues/73)) ([44bc192](https://github.com/filecoin-project/agents/commit/44bc1920885d5f3673a111f65b7e5a73a47d80c8))
+* **cli:** report balances, runway, and storage in status ([#68](https://github.com/filecoin-project/agents/issues/68)) ([5092654](https://github.com/filecoin-project/agents/commit/5092654be8c25a3b397d980194ffaf6a0d0bdf92))
+
 ## [0.6.0](https://github.com/filecoin-project/agents/compare/filecoin-cli-v0.5.2...filecoin-cli-v0.6.0) (2026-10-20)
 
 
