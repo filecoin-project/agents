@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "filecoin-api",
-    "version": "0.4.1",
+    "version": "0.5.0",
     "description": "Read-only Filecoin data: storage providers, data sets, pieces, Filecoin Pay rails and session keys."
   },
   "servers": [
