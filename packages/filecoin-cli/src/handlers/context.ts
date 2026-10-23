@@ -30,7 +30,8 @@ export type AccountInput = {
 export type JobReporter = Pick<
   // biome-ignore lint/suspicious/noExplicitAny: any command's context
   Context<any, any>,
-  'signal' | 'progress' | 'checkpoint'>
+  'signal' | 'progress' | 'checkpoint'
+>
 
 /**
  * Who runs the CLI, for console link tags: the detected agent's name, `human`
