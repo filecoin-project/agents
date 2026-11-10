@@ -7,7 +7,7 @@ import type { Network } from './networks.ts'
  * @param baseUrl - filecoin-api base URL.
  * @param network - Filecoin network.
  * @param cid - PieceCID or IPFS root CID.
- * @see https://github.com/filecoin-project/agents/tree/main/apps/filecoin-api#retrieval
+ * @see https://github.com/filecoin-project/agents/blob/main/docs/filecoin/retrieval.md
  */
 export function retrievalUrl(baseUrl: string, network: Network, cid: string) {
   const url = new URL(
