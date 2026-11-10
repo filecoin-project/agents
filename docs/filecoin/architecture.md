@@ -173,16 +173,16 @@ Before each mutation, `requireSession` rebuilds the key with `fromSecp256k1` and
 
 A file becomes a resource of kind `file`, and a folder becomes a resource of kind `folder`. Files and folders go into separate data sets, because data sets match on their exact metadata keys and only CARs belong in an IPFS-indexed data set.
 
-`put` returns two [filecoin-api retrieval URLs](../../apps/filecoin-api/README.md#retrieval), and `resource.url` holds the browser URL:
+`put` returns two [filecoin-api retrieval URLs](retrieval.md), and `resource.url` holds the browser URL:
 
 - **`urls.piece`** is `<api>/get/<pieceCid>?network=<net>`. filecoin-api redirects it to `/piece/<pieceCid>` on a provider that stores the piece, which serves the exact stored bytes.
 - **`urls.browser`** is the URL in the table. filecoin-api redirects a file to the same `/piece` URL, and a browser renders it. It redirects a folder's root CID to inbrowser.link, which fetches and verifies the blocks in the browser.
 
-filecoin-api finds the provider of a PieceCID in its indexer. Its [IPNI fallback](retrieval.md) does not find FWSS pieces either, because FWSS providers don't advertise PieceCIDs to IPNI yet. `urls.piece` and a file's `urls.browser` therefore return 404 until the indexer has the piece. A folder's browser URL goes to inbrowser.link without a lookup.
+filecoin-api finds an FWSS piece only in its indexer, because FWSS providers don't advertise PieceCIDs to IPNI yet ([what Curio announces](retrieval.md#what-curio-announces-for-fwss)). `urls.piece` and a file's `urls.browser` therefore return 404 until the indexer has the piece. A folder's browser URL goes to inbrowser.link without a lookup.
 
 Before the commit confirms, `put` reports early links as `link` progress, with `pieceCid` and `urls` in `data`. The early `/piece` links add `provider=<id>`, and filecoin-api redirects to that provider until its indexer has the piece. Curio serves `/piece/<pieceCid>` for a parked piece, so a file's early link works as soon as the upload finishes. The result's links carry no hint, so once the indexer has the piece, its ranking of the copies applies.
 
-A folder's browser URL carries no hint, because filecoin-api never looks it up. inbrowser.link finds the blocks through IPNI. Curio sets `needs_indexing` when it receives the add-pieces request, not when the transaction confirms ([`handlers_add.go`](https://github.com/filecoin-project/curio/blob/e00c24bdbb347dcec7ea0bf289d06985f0738023/pdp/handlers_add.go#L432-L470)). Its indexing task runs about every 3 seconds, and its IPNI task about every 30 seconds. A folder's browser URL therefore starts working shortly after the commit is sent, before it confirms, and `put` reports a folder's early link at that point. Curio's `/ipfs` endpoint also answers only after indexing.
+A folder's browser URL carries no hint, because filecoin-api never looks it up. inbrowser.link finds the blocks through IPNI, and Curio advertises them shortly after it receives the commit, before the transaction confirms ([what Curio announces](retrieval.md#what-curio-announces-for-fwss)). `put` therefore reports a folder's early link once the commit is sent.
 
 `<api>` is `https://api.filecoin.io` unless `FILECOIN_API_URL` sets another origin. `ls` and `inspect` rebuild the URLs from the resource, so they follow `FILECOIN_API_URL`.
 

@@ -70,9 +70,9 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 | [Agent support on docs.filecoin.io](filecoin-docs-agent-support.md) | What GitBook gives agents on docs.filecoin.io, what is missing compared with filecoin-app, and what GitBook lets the docs team change |
 | [Agent discovery on filecoin.io](filecoin-io-agent-support.md) | How www.filecoin.io compares with poc.filecoin.cloud for agent discovery, the Is Agentic scores of both sites, and what filecoin.io should fix and add |
 | [Agent discovery](agent-discovery.md) | Every agent discovery spec that applies to Filecoin for Agents, what each host serves today, what is missing, and which host should serve each file |
-| [Retrieval through `/get/{cid}`](retrieval.md) | How filecoin-api's `/get/{cid}` finds a provider through the indexer, the `provider` hint, and cid.contact, what IPNI knows about FWSS content, and the decisions behind the order |
+| [Retrieval through `/get/{cid}`](retrieval.md) | filecoin-api's `/get/{cid}` route: its parameters, responses, and cache, how it finds a provider through the indexer, the `provider` hint, and cid.contact, what IPNI knows about FWSS content, and the decisions behind the order |
 | [Deployments and domains](deployments.md) | How filecoin-api, filecoin-app, and their domains relate, the `filecoin.io` and `filecoin.cloud` hostnames that serve filecoin-api and its MCP server, and the Cloudflare for SaaS setup behind `filecoin.io` |
-| [filecoin-api README](../../apps/filecoin-api/README.md) | Routes, retrieval redirects, MCP tools, deploys, and limits |
+| [filecoin-api README](../../apps/filecoin-api/README.md) | Routes, MCP tools, deploys, and limits |
 | [filecoin-app README](../../apps/filecoin-app/README.md) | The explorer, the dashboard, the stack, and deploys |
 | [hooks-synapse README](../../apps/filecoin-app/src/hooks-synapse/README.md) | React hooks that synapse-react lacks, and the gaps that remain upstream |
 
@@ -100,7 +100,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **Piece removal stops at `removal_pending`.** Nothing tracks when the provider removes the piece.
 - **Every transfer hashes the whole content.** `put`, `operations resume`, and `get` each compute the PieceCID of all of it, at about 6 seconds per GiB.
 - **Shallow folder check.** `inspect --check` probes only the piece URL, not each file of a folder.
-- **Result links wait for the indexer.** The piece link and a file's browser link in the `put` result return 404 until filecoin-api's indexer has the new piece. Before that, `put` reports an early link on stderr. A file's early link carries a provider hint and works once the provider has parked the piece. A folder's link goes through inbrowser.link, which works only after Curio indexes the CAR and announces it to IPNI. Curio starts that when it receives the commit, before the transaction confirms. `filecoin get` downloads from the provider directly.
+- **Result links wait for the indexer.** The piece link and a file's browser link in the `put` result return 404 until filecoin-api's indexer has the new piece. Before that, `put` reports an early link on stderr. A file's early link carries a provider hint and works once the provider has parked the piece. A folder's link goes through inbrowser.link, which works only after Curio [announces the CAR to IPNI](retrieval.md#what-curio-announces-for-fwss), shortly after the commit is sent. `filecoin get` downloads from the provider directly.
 - **No `--events`, `--fields`, or `operations inspect --refresh`.** clipact doesn't implement `--events` or `--fields`. `operations resume` already checks the chain before it sends anything.
 
 ### REST API and MCP server
