@@ -45,9 +45,12 @@
   // MCP_HOSTS: comma-separated hostnames that serve only the MCP endpoint.
   // MCP_PUBLIC_URL: the MCP endpoint the server card advertises on every host.
   // The `dev` script empties it, so local dev advertises its own endpoint.
+  // IPNI_URL: IPNI instance /get/{cid} asks, with delegated routing, when the
+  // indexer has no copy. See docs/filecoin/retrieval.md.
   "vars": {
     "MCP_HOSTS": "mcp.filecoin.io,mcp.filecoin.cloud",
-    "MCP_PUBLIC_URL": "https://mcp.filecoin.io"
+    "MCP_PUBLIC_URL": "https://mcp.filecoin.io",
+    "IPNI_URL": "https://cid.contact"
   },
   "ratelimits": [
     {
@@ -67,7 +70,11 @@
   "previews": {
     // Previews run on workers.dev, which is no MCP host, and their server card
     // advertises the Preview's own `/mcp`.
-    "vars": { "MCP_HOSTS": "", "MCP_PUBLIC_URL": "" },
+    "vars": {
+      "MCP_HOSTS": "",
+      "MCP_PUBLIC_URL": "",
+      "IPNI_URL": "https://cid.contact"
+    },
     "hyperdrive": [
       {
         "binding": "HYPERDRIVE_CALIBRATION",

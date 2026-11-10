@@ -47,7 +47,7 @@ export const RetrievalCidInput = z
   })
   .openapi({
     type: 'string',
-    description: 'PieceCID v2 or IPFS root CID',
+    description: 'PieceCID v2 or IPFS CID',
     example:
       'bafkzcibfq263oaytvzyzerkprzkwx5l3ek3dwyngge4sim2o3ahsk7shfendo7jvdm7a',
   })

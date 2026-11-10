@@ -11,17 +11,21 @@ export interface RecordedQuery {
   params: readonly unknown[]
 }
 
+/** Answers a {@link fakeDb} query, now or after a delay. */
+export type FakeDbHandler = (
+  text: string,
+  params: readonly unknown[]
+) => Row[] | Promise<Row[]>
+
 /** Fake database that records queries and answers from a handler. */
-export function fakeDb(
-  handler: (text: string, params: readonly unknown[]) => Row[] = () => []
-) {
+export function fakeDb(handler: FakeDbHandler = () => []) {
   const queries: RecordedQuery[] = []
   let closed = 0
   const db: Db = {
     query<T extends object = Row>(query: Sql) {
       const { text, params } = render(query)
       queries.push({ text, params })
-      return Promise.resolve(handler(text, params) as T[])
+      return Promise.resolve(handler(text, params)) as Promise<T[]>
     },
     close() {
       closed++
@@ -39,12 +43,16 @@ export function fakeDb(
 
 /** Create an app wired to a fake database and send it a request. */
 export function testApp(
-  handler?: (text: string, params: readonly unknown[]) => Row[],
+  handler?: FakeDbHandler,
   bindings: Partial<Bindings> = {},
   options: Omit<AppOptions, 'dbFactory'> = {}
 ) {
   const fake = fakeDb(handler)
-  const app = createApp({ ...options, dbFactory: () => fake.db })
+  const app = createApp({
+    ipniFetch: ipniNotFound,
+    ...options,
+    dbFactory: () => fake.db,
+  })
   const testEnv = { ...env, ...bindings } as Bindings
   async function request(path: string, init?: RequestInit) {
     const ctx = createExecutionContext()
@@ -54,6 +62,10 @@ export function testApp(
   }
   return { app, fake, request }
 }
+
+/** IPNI fetch that knows no provider, so tests never reach cid.contact. */
+export const ipniNotFound: typeof fetch = () =>
+  Promise.resolve(new Response('', { status: 404 }))
 
 /** Rate limiter that always allows or always rejects. */
 export function fakeLimiter(success: boolean): RateLimit {
