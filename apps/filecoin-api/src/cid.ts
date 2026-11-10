@@ -8,8 +8,9 @@ import { CID } from 'multiformats/cid'
 const LEGACY_PIECE_CODEC = 0xf101
 
 /**
- * A CID accepted by the retrieval route: a PieceCID v2 or the root CID of
- * IPFS content, normalized to its canonical base32 CIDv1 string.
+ * A CID accepted by the retrieval route: a PieceCID v2 or any IPFS CID, such
+ * as a folder root or a block inside it, normalized to its canonical base32
+ * CIDv1 string.
  */
 export interface RetrievalCid {
   kind: 'piece' | 'ipfs'

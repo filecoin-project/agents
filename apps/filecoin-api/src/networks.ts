@@ -52,12 +52,14 @@ export const NETWORK_NAMES = Object.keys(NETWORKS) as [
  */
 export type Bindings = Omit<
   Env,
-  Network['binding'] | 'MCP_HOSTS' | 'MCP_PUBLIC_URL'
+  Network['binding'] | 'MCP_HOSTS' | 'MCP_PUBLIC_URL' | 'IPNI_URL'
 > & {
   [K in Network['binding']]?: Hyperdrive
 } & {
   MCP_HOSTS: string
   MCP_PUBLIC_URL: string
+  /** IPNI instance `/get/{cid}` asks when the indexer has no copy. */
+  IPNI_URL: string
 }
 
 /** Whether `name` is a supported network. */

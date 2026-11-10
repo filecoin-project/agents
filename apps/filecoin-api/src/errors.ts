@@ -84,3 +84,8 @@ export function networkUnavailable(network: string): ApiError {
     `Network ${network} is not available yet`
   )
 }
+
+/** 502 for an IPNI lookup that failed or timed out. */
+export function ipniUnavailable(reason: string): ApiError {
+  return new ApiError(502, 'ipni_unavailable', `IPNI lookup failed: ${reason}`)
+}

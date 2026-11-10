@@ -14,7 +14,7 @@ Built with [Hono](https://hono.dev), [`@hono/zod-openapi`](https://github.com/ho
 | `GET /mcp/server-card` | The MCP server's [server card](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/seps/2127-mcp-server-cards.md), at the location SEP-2127 reserves next to the endpoint (see [Server card](#server-card)) |
 | `GET /.well-known/mcp/server-card.json`, `GET /.well-known/mcp-server-card` | The same card, at the paths of older drafts, which scanners still check |
 | `GET /health` | Latest indexed block per network and indexer; `503` if a configured database fails |
-| `GET /get/{cid}` | Redirect to where a PieceCID or IPFS root CID can be retrieved (see [Retrieval](#retrieval)) |
+| `GET /get/{cid}` | Redirect to where a PieceCID or IPFS CID can be retrieved (see [Retrieval](#retrieval)) |
 
 Every data route is namespaced by network: `/calibration/...` or `/mainnet/...`.
 
@@ -78,17 +78,25 @@ The card is sent as `application/mcp-server-card+json`, with `Cache-Control: pub
 | --- | --- | --- |
 | PieceCID v2 (`bafkzcib…`) | `false` or absent | `{serviceUrl}/piece/{cid}` on a provider storing the piece |
 | PieceCID v2 (`bafkzcib…`) | `true` | `https://inbrowser.link/ipfs/{root}` when the chosen copy has `ipfsRootCID` metadata in an IPFS-indexed data set, otherwise `{serviceUrl}/piece/{cid}` |
-| Other CID (IPFS content) | `false` or absent | `{serviceUrl}/ipfs/{cid}` on a provider with a piece whose `ipfsRootCID` metadata matches, in an IPFS-indexed data set |
-| Other CID (IPFS content) | `true` | `https://inbrowser.link/ipfs/{cid}`, without a database lookup |
+| Other CID (IPFS content) | `false` or absent | `{serviceUrl}/ipfs/{cid}` on a provider with a piece whose `ipfsRootCID` metadata matches, in an IPFS-indexed data set, or on a provider that IPNI lists for the CID |
+| Other CID (IPFS content) | `true` | `https://inbrowser.link/ipfs/{cid}`, without a lookup |
 
-`provider={id}` names a provider to redirect to when no indexed copy exists, using the same paths. It covers the time between a provider parking a piece and the indexer seeing the commit, because Curio serves `/piece/{cid}` for a parked piece. The provider must be active, with an HTTP service URL. An indexed copy always wins over the hint, and the hint is never cached, so the normal ranking takes over once the indexer has the piece. `filecoin put` adds the hint to the links it reports before the commit confirms. The hint does nothing for an IPFS CID with `browser=true`, which needs no lookup.
+The route looks for a provider in this order:
 
-Legacy v1 PieceCIDs (`baga…`) and strings that aren't CIDs return `400`. If no live copy exists and no hint applies, the response is `404`. Other query parameters, such as `format=car`, are forwarded to the target. When several providers store the content, the route ranks endorsed providers first, then approved ones, then the oldest copy.
+1. **The indexer.** It ranks endorsed providers first, then approved ones, then the oldest copy.
+2. **The `provider={id}` hint,** when the indexer has no copy. It covers the time between a provider parking a piece and the indexer seeing the commit, because Curio serves `/piece/{cid}` for a parked piece. The provider must be active, with an HTTP service URL. The hint is never cached, so the indexer's ranking takes over once it has the piece. `filecoin put` adds the hint to the links it reports before the commit confirms.
+3. **IPNI,** through [delegated routing](https://specs.ipfs.tech/routing/http-routing-v1/) at `IPNI_URL`, which is `https://cid.contact`. The route keeps providers that advertise `transport-ipfs-gateway-http` for an IPFS CID, or `transport-filecoin-piece-http` for a PieceCID, at an https DNS address. It ranks registry providers first, matched by host, endorsed and then approved, and redirects to the registry's service URL. Other providers follow in IPNI's order, at the origin they advertise. IPNI knows every block of an indexed CAR, so a file or block inside a folder resolves too, and so does content stored outside Filecoin Warm Storage.
 
-Resolved providers are cached per network and CID in the [Workers Cache API](https://developers.cloudflare.com/workers/runtime-apis/cache/) with stale-while-revalidate:
+Without a hint, the route starts the indexer query and the IPNI lookup together. It still takes the indexer's answer whenever the indexer has a copy, and aborts the IPNI request. A request with a hint asks IPNI only when the hint names no active provider. The IPNI lookup times out after 2 seconds and reads at most 20 providers. The `X-Source` response header reports `index`, `hint` or `ipni`.
+
+Legacy v1 PieceCIDs (`baga…`) and strings that aren't CIDs return `400`. If no source has the CID, the response is `404`. If the indexer has no copy, no hint applies, and IPNI fails or times out, the response is `502` with the code `ipni_unavailable`. Other query parameters, such as `format=car`, are forwarded to the target. A network without a database binding resolves through IPNI alone. FWSS providers don't advertise PieceCIDs to IPNI yet, so a new FWSS piece still needs the indexer or the hint.
+
+Resolved providers are cached per network and CID in the [Workers Cache API](https://developers.cloudflare.com/workers/runtime-apis/cache/) with stale-while-revalidate, whether they came from the indexer or from IPNI:
 - An entry is fresh for 10 minutes.
-- After that, it is still served immediately for up to 24 hours, and refreshed in the background after the response.
+- After that, it is still served immediately for up to 24 hours, and refreshed in the background after the response. The refresh asks the indexer first and IPNI only when the indexer has no copy.
+- Misses are never cached. cid.contact's CDN can still cache its own `404` for up to 20 minutes.
 - The `X-Cache` response header reports `hit`, `stale`, `miss` or `none`.
+- Each network's active providers are cached the same way, under `/__cache/v3/{network}/providers`. The route uses the list to rank IPNI answers and to check the hint.
 - The cache is per datacenter. It also works on `workers.dev` preview URLs; only the dashboard editor and the Playground ignore Cache API calls.
 
 The MCP server offers one tool per data route: `get_status`, `list_providers`, `get_provider`, `list_data_sets`, `get_data_set`, `list_data_set_pieces`, `get_piece`, `list_pieces`, `list_rails`, `get_rail`, `list_rail_settlements`, `list_session_keys` and `list_session_key_events`. Each of these requires a `network` argument.
@@ -189,7 +197,7 @@ If the databases move, measure again. A database a few milliseconds from Frankfu
 ## Observability and limits
 
 - **Workers Logs and traces** are enabled in `wrangler.jsonc`. Cloudflare writes one invocation log per request (method, URL, status, CPU and wall time). The app adds no per-request log line; it only logs unexpected errors.
-- **Trace spans:** the root span gets `http.route`, `filecoin.network` and `filecoin.db.queries` attributes, and every database query runs in a `db.query` child span with its SQL text and returned row count. Workers tracing only records a `hyperdrive_connect` span for opening the connection, so these spans are the only place query time shows up. Unexpected errors are recorded on the root span.
+- **Trace spans:** the root span gets `http.route`, `filecoin.network` and `filecoin.db.queries` attributes, and every database query runs in a `db.query` child span with its SQL text and returned row count. Workers tracing only records a `hyperdrive_connect` span for opening the connection, so these spans are the only place query time shows up. `/get/{cid}` adds `filecoin.cid.kind`, `filecoin.cache`, `filecoin.provider_id` and `filecoin.retrieval.source`, and Workers tracing records its IPNI request as a `fetch` span. Unexpected errors are recorded on the root span.
 - **Request ids:** `X-Request-Id` is the Cloudflare Ray ID, the same value as `$metadata.rayId` on every log and span, so one id from a client finds the whole request. Client-sent `X-Request-Id` headers are ignored.
 - **Response headers:** `X-Request-Id`, `Server-Timing` with `db` and `total` metrics, and `RateLimit-Policy` on rate-limited routes.
 - **Unknown paths:** only `/calibration/...` and `/mainnet/...` reach the network middleware and API rate limiter. Other paths, such as crawler requests for `/sitemap.xml`, get a plain `404 not_found`. A valid route under an unsupported network, such as `/filecoin/providers`, gets `404 unknown_network`.

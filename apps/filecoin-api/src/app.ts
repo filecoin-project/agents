@@ -68,6 +68,8 @@ export interface AppOptions {
   dbFactory?: DbFactory
   /** Fetch for the MCP docs search's calls to GitBook; tests inject fakes. */
   docsFetch?: typeof fetch
+  /** Fetch for `/get/{cid}`'s IPNI lookups; tests inject fakes. */
+  ipniFetch?: typeof fetch
 }
 
 /**
@@ -205,7 +207,7 @@ export function createApp(options: AppOptions = {}) {
   })
 
   app.route('/', networkRoutes(dbFactory))
-  app.route('/', retrievalRoutes(dbFactory))
+  app.route('/', retrievalRoutes(dbFactory, options.ipniFetch))
 
   app.notFound((c) => c.json(errorBody('not_found', 'Route not found'), 404))
 
