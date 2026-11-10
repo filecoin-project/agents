@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/filecoin-project/agents/compare/filecoin-api-v0.5.0...filecoin-api-v0.6.0) (2026-11-10)
+
+
+### Features
+
+* **filecoin-api:** resolve /get misses through IPNI ([e3bd470](https://github.com/filecoin-project/agents/commit/e3bd470b72c1a9e5a51a89bffe51c8a0ddaccb74))
+
 ## [0.5.0](https://github.com/filecoin-project/agents/compare/filecoin-api-v0.4.1...filecoin-api-v0.5.0) (2026-10-23)
 
 
