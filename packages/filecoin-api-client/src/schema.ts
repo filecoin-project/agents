@@ -243,7 +243,7 @@ export interface paths {
         };
         /**
          * Redirect to where content can be retrieved
-         * @description Redirects a PieceCID to `/piece/{cid}` on a storage provider serving it, or with `browser=true` to inbrowser.link when the piece has `ipfsRootCID` metadata in an IPFS-indexed data set. Redirects an IPFS root CID to `/ipfs/{cid}` on a provider with a piece whose `ipfsRootCID` metadata matches, or to inbrowser.link with `browser=true`. When no indexed copy exists, `provider` names the provider to redirect to instead. Other query parameters are forwarded.
+         * @description Redirects a PieceCID to `/piece/{cid}` on a storage provider serving it, or with `browser=true` to inbrowser.link when the piece has `ipfsRootCID` metadata in an IPFS-indexed data set. Redirects any other CID to `/ipfs/{cid}` on a provider with a piece whose `ipfsRootCID` metadata matches, or to inbrowser.link with `browser=true`. When the indexer has no copy, `provider` names the provider to redirect to instead. Without a usable hint, the route looks the CID up in IPNI (cid.contact) and redirects to a provider that serves it over https, including providers outside Filecoin Warm Storage. Other query parameters are forwarded.
          */
         get: operations["retrieve"];
         put?: never;
@@ -1597,7 +1597,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description PieceCID v2 or IPFS root CID */
+                /** @description PieceCID v2 or IPFS CID */
                 cid: string;
             };
             cookie?: never;
@@ -1613,6 +1613,8 @@ export interface operations {
                     Location?: string;
                     /** @description Provider cache status: hit, stale, miss or none */
                     "X-Cache"?: string;
+                    /** @description Where the provider came from: index, hint or ipni. Absent for a redirect to inbrowser.link without a lookup */
+                    "X-Source"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -1652,8 +1654,8 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Network not available */
-            503: {
+            /** @description IPNI lookup failed after the indexer had no copy */
+            502: {
                 headers: {
                     /** @description Rate limit for the client IP, as `"<name>";q=<requests>;w=<seconds>` */
                     "RateLimit-Policy"?: string;
