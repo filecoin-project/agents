@@ -70,7 +70,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 | [Agent support on docs.filecoin.io](filecoin-docs-agent-support.md) | What GitBook gives agents on docs.filecoin.io, what is missing compared with filecoin-app, and what GitBook lets the docs team change |
 | [Agent discovery on filecoin.io](filecoin-io-agent-support.md) | How www.filecoin.io compares with poc.filecoin.cloud for agent discovery, the Is Agentic scores of both sites, and what filecoin.io should fix and add |
 | [Agent discovery](agent-discovery.md) | Every agent discovery spec that applies to Filecoin for Agents, what each host serves today, what is missing, and which host should serve each file |
-| [Retrieval through `/get/{cid}`](retrieval.md) | How filecoin-api's `/get/{cid}` finds a provider, what IPNI and cid.contact know about the same content, and how to add cid.contact as a fallback for any provider |
+| [Retrieval through `/get/{cid}`](retrieval.md) | How filecoin-api's `/get/{cid}` finds a provider through the indexer, the `provider` hint, and cid.contact, what IPNI knows about FWSS content, and the decisions behind the order |
 | [Deployments and domains](deployments.md) | How filecoin-api, filecoin-app, and their domains relate, the `filecoin.io` and `filecoin.cloud` hostnames that serve filecoin-api and its MCP server, and the Cloudflare for SaaS setup behind `filecoin.io` |
 | [filecoin-api README](../../apps/filecoin-api/README.md) | Routes, retrieval redirects, MCP tools, deploys, and limits |
 | [filecoin-app README](../../apps/filecoin-app/README.md) | The explorer, the dashboard, the stack, and deploys |
@@ -108,6 +108,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **Agents cannot store data through MCP.** Neither the REST API nor the MCP server can store, delete, or sign. A remote MCP server cannot read files from the agent's machine, so uploads need a different design.
 - **No authentication.** The only control is a per-IP rate limit of 120 requests a minute for the REST API and 60 for MCP. Responses state the limit in a `RateLimit-Policy` header, but not how many requests remain, because Workers Rate Limiting doesn't report it.
 - **Data trails the chain.** The REST API and the MCP server return what the indexer has stored so far. `/health` reports the latest indexed block.
+- **`/get` trusts IPNI for content the indexer lacks.** When the indexer has no copy, `/get/{cid}` redirects to a provider that cid.contact lists, including servers outside FWSS that nobody vetted. Clients that check the bytes against the CID are safe. cid.contact can also list a provider until it processes Curio's withdrawal of a removed piece ([retrieval](retrieval.md#how-the-route-uses-cidcontact)).
 - **Docs search depends on GitBook.** `search_docs` forwards to the `searchDocumentation` tool of docs.filecoin.io's GitBook MCP server, which GitBook doesn't document as a stable API. If GitBook changes or removes it, the tool returns `docs_unavailable` until cached results expire. Results are cached for an hour, so docs edits take up to an hour to show up.
 - **Best-effort browser links for folders.** For a folder, `/get/{cid}?browser=true` redirects to inbrowser.link, which this project does not operate. For a file, it redirects to the provider's `/piece` URL.
 
@@ -161,6 +162,5 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **CLI state.** Track a removal until the provider deletes the piece. Check every file of a folder in `inspect --check`.
 - **Old hosts.** Delete the `fil-api` and `fil-app` Workers and their `hugomrdias.dev` domains from the personal Cloudflare account. Since `filecoin` 0.5.0 and the plugin 0.2.0, released CLIs and plugins point at `filecoin.cloud` or `filecoin.io` hosts. Only earlier releases still call the old hosts.
 - **MCP servers.** Review the [foc-observer](https://github.com/FilOzone/foc-observer) MCP server. Merge its tools into the filecoin-api MCP server.
-- **Retrieval through IPNI.** When the indexer has no copy, have `/get/{cid}` look the CID up in cid.contact and redirect to any provider with an https trustless gateway or piece endpoint, as [Retrieval through `/get/{cid}`](retrieval.md#add-cidcontact-to-get) describes. Child CIDs inside a folder, and content stored outside FWSS, would then resolve.
 - **Indexer.** Consider moving the databases near Frankfurt, where Hyperdrive pools their connections, to cut each query from about 30 ms to an estimated 5–10 ms ([placement](../../apps/filecoin-api/README.md#placement)).
 - **Upstream.** Move the rest of `hooks-synapse` into synapse-react, starting with the gaps listed in its README.

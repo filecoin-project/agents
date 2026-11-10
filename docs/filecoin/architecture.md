@@ -178,7 +178,7 @@ A file becomes a resource of kind `file`, and a folder becomes a resource of kin
 - **`urls.piece`** is `<api>/get/<pieceCid>?network=<net>`. filecoin-api redirects it to `/piece/<pieceCid>` on a provider that stores the piece, which serves the exact stored bytes.
 - **`urls.browser`** is the URL in the table. filecoin-api redirects a file to the same `/piece` URL, and a browser renders it. It redirects a folder's root CID to inbrowser.link, which fetches and verifies the blocks in the browser.
 
-filecoin-api finds the provider of a PieceCID in its indexer, so `urls.piece` and a file's `urls.browser` return 404 until the indexer has the piece. A folder's browser URL goes to inbrowser.link without a lookup.
+filecoin-api finds the provider of a PieceCID in its indexer. Its [IPNI fallback](retrieval.md) does not find FWSS pieces either, because FWSS providers don't advertise PieceCIDs to IPNI yet. `urls.piece` and a file's `urls.browser` therefore return 404 until the indexer has the piece. A folder's browser URL goes to inbrowser.link without a lookup.
 
 Before the commit confirms, `put` reports early links as `link` progress, with `pieceCid` and `urls` in `data`. The early `/piece` links add `provider=<id>`, and filecoin-api redirects to that provider until its indexer has the piece. Curio serves `/piece/<pieceCid>` for a parked piece, so a file's early link works as soon as the upload finishes. The result's links carry no hint, so once the indexer has the piece, its ranking of the copies applies.
 
