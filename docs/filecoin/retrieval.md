@@ -2,16 +2,16 @@
 
 filecoin-api's `GET /get/{cid}` route turns a CID into a redirect to a server that has the content. This page explains how the route finds that server. It asks the indexer database first, then the `provider` hint, and then [cid.contact](https://cid.contact), the public instance of the [InterPlanetary Network Indexer](https://docs.ipfs.tech/concepts/ipni/) (IPNI). With IPNI, `/get` is not limited to content stored through Filecoin Warm Storage Service (FWSS).
 
-This page is the one place that describes the route: its parameters, responses, lookup order, and cache, and the IPNI research behind them. Other docs link here instead of repeating it. The measurements on this page ran on 2026-11-10 against mainnet, with `curl` from Lisbon against `api.filecoin.io`, `cid.contact`, and `fetch.cid.contact`, before the route used IPNI.
+This page describes the route's parameters, responses, lookup order, and cache, and the IPNI research behind them. Other docs link here instead of repeating them. The measurements on this page ran on 2026-11-10 against mainnet, with `curl` from Lisbon against `api.filecoin.io`, `cid.contact`, and `fetch.cid.contact`, before the route used IPNI.
 
 ## Request and responses
 
-`GET /get/{cid}?network=mainnet&browser=false` redirects with a `302` to where the content can be fetched. The Worker never proxies the bytes.
+`GET /get/{cid}?network=mainnet&browser=false` redirects with a `302` to a server that has the content. The route never proxies the bytes.
 
 | Parameter | Meaning |
 | --- | --- |
 | `cid` | A PieceCID v2 or any IPFS CID, such as a folder root or a file or block inside it |
-| `network` | `mainnet` or `calibration`. Default: `mainnet`. It picks the indexer database and the providers that IPNI answers are ranked against |
+| `network` | `mainnet` or `calibration`. Default: `mainnet`. It picks the indexer database, and the registry providers that the route ranks IPNI answers against |
 | `browser` | `true` sends IPFS content to inbrowser.link, as the next table shows |
 | `provider` | A provider ID to redirect to when the indexer has no copy (see [the hint](#the-hint-comes-after-the-indexer-and-before-cidcontact)) |
 | Any other | Forwarded to the target, such as `format=car` |
@@ -24,6 +24,8 @@ The CID's codec and multihash decide where the redirect goes:
 | PieceCID v2 (`bafkzcib…`) | `true` | `https://inbrowser.link/ipfs/{root}` when the chosen copy has `ipfsRootCID` metadata in an IPFS-indexed data set, otherwise `{serviceUrl}/piece/{cid}` |
 | Other CID (IPFS content) | `false` or absent | `{serviceUrl}/ipfs/{cid}` on a provider whose piece has a matching `ipfsRootCID`, or on a provider that IPNI lists for the CID |
 | Other CID (IPFS content) | `true` | `https://inbrowser.link/ipfs/{cid}`, without a lookup |
+
+The route answers with these statuses:
 
 | Status | Code | When |
 | --- | --- | --- |
@@ -50,7 +52,7 @@ flowchart TD
   req[GET /get/cid] --> parse{parseRetrievalCid}
   parse -- not a CID, or a legacy v1 PieceCID --> e400[400]
   parse -- IPFS CID and browser=true --> inb[302 inbrowser.link/ipfs/cid]
-  parse -- PieceCID, or IPFS CID --> cache{SWR cache}
+  parse -- PieceCID, or IPFS CID --> cache{cache}
   cache -- hit or stale --> found
   cache -- miss --> race[indexer query and IPNI lookup]
   race -- indexer has a copy --> found[provider]
@@ -87,7 +89,7 @@ The indexer knows only what FWSS contracts record on chain. Before the route use
 - **Content stored outside FWSS never resolved.** A CID served by any other Filecoin or IPFS provider returned `404`.
 - **A network without a database returned `503`,** even for content that a provider serves.
 
-IPNI closes the first three gaps for IPFS CIDs. A network without a database binding now resolves through IPNI alone, in IPNI's order, and its `provider` hint is ignored because the route cannot check it.
+IPNI closes the first three gaps for IPFS CIDs. A network without a database binding now resolves through IPNI alone, in IPNI's order. The route ignores its `provider` hint, because it has no provider list to check the hint against.
 
 ## What IPNI knows
 
@@ -107,9 +109,9 @@ cid.contact answers an unknown CID with `404`. Its CDN caches that `404` for up 
 
 FWSS data sets go through Curio's PDP v0 path, [`task_pdp_v0_ipni.go`](https://github.com/filecoin-project/curio/blob/main/tasks/indexing/task_pdp_v0_ipni.go). For a piece in a data set with `withIPFSIndexing`, Curio advertises every block multihash in the CAR with `0x0920` metadata. The context ID is one flags byte followed by the PieceCID v2 bytes ([`PdpIpniContext`](https://github.com/filecoin-project/curio/blob/main/market/ipni/types/types.go)). One record from cid.contact decodes to flags `0x01`, the payload flag, and `bafkzcibftt4poaqteiv5gzoutzi4lmy727flqa2dlp6c6vzct2m7cpdhsiqmi4k3vqha`, the same piece the indexer stores for that root.
 
-Curio advertises a CAR before the add-pieces transaction confirms. It sets `needs_indexing` when it receives the add-pieces request ([`handlers_add.go`](https://github.com/filecoin-project/curio/blob/e00c24bdbb347dcec7ea0bf289d06985f0738023/pdp/handlers_add.go#L432-L470)). Its indexing task runs about every 3 seconds, and its IPNI task about every 30 seconds. Curio's `/ipfs` endpoint answers only after indexing. A folder's blocks therefore resolve through IPNI, and through inbrowser.link, shortly after the commit is sent.
+Curio advertises a CAR before the add-pieces transaction confirms. It sets `needs_indexing` when it receives the add-pieces request ([`handlers_add.go`](https://github.com/filecoin-project/curio/blob/e00c24bdbb347dcec7ea0bf289d06985f0738023/pdp/handlers_add.go#L432-L470)). Its indexing task runs about every 3 seconds, and its IPNI task about every 30 seconds. Curio's `/ipfs` endpoint answers only after indexing. A folder's blocks therefore resolve through IPNI, and through inbrowser.link, shortly after the client sends the commit.
 
-Curio does not advertise FWSS PieceCIDs yet. Its newer pipeline, [`task_pdp_ipni.go`](https://github.com/filecoin-project/curio/blob/main/tasks/indexing/task_pdp_ipni.go), can advertise the PieceCID multihash itself with `0x0930` metadata, and Curio is expected to enable it for FWSS soon. Until then, a new FWSS piece resolves only through the indexer or the hint. Every provider in the sample of roots below had content in cid.contact. The seven mainnet provider hosts we looked up in `GET /providers` had each published an advertisement in the 15 minutes before the check.
+Curio does not advertise FWSS PieceCIDs yet. Its newer pipeline, [`task_pdp_ipni.go`](https://github.com/filecoin-project/curio/blob/main/tasks/indexing/task_pdp_ipni.go), can advertise the PieceCID multihash itself with `0x0930` metadata. Curio will probably enable it for FWSS soon. Until then, a new FWSS piece resolves only through the indexer or the hint. Every provider in the sample of roots below had content in cid.contact. The seven mainnet provider hosts we looked up in `GET /providers` had each published an advertisement in the 15 minutes before the check.
 
 Curio withdraws a PDP advertisement only when it garbage-collects the piece ([`task_piece_gc.go`](https://github.com/filecoin-project/curio/blob/main/tasks/pdpv0/task_piece_gc.go)). Until cid.contact processes the withdrawal, it still lists a provider that dropped the piece.
 
@@ -122,7 +124,7 @@ The FWSS service provider registry has `ipniPiece`, `ipniIpfs`, and `ipniPeerId`
 - A PieceCID v2 redirects to `{provider}/piece/{cid}`.
 - Any other CID redirects to `{provider}/ipfs/{cid}?format=car`.
 - It takes the first provider that advertises the matching transport with an https address. It does not rank providers.
-- It returns `404` when no provider is indexed and `502` when cid.contact is unavailable.
+- It returns `404` when cid.contact lists no provider, and `502` when cid.contact is unavailable.
 
 We found no public source for it. Redirecting `/get` misses to it would add a hop to a service we don't run, ignore our ranking, and force `format=car` on every IPFS redirect. The route queries cid.contact directly instead.
 
@@ -136,7 +138,7 @@ Each row compares cid.contact with `/get`, before the route used IPNI, on the sa
 | 78 IPFS roots, one from each of the newest IPFS-indexed data sets | 73 found | 76 found |
 | 4 child blocks inside one indexed root | 4 found | 0 found |
 
-- **Five roots are missing from cid.contact.** Two return `404` from `/get` too, most likely because their pieces were removed. The other three are one 418 MB `ipfs2fil` root stored on providers 1, 5, and 32. It was added at block 6531147, about 21 hours before the check, and none of the three providers had it in cid.contact. We did not find out why.
+- **Five roots are missing from cid.contact.** Two return `404` from `/get` too, most likely because their providers removed the pieces. The other three are one 418 MB `ipfs2fil` root stored on providers 1, 5, and 32. It was added at block 6531147, about 21 hours before the check, and none of the three providers had it in cid.contact. We did not find out why.
 - **Lookups are fast.** cid.contact answered in 350 to 490 ms on a cold lookup and 50 to 90 ms on a repeat, because a CDN caches its answers. A cached `/get` answered in about 120 ms.
 - **delegated-ipfs.dev returned the same record** as cid.contact for the same root, in 800 ms. It queries the Amino DHT as well as IPNI.
 - **cid.contact mixes networks.** Calibration providers, such as `calib.ezpdpz.net`, advertise to the same instance as mainnet providers.
@@ -177,9 +179,9 @@ The hint stays after the indexer. A hint ahead of the indexer would skip one que
 
 ### The route looks up providers with delegated routing
 
-[`findIpniProviders`](../../apps/filecoin-api/src/ipni.ts) sends `GET {IPNI_URL}/routing/v1/providers/{cid}` with `Accept: application/x-ndjson`. `IPNI_URL` is a Worker variable in [`wrangler.jsonc`](../../apps/filecoin-api/wrangler.jsonc), set to `https://cid.contact`. The delegated routing format is a published spec that cid.contact, delegated-ipfs.dev, and self-hosted routers all serve, so the source can change without code changes. cid.contact is the only router the route calls.
+[`findIpniProviders`](../../apps/filecoin-api/src/ipni.ts) sends `GET {IPNI_URL}/routing/v1/providers/{cid}` with `Accept: application/x-ndjson`. `IPNI_URL` is a Worker variable in [`wrangler.jsonc`](../../apps/filecoin-api/wrangler.jsonc), set to `https://cid.contact`. The delegated routing format is a published spec that cid.contact, delegated-ipfs.dev, and self-hosted routers all serve, so the route can switch routers through `IPNI_URL` alone. cid.contact is the only router the route calls.
 
-The lookup times out after 2 seconds. It reads the NDJSON body line by line and cancels it after 20 records, so a CID with many providers is never buffered whole. `/cid/{cid}` also returns the context ID, but only Curio's context IDs contain a PieceCID, and the route does not need the PieceCID to redirect.
+The lookup times out after 2 seconds. It reads the NDJSON body line by line and cancels it after 20 records, so the Worker never buffers the whole answer for a CID with many providers. `/cid/{cid}` also returns the context ID, but only Curio's context IDs contain a PieceCID, and the route does not need the PieceCID to redirect.
 
 ### The route keeps providers it can redirect to
 
@@ -215,9 +217,9 @@ The route keeps its entries in the [Workers Cache API](https://developers.cloudf
 
 ### The route caches answers, not misses
 
-- **Answers are cached** under `/__cache/v3/{network}/{kind}/{cid}`, with their source, whether they came from the indexer or from cid.contact. An answer is fresh for 10 minutes. After that, the route still serves it at once for up to 24 hours, and refreshes it in the background after the response.
-- **Misses are never cached,** not even for a few seconds, so a folder resolves as soon as Curio's advertisement reaches cid.contact. The per-IP rate limit of 120 requests a minute caps how often one client can make the route call cid.contact. cid.contact's own CDN can still cache its `404` for up to 20 minutes.
-- **Hinted answers are never cached,** so the indexer's ranking takes over once it has the piece.
+- **Answers.** The route caches each answer under `/__cache/v3/{network}/{kind}/{cid}`, with its source, whether it came from the indexer or from cid.contact. An answer is fresh for 10 minutes. After that, the route still serves it at once for up to 24 hours, and refreshes it in the background after the response.
+- **Misses.** The route never caches a miss, not even for a few seconds, so a folder resolves as soon as Curio's advertisement reaches cid.contact. The per-IP rate limit of 120 requests a minute caps how often one client can make the route call cid.contact. cid.contact's own CDN can still cache its `404` for up to 20 minutes.
+- **Hinted answers.** The route never caches them, so the indexer's ranking takes over once it has the piece.
 
 ### The route caches the active providers
 
@@ -225,21 +227,21 @@ Ranking needs each provider's host, `endorsed`, and `approved`. A query for them
 
 - **Key.** `/__cache/v3/{network}/providers`.
 - **Entries.** [`listActiveProviders`](../../apps/filecoin-api/src/queries/providers.ts) returns every provider that is active, has an active PDP product, and has an `http` or `https` service URL. Each entry has `providerId`, `serviceUrl`, the `URL.host` of the service URL, `endorsed`, and `approved`. Mainnet had 49 such providers and calibration 56 on 2026-11-10.
-- **Freshness.** Fresh for 10 minutes and served stale for up to 24 hours, the same limits as answers.
+- **Freshness.** The list is fresh for 10 minutes, and the route serves it stale for up to 24 hours, the same limits as answers.
 - **Load.** The route reads the list only after the indexer misses. cid.contact is still answering then, so a cache miss on the list rarely adds to the wait, and an indexer hit never reads it.
 
-The list also answers the `provider` hint, with the same conditions the hint's own query used to check. A provider registered in the last 10 minutes can be missing from a fresh list. Its hint then falls through to cid.contact until the list is revalidated.
+The list also answers the `provider` hint. A hint counts only if it names a provider in the list. A provider that registered in the last 10 minutes can be missing from a fresh list. Its hint then falls through to cid.contact until the route revalidates the list.
 
 ## Decisions
 
-These questions came up during the research, and each has an answer:
+The research raised these questions:
 
-- **Race cid.contact with the indexer?** Yes, and the indexer answer wins whenever it has a copy.
+- **Race cid.contact with the indexer?** Yes, and the indexer's answer wins whenever it has a copy.
 - **Where does the `provider` hint go?** After the indexer and before cid.contact. A request with a hint calls cid.contact only if the hint names no active provider.
 - **Query the registry for ranking after cid.contact answers?** No. The route caches the active providers per network, and the same list answers the `provider` hint.
 - **Cache cid.contact misses?** No. Misses are never cached.
 - **Resolve legacy v1 PieceCIDs through cid.contact?** No. They keep returning `400`.
 - **Find out why the 418 MB `ipfs2fil` root is missing from cid.contact?** No. The fallback does not depend on the answer.
-- **Have FWSS providers advertise PieceCIDs?** Curio is expected to enable it for FWSS soon. The route already looks up PieceCIDs in cid.contact, so it needs no change when Curio does.
+- **Have FWSS providers advertise PieceCIDs?** Curio will probably enable it for FWSS soon. The route already looks up PieceCIDs in cid.contact, so it needs no change when Curio does.
 - **Store the registry's `ipniPeerId`, `ipniPiece`, and `ipniIpfs` capabilities in the indexer?** Not for now. Ranking matches providers by host.
 - **Use delegated-ipfs.dev as a second router?** No. cid.contact is the only router.
