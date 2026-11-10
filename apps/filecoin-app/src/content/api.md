@@ -24,12 +24,14 @@ Conventions:
 | --- | --- | --- |
 | PieceCID v2 (`bafkzcib…`) | `false` or absent | The provider's `/piece/{cid}` |
 | PieceCID v2 (`bafkzcib…`) | `true` | `https://inbrowser.link/ipfs/{root}` when the piece is a folder, otherwise the provider's `/piece/{cid}` |
-| Other CID (IPFS content) | `false` or absent | The provider's `/ipfs/{cid}` |
+| Other CID (IPFS content) | `false` or absent | The provider's `/ipfs/{cid}`, for a folder root or for any file or block inside it |
 | Other CID (IPFS content) | `true` | `https://inbrowser.link/ipfs/{cid}` |
 
 `provider={id}` names a provider to redirect to when the indexer has no copy yet. It covers the time between a provider receiving a piece and the indexer seeing the commit. An indexed copy always wins over it. `filecoin put` adds it to the early links it prints before the commit confirms.
 
-Legacy v1 PieceCIDs (`baga…`) and strings that aren't CIDs return `400`. If no live copy exists and no `provider` applies, the response is `404`. When several providers store the content, the route prefers endorsed providers, then approved ones, then the oldest copy.
+When neither the indexer nor `provider` has the CID, the route looks it up in [IPNI](https://cid.contact) and redirects to a provider that serves it over https, including providers outside Filecoin. The `X-Source` header says whether the answer came from `index`, `hint`, or `ipni`.
+
+Legacy v1 PieceCIDs (`baga…`) and strings that aren't CIDs return `400`. If no source has the CID, the response is `404`. If IPNI fails after the indexer had no copy, the response is `502`. When several providers store the content, the route prefers endorsed providers, then approved ones, then the oldest copy.
 
 ## MCP server
 
