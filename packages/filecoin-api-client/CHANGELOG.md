@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/filecoin-project/agents/compare/filecoin-api-client-v0.2.0...filecoin-api-client-v0.3.0) (2026-11-10)
+
+
+### Features
+
+* **filecoin-api-client:** add the X-Source header and 502 to retrieve ([66749c8](https://github.com/filecoin-project/agents/commit/66749c82a8dff46e5ccfa84fd508cc2bfcf8a922))
+
 ## [0.2.0](https://github.com/filecoin-project/agents/compare/filecoin-api-client-v0.1.0...filecoin-api-client-v0.2.0) (2026-10-23)
 
 
