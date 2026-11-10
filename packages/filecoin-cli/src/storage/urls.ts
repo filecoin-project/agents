@@ -7,7 +7,7 @@ import type { Resource } from '../state/resources.ts'
  * filecoin-api retrieval URLs for stored content. Each redirects to where the
  * content can be fetched; filecoin-api never proxies the bytes.
  *
- * @see ../../../../apps/filecoin-api/README.md#retrieval
+ * @see ../../../../docs/filecoin/retrieval.md
  */
 export type RetrievalUrls = {
   /** Exact stored bytes: `/get/<pieceCid>` redirects to a provider's `/piece/<pieceCid>`. */
@@ -54,7 +54,7 @@ function getUrl(
  * the piece. `put` adds it only to the links it reports before the commit
  * confirms. A folder's browser URL leaves it out: filecoin-api never looks it up.
  *
- * @see ../../../../apps/filecoin-api/README.md#retrieval
+ * @see ../../../../docs/filecoin/retrieval.md
  */
 export function retrievalUrls(options: {
   apiUrl: string
