@@ -1,6 +1,6 @@
 # CLI
 
-`filecoin` stores a file or a folder as one copy on one storage provider and returns retrieval links. It runs on the calibration network unless you choose mainnet. It needs Node.js 24 or newer:
+`filecoin` stores a file or a folder as one copy on one storage provider and returns retrieval links. It runs on the calibration network unless you choose mainnet. It needs Node.js 24 or newer. Install the [`filecoin` package from npm](https://www.npmjs.com/package/filecoin):
 
 ```sh
 npm install -g filecoin

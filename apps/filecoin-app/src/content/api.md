@@ -4,6 +4,8 @@
 
 The interactive reference is at [`/docs`](https://api.filecoin.io/docs), and the OpenAPI 3.1 document is at [`/openapi.json`](https://api.filecoin.io/openapi.json).
 
+To call the API from TypeScript, install [`@filecoin-project/api-client`](https://www.npmjs.com/package/@filecoin-project/api-client) from npm. Its types come from the OpenAPI document, and it runs wherever `fetch` does.
+
 ## Routes
 
 `GET /openapi.json` lists every route and its filters, and `POST /mcp` is the MCP server, which also has its own host, `https://mcp.filecoin.io`. `GET /health` reports the latest indexed block per network, and [`GET /get/{cid}`](#retrieval) redirects to where content can be retrieved. Every data route starts with the network, `/calibration/...` or `/mainnet/...`, and reads one of: indexer status, storage providers, data sets and their pieces, pieces by owner or PieceCID, Filecoin Pay rails and their settlements, and session keys and their history.

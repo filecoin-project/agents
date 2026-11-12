@@ -11,6 +11,7 @@ import {
   markdownPath,
   robotsTxt,
   serverCardRedirect,
+  serverCardUrl,
   sitemapXml,
 } from './discovery'
 import { MARKDOWN_TYPE } from './negotiate'
@@ -112,8 +113,24 @@ export function llmsResponse(request: Request, full: boolean) {
       },
       {
         title: 'MCP server card',
-        url: `${origin}/.well-known/mcp/server-card.json`,
+        url: serverCardUrl(env.mcpUrl),
         description: 'filecoin-api MCP server, Streamable HTTP',
+      },
+      {
+        title: 'AI Catalog',
+        url: `${origin}/.well-known/ai-catalog.json`,
+        description: "The site's agent artifacts: the MCP server card",
+      },
+      {
+        title: 'filecoin on npm',
+        url: 'https://www.npmjs.com/package/filecoin',
+        description: 'The filecoin CLI, Node.js 24 or newer',
+      },
+      {
+        title: '@filecoin-project/api-client on npm',
+        url: 'https://www.npmjs.com/package/@filecoin-project/api-client',
+        description:
+          'Typed filecoin-api REST client, generated from the OpenAPI document',
       },
       ...skills.map((skill) => ({
         title: `Agent skill: ${skill.name}`,

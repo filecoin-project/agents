@@ -37,7 +37,7 @@ npx skills add https://poc.filecoin.cloud
 
 `npx skills add filecoin-project/agents` installs the same skill from GitHub. Agents that support [agent skills discovery](https://github.com/cloudflare/agent-skills-discovery-rfc) find it at [`/.well-known/agent-skills/index.json`](/.well-known/agent-skills/index.json).
 
-The agent runs the CLI with `npx -y filecoin`, which needs Node.js 24 or newer. To install it instead, run `npm install -g filecoin`. Then `filecoin skills install` installs the copy of the skill that matches the installed CLI.
+The agent runs the CLI, the [`filecoin` package on npm](https://www.npmjs.com/package/filecoin), with `npx -y filecoin`, which needs Node.js 24 or newer. To install it instead, run `npm install -g filecoin`. Then `filecoin skills install` installs the copy of the skill that matches the installed CLI.
 
 The first `filecoin login` asks you to [approve the agent's key](#approve-the-agents-key).
 
