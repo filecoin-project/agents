@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { VERSION } from '../src/app.ts'
-import { MODERN_PROTOCOL_VERSION } from '../src/server-card.ts'
+import {
+  MCP_SERVER_ICONS,
+  MODERN_PROTOCOL_VERSION,
+} from '../src/server-card.ts'
 import { rows, testApp } from './helpers.ts'
 
 function rpc(method: string, params: unknown = {}, id = 1) {
@@ -68,7 +71,7 @@ describe('mcp', () => {
     const body = (await res.json()) as RpcResult<{
       serverInfo: { name: string; title: string; version: string }
     }>
-    expect(body.result.serverInfo).toEqual({
+    expect(body.result.serverInfo).toMatchObject({
       name: 'io.filecoin/mcp',
       title: 'Filecoin',
       version: VERSION,
@@ -81,6 +84,7 @@ describe('mcp', () => {
       name: string
       title: string
       version: string
+      icons: { src: string; mimeType: string }[]
       remotes: { supportedProtocolVersions: string[] }[]
     }
     const res = await request(
@@ -92,13 +96,20 @@ describe('mcp', () => {
       })
     )
     const body = (await res.json()) as RpcResult<{
-      serverInfo: { name: string; title: string; version: string }
+      serverInfo: {
+        name: string
+        title: string
+        version: string
+        icons: unknown[]
+      }
     }>
     expect(body.result.serverInfo).toEqual({
       name: card.name,
       title: card.title,
       version: card.version,
+      icons: card.icons,
     })
+    expect(card.icons.map((icon) => icon.mimeType)).toContain('image/png')
     expect(card.remotes[0]?.supportedProtocolVersions).toContain('2025-06-18')
     expect(card.remotes[0]?.supportedProtocolVersions).toContain(
       MODERN_PROTOCOL_VERSION
@@ -118,6 +129,7 @@ describe('mcp', () => {
       name: 'io.filecoin/mcp',
       title: 'Filecoin',
       version: VERSION,
+      icons: MCP_SERVER_ICONS,
     })
   })
 

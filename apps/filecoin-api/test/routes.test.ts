@@ -8,6 +8,13 @@ describe('rest routes', () => {
     expect(fake.queries).toHaveLength(0)
   })
 
+  it('links the index to the OpenAPI document and the docs', async () => {
+    const { request } = testApp()
+    const link = (await request('/')).headers.get('link')
+    expect(link).toContain('</openapi.json>; rel="service-desc"')
+    expect(link).toContain('</docs>; rel="service-doc"')
+  })
+
   it('lists providers with pagination and cache headers', async () => {
     const { request, fake } = testApp(() => [
       rows.provider,
