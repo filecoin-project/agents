@@ -72,13 +72,13 @@ The HTML responses send `Vary: Accept` and a `Link` header to the Markdown versi
 
 Other pages have no Markdown version. TanStack Start answers a request that accepts neither `text/html` nor `*/*` with a JSON `406`, so `src/server.ts` wraps its handler with `src/lib/site/markdown-errors.ts`. The wrapper renders the page as HTML to learn whether it exists, then answers in Markdown: `404` with links to `llms.txt` and the sitemap when no page matches, or `406` when the page exists only as HTML. Redirects and errors pass through.
 
-Site pages set a canonical URL and Open Graph tags, and the root route adds the site-wide ones, including the social image at `public/og.png`. The landing page also describes Filecoin for Agents as a schema.org `SoftwareApplication` in JSON-LD. These absolute URLs come from `VITE_SITE_URL`.
+Site pages set a canonical URL and Open Graph tags, and the root route adds the site-wide ones, including the social image at `public/og.png`. `public/icon-192.png` is a PNG of `public/favicon.svg`, for filecoin-api's MCP server icons. The landing page also describes Filecoin for Agents as a schema.org `SoftwareApplication` in JSON-LD. These absolute URLs come from `VITE_SITE_URL`.
 
 Server routes serve the files that agents use to discover the site:
 
 | Path | Contents |
 | --- | --- |
-| `/llms.txt`, `/llms-full.txt` | An [llms.txt](https://llmstxt.org) index of the site with a short summary and the way in for each kind of agent, and every page in one file |
+| `/llms.txt`, `/llms-full.txt` | An [llms.txt](https://llmstxt.org) index of the site with a short summary and the way in for each kind of agent, and every page in one file. Its Optional section links the OpenAPI document, filecoin-api's MCP server card, the AI Catalog, the `filecoin` CLI and `@filecoin-project/api-client` on npm, and the agent skill |
 | `/.well-known/api-catalog` | An [RFC 9727](https://www.rfc-editor.org/rfc/rfc9727) linkset to filecoin-api's OpenAPI document, reference, and health check, with its MCP server as an `item`. `HEAD` returns the `api-catalog` link relation |
 | `/.well-known/integrations.json` | The [integrations.sh](https://integrations.sh/publishing/) owner declaration: filecoin-api's REST API and MCP server, which need no credentials, and the `filecoin` CLI with its session key |
 | `/.well-known/ai-catalog.json` | An [AI Catalog](https://ai-catalog.io) that lists filecoin-api's MCP server card at `<MCP URL>/server-card`, as `urn:air:filecoin.io:mcp:mcp`. The [server card discovery](https://github.com/modelcontextprotocol/experimental-ext-server-card/blob/main/docs/discovery.md#ai-catalog) of [SEP-2127](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/seps/2127-mcp-server-cards.md) reads it |
