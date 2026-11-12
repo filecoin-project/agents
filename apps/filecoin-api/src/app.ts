@@ -101,6 +101,7 @@ export function createApp(options: AppOptions = {}) {
         'Last-Event-ID',
       ],
       exposeHeaders: [
+        'Link',
         'Mcp-Session-Id',
         'X-Request-Id',
         'Retry-After',
@@ -110,8 +111,14 @@ export function createApp(options: AppOptions = {}) {
     })
   )
 
-  app.get('/', (c) =>
-    c.json({
+  // RFC 8631 links from the API root to its description and docs, for
+  // clients that start from the URL alone.
+  app.get('/', (c) => {
+    c.header(
+      'Link',
+      '</openapi.json>; rel="service-desc"; type="application/json", </docs>; rel="service-doc"; type="text/html"'
+    )
+    return c.json({
       name: 'filecoin-api',
       version: VERSION,
       networks: NETWORK_NAMES,
@@ -121,7 +128,7 @@ export function createApp(options: AppOptions = {}) {
       mcp: '/mcp',
       serverCard: '/mcp/server-card',
     })
-  )
+  })
   // Health queries every network's database, so it shares the API limit.
   app.get('/health', rateLimit('RATE_LIMIT_API'), async (c) => {
     const health = await checkHealth({

@@ -33,6 +33,26 @@ export const MCP_SERVER_NAME = 'io.filecoin/mcp'
 /** Display name of the MCP server, shared by `serverInfo` and the card. */
 export const MCP_SERVER_TITLE = 'Filecoin'
 
+/**
+ * Icons of the MCP server, served by filecoin-app. `serverInfo` and the card
+ * both list them, so clients show the same icon before and after they
+ * connect. Clients that show icons must support PNG; SVG is optional.
+ *
+ * @see https://modelcontextprotocol.io/specification/2025-11-25/basic/index#icons
+ */
+export const MCP_SERVER_ICONS = [
+  {
+    src: 'https://poc.filecoin.cloud/icon-192.png',
+    mimeType: 'image/png',
+    sizes: ['192x192'],
+  },
+  {
+    src: 'https://poc.filecoin.cloud/favicon.svg',
+    mimeType: 'image/svg+xml',
+    sizes: ['any'],
+  },
+]
+
 /** Media type of an MCP server card. */
 export const SERVER_CARD_TYPE = 'application/mcp-server-card+json'
 
@@ -67,6 +87,7 @@ export function mcpServerCard(mcpUrl: string, version: string) {
     version,
     description:
       'Read-only Filecoin data: storage providers, data sets, pieces, Filecoin Pay rails, and session keys on mainnet and calibration, and a search of the Filecoin docs.',
+    icons: MCP_SERVER_ICONS,
     websiteUrl: 'https://poc.filecoin.cloud/docs/api',
     repository: {
       url: 'https://github.com/filecoin-project/agents',

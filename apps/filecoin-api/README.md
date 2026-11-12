@@ -8,6 +8,7 @@ Built with [Hono](https://hono.dev), [`@hono/zod-openapi`](https://github.com/ho
 
 | Route | Description |
 | --- | --- |
+| `GET /` | The API's name, version, networks, and route paths, as JSON. A `Link` header points to `/openapi.json` as `service-desc` and to `/docs` as `service-doc` ([RFC 8631](https://www.rfc-editor.org/rfc/rfc8631)) |
 | `GET /openapi.json` | OpenAPI 3.1 document |
 | `GET /docs` | API reference (Scalar) |
 | `POST /mcp` | MCP server (Streamable HTTP, stateless) |
@@ -58,12 +59,13 @@ Plugins released before the MCP hosts existed, and connectors added by hand, poi
 
 ### Server card
 
-The card describes the MCP server before a client connects: its name, title, version, and Streamable HTTP endpoint. [`src/server-card.ts`](src/server-card.ts) builds it, and `serverInfo` reads the same name and title from there, so a client sees the same identity before and after it connects:
+The card describes the MCP server before a client connects: its name, title, icons, version, and Streamable HTTP endpoint. [`src/server-card.ts`](src/server-card.ts) builds it, and `serverInfo` reads the same name, title, and icons from there, so a client sees the same identity before and after it connects:
 
 | Field | Value |
 | --- | --- |
 | `name` | `io.filecoin/mcp`, which is `mcp.filecoin.io` in reverse-DNS form. The MCP registry entry uses the same name ([#75](https://github.com/filecoin-project/agents/issues/75)) |
 | `title` | `Filecoin` |
+| `icons` | A 192-pixel PNG and an SVG of the Filecoin logo, which filecoin-app serves at `https://poc.filecoin.cloud/icon-192.png` and `https://poc.filecoin.cloud/favicon.svg`. MCP clients that show icons must support PNG |
 | `version` | The filecoin-api version |
 | `remotes[0].url` | `MCP_PUBLIC_URL`, which is `https://mcp.filecoin.io` in production, on every host. Previews and `pnpm dev` set it to an empty string, so the card advertises the endpoint on the request's host: its root on an MCP host, and `/mcp` elsewhere |
 | `remotes[0].supportedProtocolVersions` | `2026-07-28`, then the MCP SDK's `initialize` versions that include Streamable HTTP, from `2025-03-26` |
