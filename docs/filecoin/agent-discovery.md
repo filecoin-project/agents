@@ -2,7 +2,7 @@
 
 This document lists every agent discovery spec that applies to Filecoin for Agents. For each spec, it says what the spec is, what we serve today, what is missing, and which host should serve it. It also lists the specs that don't apply.
 
-We checked each host with `curl` on 2026-10-21, after [#76](https://github.com/filecoin-project/agents/pull/76) deployed filecoin-api's MCP server card. The poc.filecoin.cloud cells include [#80](https://github.com/filecoin-project/agents/pull/80), which closes [#61](https://github.com/filecoin-project/agents/issues/61). We checked #80 on its preview deploy. [Reproduce the checks](#reproduce-the-checks) has the commands. For details on the hosts that other teams run, see [Agent discovery on filecoin.io](filecoin-io-agent-support.md) and [Agent support on docs.filecoin.io](filecoin-docs-agent-support.md).
+We checked each host with `curl` on 2026-10-21, after [#76](https://github.com/filecoin-project/agents/pull/76) deployed filecoin-api's MCP server card. The poc.filecoin.cloud cells include [#80](https://github.com/filecoin-project/agents/pull/80), which closes [#61](https://github.com/filecoin-project/agents/issues/61). We checked #80 on its preview deploy. We checked the hosts again on 2026-11-12. Three changes since then describe the code, and they reach the hosts with the next releases of filecoin-app and filecoin-api: the `llms.txt` links, the `service-desc` header on `https://api.filecoin.io/`, and the MCP server icons. [Reproduce the checks](#reproduce-the-checks) has the commands. For details on the hosts that other teams run, see [Agent discovery on filecoin.io](filecoin-io-agent-support.md) and [Agent support on docs.filecoin.io](filecoin-docs-agent-support.md).
 
 ## The hosts
 
@@ -59,7 +59,7 @@ Each cell has one of these values:
 | [Agent skills discovery](#agent-skills-discovery) | Draft | Served | Not applicable | Not applicable | Theirs, missing | Not applicable |
 | [WebMCP](#webmcp) | Draft | Served | Not applicable | Not applicable | Theirs, not served | Theirs, served |
 | [OpenAPI document](#openapi-document) | Final (3.1) | Not applicable | Served | Not applicable | Not applicable | Not applicable |
-| [`service-desc` link](#service-desc-link) | Final (RFC 8631) | Missing | Missing | Not applicable | Not applicable | Not applicable |
+| [`service-desc` link](#service-desc-link) | Final (RFC 8631) | Missing | Served | Not applicable | Not applicable | Not applicable |
 | [`robots.txt`](#robotstxt-and-content-signal) | Final (RFC 9309) | Served | Not applicable | Not applicable | Theirs, served | Theirs, served |
 | [Content-Signal](#robotstxt-and-content-signal) | Vendor policy | Missing | Not applicable | Not applicable | Theirs, missing | Theirs, served |
 | [Sitemap](#sitemap-json-ld-and-open-graph) | Final (0.9) | Served | Not applicable | Not applicable | Theirs, served | Theirs, served |
@@ -76,9 +76,9 @@ No host serves the MCP registry's `server.json`. We publish it to the registry, 
 
 **What it is.** [llms.txt](https://llmstxt.org) is a proposal, not a standard. `/llms.txt` is a Markdown index of a site for language models. `/llms-full.txt` holds the site's content in one file.
 
-**What we serve.** poc.filecoin.cloud serves both files. Its `llms.txt` has a summary and the way in for each kind of agent. It links each page's Markdown version, the OpenAPI document, the MCP server, the server card, and the agent skill. docs.filecoin.io serves both files through GitBook. www.filecoin.io serves neither.
+**What we serve.** poc.filecoin.cloud serves both files. Its `llms.txt` has a summary and the way in for each kind of agent. It links each page's Markdown version, the OpenAPI document, the MCP server, filecoin-api's server card, the AI Catalog, the `filecoin` CLI and the API client on npm, and the agent skill. docs.filecoin.io serves both files through GitBook. www.filecoin.io serves neither.
 
-**What's missing.** `llms.txt` doesn't link the `filecoin` CLI on npm ([#63](https://github.com/filecoin-project/agents/issues/63)). It still links the site's old card path, `/.well-known/mcp/server-card.json`, which redirects to filecoin-api's card.
+**What's missing.** Nothing is missing on our hosts.
 
 **Where it belongs.** The sites serve `llms.txt`, and it links to filecoin-api. filecoin-api's hosts don't serve one.
 
@@ -118,7 +118,7 @@ docs.filecoin.io serves `.md` URLs, answers `Accept: text/markdown`, and has the
 
 **What it is.** [SEP-2127](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/seps/2127-mcp-server-cards.md) is final. A card describes an MCP server before a client connects. The SEP reserves `<streamable-http-url>/server-card` for it. The server card extension's [discovery doc](https://github.com/modelcontextprotocol/experimental-ext-server-card/blob/main/docs/discovery.md) sets the media type, `application/mcp-server-card+json`. Older drafts used `/.well-known/mcp/server-card.json` and `/.well-known/mcp-server-card`.
 
-**What we serve.** filecoin-api serves the card at `https://mcp.filecoin.io/server-card` and `https://api.filecoin.io/mcp/server-card`. It also serves the card at both older paths on each of its hosts, because scanners still check them. The response is `application/mcp-server-card+json`, with `max-age=3600` and an `ETag`. The card's `name` and the server's `serverInfo.name` are both `io.filecoin/mcp`, which is `mcp.filecoin.io` in reverse. Every production card advertises `https://mcp.filecoin.io`, from the `MCP_PUBLIC_URL` variable ([filecoin-api README](../../apps/filecoin-api/README.md#server-card)).
+**What we serve.** filecoin-api serves the card at `https://mcp.filecoin.io/server-card` and `https://api.filecoin.io/mcp/server-card`. It also serves the card at both older paths on each of its hosts, because scanners still check them. The card and `serverInfo` list the same two icons, a PNG and an SVG that poc.filecoin.cloud serves. The response is `application/mcp-server-card+json`, with `max-age=3600` and an `ETag`. The card's `name` and the server's `serverInfo.name` are both `io.filecoin/mcp`, which is `mcp.filecoin.io` in reverse. Every production card advertises `https://mcp.filecoin.io`, from the `MCP_PUBLIC_URL` variable ([filecoin-api README](../../apps/filecoin-api/README.md#server-card)).
 
 poc.filecoin.cloud builds no card of its own. Its two older paths return a `308` to `https://mcp.filecoin.io/server-card`, with `Access-Control-Allow-Origin: *`. They redirect instead of proxying, because a server-side fetch from the `filecoin.cloud` zone to `mcp.filecoin.io` fails ([same-zone fetches](deployments.md#same-zone-fetches)). docs.filecoin.io serves the card of GitBook's docs MCP server at `/~gitbook/mcp/server-card` and `/.well-known/mcp/server-card.json`.
 
@@ -160,9 +160,9 @@ poc.filecoin.cloud builds no card of its own. Its two older paths return a `308`
 
 **What it is.** [WebMCP](https://webmachinelearning.github.io/webmcp/) is a draft report of the W3C Web Machine Learning Community Group. A page registers tools that a browser agent can call.
 
-**What we serve.** poc.filecoin.cloud registers seven tools from its script bundle, six of them on every page ([filecoin-app README](../../apps/filecoin-app/README.md#webmcp)). They work in Chrome 149 and later through an origin trial, whose token expires on 2027-03-30. On docs.filecoin.io, GitBook's script connects to its docs MCP server and registers that server's tools as WebMCP tools ([Agent support on docs.filecoin.io](filecoin-docs-agent-support.md#what-works-today)).
+**What we serve.** poc.filecoin.cloud registers seven tools from its script bundle, six of them on every page ([filecoin-app README](../../apps/filecoin-app/README.md#webmcp)). They work in Chrome 149 and later through an origin trial, whose token expires on 2027-03-30. Codex in the ChatGPT desktop app and the ChatGPT Chrome extension ran the login flow end to end with them, and both left the wallet approval to the user. Claude in Chrome finds them through `document.modelContext` ([#8](https://github.com/filecoin-project/agents/issues/8)). On docs.filecoin.io, GitBook's script connects to its docs MCP server and registers that server's tools as WebMCP tools ([Agent support on docs.filecoin.io](filecoin-docs-agent-support.md#what-works-today)).
 
-**What's missing.** Nobody has tested the tools with real browser agents yet ([#8](https://github.com/filecoin-project/agents/issues/8)). No tool verifies a file in the page yet. The "Browser verification" follow-up in the [README](README.md#follow-up-work) covers that tool.
+**What's missing.** No tool verifies a file in the page yet. The "Browser verification" follow-up in the [README](README.md#follow-up-work) covers that tool.
 
 **Where it belongs.** The pages that a browser agent uses register the tools. Those pages are on poc.filecoin.cloud. filecoin-api's hosts serve no pages.
 
@@ -180,9 +180,9 @@ poc.filecoin.cloud builds no card of its own. Its two older paths return a `308`
 
 **What it is.** The `service-desc` link relation ([RFC 8631](https://www.rfc-editor.org/rfc/rfc8631)) is final. It points from an API, or from a page, to the API's machine-readable description.
 
-**What we serve.** The API catalog uses `service-desc`. No response header or HTML `<link>` tag uses it.
+**What we serve.** The API catalog uses `service-desc`. `https://api.filecoin.io/` sends `Link: </openapi.json>; rel="service-desc"`, and it links `/docs` as `service-doc`.
 
-**What's missing.** `https://api.filecoin.io/` should send `Link: </openapi.json>; rel="service-desc"`, and no issue tracks that yet. A `<link rel="service-desc">` tag on poc.filecoin.cloud is one possible outcome of [#56](https://github.com/filecoin-project/agents/issues/56).
+**What's missing.** poc.filecoin.cloud has no `service-desc` link. A `<link rel="service-desc">` tag on poc.filecoin.cloud is one possible outcome of [#56](https://github.com/filecoin-project/agents/issues/56).
 
 **Where it belongs.** filecoin-api sends the header. The site adds the `<link>` tag.
 
@@ -249,9 +249,6 @@ These pieces are ours:
 - Find out why Is Agentic finds no API from poc.filecoin.cloud ([#56](https://github.com/filecoin-project/agents/issues/56))
 - Version the REST API, and send `Deprecation` and `Sunset` ([#60](https://github.com/filecoin-project/agents/issues/60))
 - Add `Organization` JSON-LD and the About, Contact, Privacy, and Pricing pages ([#62](https://github.com/filecoin-project/agents/issues/62))
-- Link the `filecoin` CLI and the API client on npm from the site and `llms.txt` ([#63](https://github.com/filecoin-project/agents/issues/63))
-- Test the WebMCP tools with real browser agents ([#8](https://github.com/filecoin-project/agents/issues/8))
-- Send `Link: </openapi.json>; rel="service-desc"` from `https://api.filecoin.io/` (no issue yet)
 - Choose a Content-Signal policy for poc.filecoin.cloud's `robots.txt` (no issue yet)
 
 These pieces belong to other teams:
@@ -285,6 +282,9 @@ curl -s -X POST https://mcp.filecoin.io \
 for u in https://poc.filecoin.cloud/ https://www.filecoin.io/ https://docs.filecoin.io/getting-started/what-is-filecoin; do
 	curl -sI -H "Accept: text/markdown" "$u" | grep -iE "^(content-type|vary|link):"
 done
+
+# service-desc link on the API root
+curl -sI https://api.filecoin.io/ | grep -i "^link:"
 
 # Rate-limit policy
 curl -sI https://api.filecoin.io/health | grep -i ratelimit-policy
