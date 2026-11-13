@@ -5,8 +5,6 @@ import {
   NoEndorsedProviderError,
   TransactionNotAppliedError,
 } from '@filoz/synapse-core/errors'
-import * as Pay from '@filoz/synapse-core/pay'
-import * as PDPVerifier from '@filoz/synapse-core/pdp-verifier'
 import * as Piece from '@filoz/synapse-core/piece'
 import * as SP from '@filoz/synapse-core/sp'
 import * as WarmStorage from '@filoz/synapse-core/warm-storage'
@@ -33,24 +31,6 @@ export function createSynapseBackend(
   const signer = sessionKey.client
   const payer = sessionKey.rootAddress
   const signal = app.signal
-  const dataSets = new Map<
-    bigint,
-    ReturnType<typeof WarmStorage.getPdpDataSet>
-  >()
-
-  /**
-   * Read a data set once per invocation. A failed read is forgotten so the
-   * next call tries again.
-   */
-  function getDataSet(dataSetId: bigint) {
-    let dataSet = dataSets.get(dataSetId)
-    if (!dataSet) {
-      dataSet = WarmStorage.getPdpDataSet(client, { dataSetId })
-      dataSet.catch(() => dataSets.delete(dataSetId))
-      dataSets.set(dataSetId, dataSet)
-    }
-    return dataSet
-  }
 
   return {
     async selectPlacement({ metadata, providerId }) {
@@ -101,21 +81,13 @@ export function createSynapseBackend(
     },
 
     async quote({ size, placement }) {
-      const existing =
-        placement.dataSetId == null
-          ? undefined
-          : await existingDataSetCosts(placement.dataSetId)
       const costs = await WarmStorage.getUploadCosts(client, {
         clientAddress: payer,
         pieceSizes: [BigInt(size)],
-        isNewDataSet: existing == null,
-        ...existing,
+        ...(placement.dataSetId == null
+          ? { isNewDataSet: true }
+          : { dataSetId: placement.dataSetId }),
       })
-      // The balance target needs the account's funds, read only for a deposit.
-      const summary =
-        costs.depositNeeded > 0n
-          ? await Pay.getAccountSummary(client, { address: payer })
-          : undefined
       return {
         ready: costs.ready,
         depositNeeded: costs.depositNeeded,
@@ -127,14 +99,10 @@ export function createSynapseBackend(
           network: app.network,
           tags: app.linkTags,
           deposit: costs.depositNeeded,
-          ...(summary
-            ? {
-                balance: targetBalance({
-                  ...summary,
-                  depositNeeded: costs.depositNeeded,
-                }),
-              }
-            : {}),
+          balance: targetBalance({
+            ...costs.account,
+            depositNeeded: costs.depositNeeded,
+          }),
         }),
       }
     },
@@ -244,7 +212,7 @@ export function createSynapseBackend(
     },
 
     async schedulePieceRemoval({ serviceURL, dataSetId, pieceId }) {
-      const dataSet = await getDataSet(dataSetId)
+      const dataSet = await WarmStorage.getDataSet(client, { dataSetId })
       if (!dataSet) throw notFound(`Data set ${dataSetId} not found.`)
       const result = await SP.schedulePieceDeletions(signer, {
         serviceURL,
@@ -271,21 +239,6 @@ export function createSynapseBackend(
         throw error
       }
     },
-  }
-
-  /** Inputs `getUploadCosts` needs for an existing data set. */
-  async function existingDataSetCosts(dataSetId: bigint) {
-    const [dataSet, leafCount] = await Promise.all([
-      getDataSet(dataSetId),
-      PDPVerifier.getDataSetLeafCount(client, { dataSetId }),
-    ])
-    if (!dataSet) return undefined
-    return {
-      dataSetLeafCount: leafCount,
-      currentLifecycleReserveBalance: dataSet.lifecycleReserveBalance,
-      pendingOneTimePayments: dataSet.pendingOneTimePayments,
-      pdpEndEpoch: dataSet.pdpEndEpoch,
-    }
   }
 }
 
