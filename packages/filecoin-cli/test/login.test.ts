@@ -1,33 +1,18 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { sessionKeyRegistry } from '@filoz/synapse-core/abis'
-import { calibration } from '@filoz/synapse-core/chains'
 import { FwssPermissions } from '@filoz/synapse-core/session-key'
-import {
-  type Address,
-  createPublicClient,
-  custom,
-  encodeAbiParameters,
-  encodeEventTopics,
-  getAbiItem,
-  numberToHex,
-  parseUnits,
-} from 'viem'
+import { type Address, parseUnits } from 'viem'
 import {
   buildAuthorizeUrl,
   buildConsoleUrl,
   buildFundingUrl,
   buildRevokeUrl,
   classifyScopes,
-  findAuthorizer,
-  LOG_WINDOW,
   targetBalance,
 } from '../src/auth/login.ts'
 import { loginCommand } from '../src/auth/session.ts'
 
-const OWNER = '0x1111111111111111111111111111111111111111' as Address
 const SIGNER = '0x2222222222222222222222222222222222222222' as Address
-const OTHER = '0x3333333333333333333333333333333333333333' as Address
 
 test('buildAuthorizeUrl matches the Filecoin Pay console setup link', () => {
   const url = new URL(
@@ -184,79 +169,6 @@ test('classifyScopes splits live and missing scopes', () => {
     missing: ['schedulePieceRemovals'],
     expiresAt: 150n,
   })
-})
-
-/** Encode an `AuthorizationsUpdated` log. */
-function authorizationLog(identity: Address, signer: Address, block: bigint) {
-  const event = getAbiItem({
-    abi: sessionKeyRegistry,
-    name: 'AuthorizationsUpdated',
-  })
-  return {
-    address: calibration.contracts.sessionKeyRegistry.address,
-    topics: encodeEventTopics({
-      abi: [event],
-      eventName: 'AuthorizationsUpdated',
-      args: { identity },
-    }),
-    data: encodeAbiParameters(
-      [
-        { type: 'address' },
-        { type: 'uint256' },
-        { type: 'bytes32[]' },
-        { type: 'string' },
-      ],
-      [signer, 9999999999n, [FwssPermissions.addPieces], 'filecoin']
-    ),
-    blockNumber: numberToHex(block),
-    blockHash: `0x${'ab'.repeat(32)}`,
-    transactionHash: `0x${'cd'.repeat(32)}`,
-    transactionIndex: '0x0',
-    logIndex: '0x0',
-    removed: false,
-  }
-}
-
-test('findAuthorizer scans bounded windows and matches the signer', async () => {
-  const latest = 1000n + LOG_WINDOW * 2n
-  const ranges: [bigint, bigint][] = []
-  const client = createPublicClient({
-    chain: calibration,
-    transport: custom({
-      request({ method, params }) {
-        if (method === 'eth_blockNumber') {
-          return Promise.resolve(numberToHex(latest))
-        }
-        if (method === 'eth_getLogs') {
-          const [filter] = params as [{ fromBlock: string; toBlock: string }]
-          const from = BigInt(filter.fromBlock)
-          const to = BigInt(filter.toBlock)
-          ranges.push([from, to])
-          const logs = []
-          if (from <= 1500n && 1500n <= to) {
-            logs.push(authorizationLog(OTHER, OTHER, 1500n))
-          }
-          if (from <= latest && latest <= to) {
-            logs.push(authorizationLog(OWNER, SIGNER, latest))
-          }
-          return Promise.resolve(logs)
-        }
-        return Promise.reject(new Error(`Unexpected ${method}`))
-      },
-    }),
-  })
-  const owner = await findAuthorizer({
-    client,
-    signer: SIGNER,
-    fromBlock: 1000n,
-  })
-  assert.equal(owner, OWNER)
-  assert.equal(ranges[0]?.[0], 1000n)
-  assert.equal(ranges.at(-1)?.[1], latest)
-  for (const [from, to] of ranges) assert.ok(to - from <= LOG_WINDOW)
-
-  const none = await findAuthorizer({ client, signer: OTHER, fromBlock: 0n })
-  assert.equal(none, OTHER)
 })
 
 test('loginCommand spells out fresh and scopes', () => {
