@@ -17,8 +17,8 @@ allowBuilds:
 catalog:
   # One synapse-core for the app, the API and the CLI. The CLI bundles it, so
   # a bump that only edits this line ships with the CLI's next release.
-  "@filoz/synapse-core": 0.10.2
-  "@types/node": 26.5.1
+  "@filoz/synapse-core": 0.10.3
+  "@types/node": 26.6.6
   typescript: 7.0.2
 
 minimumReleaseAgeExclude:

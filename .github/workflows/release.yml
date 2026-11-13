@@ -30,7 +30,7 @@ jobs:
       # hold a token that does.
       - name: Run release-please
         id: release
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@v5
         with:
           token: ${{ secrets.FILOZZY_RELEASE_PLEASE_PAT || github.token }}
           config-file: .github/release-please-config.json
