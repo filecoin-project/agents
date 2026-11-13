@@ -4,7 +4,7 @@ import * as z from 'zod'
 /** Default Filecoin Pay console origin, which approves keys and funds accounts. */
 export const DEFAULT_CONSOLE_URL = 'https://pay.filecoin.cloud'
 
-/** Default filecoin-api origin, whose `/get/{cid}` route redirects to providers. */
+/** Default filecoin-api origin: `/get/{cid}` redirects to providers, and `datasets` reads its REST API. */
 export const DEFAULT_API_URL = 'https://api.filecoin.io'
 
 /**
@@ -29,7 +29,7 @@ export const globals = defineGlobals({
     apiUrl: z
       .url()
       .default(DEFAULT_API_URL)
-      .describe('filecoin-api origin for retrieval links'),
+      .describe('filecoin-api origin for retrieval links and data set reads'),
   }),
   env: {
     rpcUrl: 'FILECOIN_RPC_URL',

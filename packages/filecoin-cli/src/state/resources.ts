@@ -160,3 +160,26 @@ export function listResources(
     ) as ResourceRow[]
   return toPage(rows.map(fromRow), options.limit, (r) => [r.createdAt, r.ref])
 }
+
+/**
+ * Refs of the resources in an account scope with a copy in `dataSetId`,
+ * keyed by that copy's piece ID.
+ */
+export function resourceRefsByPiece(
+  db: DatabaseSync,
+  scope: AccountScope,
+  dataSetId: string
+): Map<string, string> {
+  const rows = db
+    .prepare(
+      `SELECT r.ref AS ref, json_extract(c.value, '$.pieceId') AS piece_id
+       FROM resources r, json_each(r.copies) c
+       WHERE r.chain_id = ? AND r.payer = ?
+         AND json_extract(c.value, '$.dataSetId') = ?`
+    )
+    .all(scope.chainId, scope.payer, dataSetId) as {
+    ref: string
+    piece_id: string
+  }[]
+  return new Map(rows.map((row) => [row.piece_id, row.ref]))
+}

@@ -31,7 +31,7 @@ export type App = {
   consoleUrl: string
   /** Analytics tags for console links; `undefined` when the user opted out. */
   linkTags: LinkTags | undefined
-  /** filecoin-api origin for retrieval links. */
+  /** filecoin-api origin for retrieval links and data set reads. */
   apiUrl: string
   /** `FILECOIN_RPC_URL`, which replaces the chain's fallback transport. */
   rpcUrl: string | undefined

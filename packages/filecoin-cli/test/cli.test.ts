@@ -61,6 +61,8 @@ test('definitions are valid', () => assertDefinitions(cli))
 
 test('schemas cover every command', async () => {
   assert.deepEqual(Object.keys(schemas(cli)).sort(), [
+    'datasets inspect',
+    'datasets ls',
     'delete',
     'doctor',
     'get',
