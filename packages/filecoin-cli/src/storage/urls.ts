@@ -105,10 +105,9 @@ export function resourceUrls(
 export function providerPieceUrl(resource: Resource): string {
   const [copy] = resource.copies
   if (!copy) throw new Error(`Resource ${resource.ref} has no stored copies.`)
+  // synapse-core keeps a path in `serviceURL`, with or without a trailing slash.
   return createPieceUrlPDP({
     cid: resource.pieceCid,
-    serviceURL: copy.serviceURL.endsWith('/')
-      ? copy.serviceURL
-      : `${copy.serviceURL}/`,
+    serviceURL: copy.serviceURL,
   })
 }
