@@ -103,8 +103,8 @@ importers:
         specifier: 'catalog:'
         version: 0.11.0(typescript@7.0.2)(viem@2.57.19(typescript@7.0.2)(zod@4.6.7))
       '@filoz/synapse-react':
-        specifier: 0.5.1
-        version: 0.5.1(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(@wagmi/core@3.6.9(@tanstack/query-core@5.107.1)(@types/react@19.3.0)(react@19.3.1)(typescript@7.0.2)(use-sync-external-store@1.4.0(react@19.3.1))(viem@2.57.19(typescript@7.0.2)(zod@4.6.7)))(iso-filecoin@7.4.7(typescript@7.0.2))(typescript@7.0.2)(viem@2.57.19(typescript@7.0.2)(zod@4.6.7))(wagmi@3.7.11(@tanstack/query-core@5.107.1)(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(react@19.3.1)(typescript@7.0.2)(viem@2.57.19(typescript@7.0.2)(zod@4.6.7)))
+        specifier: 0.6.0
+        version: 0.6.0(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(@wagmi/core@3.6.9(@tanstack/query-core@5.107.1)(@types/react@19.3.0)(react@19.3.1)(typescript@7.0.2)(use-sync-external-store@1.4.0(react@19.3.1))(viem@2.57.19(typescript@7.0.2)(zod@4.6.7)))(iso-filecoin@7.4.7(typescript@7.0.2))(typescript@7.0.2)(viem@2.57.19(typescript@7.0.2)(zod@4.6.7))(wagmi@3.7.11(@tanstack/query-core@5.107.1)(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(react@19.3.1)(typescript@7.0.2)(viem@2.57.19(typescript@7.0.2)(zod@4.6.7)))
       '@fontsource-variable/inter':
         specifier: 5.3.0
         version: 5.3.0
@@ -748,26 +748,21 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@filoz/synapse-core@0.10.3':
-    resolution: {integrity: sha512-awWRsQZlW5N55+CmzX14raUsEm2Y/tqeGAKxvZhW2GUZZLaMabnAQ570loco/PM9Em0efSQh4A8AmNKcmgzelg==}
-    peerDependencies:
-      viem: 2.x
-
   '@filoz/synapse-core@0.11.0':
     resolution: {integrity: sha512-KqgVP3bKYwCIThsH8MlIGY6DxQVzqLdLoBzgES/3AibbNoj2EXB4bwf4Ah/2lee79VZLOzyiuqzAMYRyJJ4TXA==}
     peerDependencies:
       viem: 2.x
 
-  '@filoz/synapse-react@0.5.1':
-    resolution: {integrity: sha512-e60n8OZKD+5b4d0FvgV4PoyuS9AIy0fqiD0uMxGbb8ezvSFkZ67lJN/E9S2vp+IRI0IggllOKGJbfpQ658Ixwg==}
+  '@filoz/synapse-react@0.6.0':
+    resolution: {integrity: sha512-1z6us9K4QGfXwfYJdu7a0Kewk63j/CoGGQEyys2raoj80ayH7UxouhsDYWiY/dr0F82e9xGBNOfY3EJS4tsoDg==}
     peerDependencies:
       '@tanstack/react-query': 5.x
       '@wagmi/core': 3.x
       viem: 2.x
       wagmi: 3.x
 
-  '@filoz/synapse-sdk@2.0.2':
-    resolution: {integrity: sha512-PiYybc4FHq/YWHouZKiS9otp3e32agE2u0C26L04uPklfYMdVeagJV38LlppxDkSTmymHrxJ292i6kGZe9hG4A==}
+  '@filoz/synapse-sdk@3.0.0':
+    resolution: {integrity: sha512-HzQmJ2kDi4wdyOSHUaHAQAfcdwFJuXI/HxNefCWiWirq2T+76y3jTjWkVS5MlDg0Ss2IhCD921muPpjN3MuKJQ==}
     peerDependencies:
       viem: 2.x
 
@@ -2707,9 +2702,6 @@ packages:
   iso-web@1.4.3:
     resolution: {integrity: sha512-8XWpz+9WqAk1obMwajwv0waMBy7uCFFGDwW2SGI3fbFO/wt+FRxf2o6DvHoadPuV+wquvz+BAq3sX+oOW+fckQ==}
 
-  iso-web@3.1.2:
-    resolution: {integrity: sha512-OpWz+KNH4vYNVvpc6T1z/zkZtT6iTQXYjc0sIbkPDwYEM5Qurg0LYESrEHloxb6xj5T/2rrnsTtaYlUSIzgicg==}
-
   iso-web@4.0.0:
     resolution: {integrity: sha512-VHaDNWgJNi2tzq1bi88azwQHeE6CtoHsANYwLvmAV3E2+gNq4JYTfZZqfeOPEtmS4ckdfmNObsToNw7c6F9vYw==}
 
@@ -4039,9 +4031,6 @@ packages:
   youch@4.1.0-beta.10:
     resolution: {integrity: sha512-rLfVLB4FgQneDr0dv1oddCVZmKjcJ6yX6mS4pU82Mq/Dt9a3cLZQ62pDBL4AUO+uVrCvtWz3ZFUL2HFAFJ/BXQ==}
 
-  zod@4.4.3:
-    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
-
   zod@4.6.6:
     resolution: {integrity: sha512-4UmzQUF5fxvfcYHlbjBmejU+w+hbDnWFx4aS8kBx7nPBHcO2SqPbpAG8snbdg+Xse4pRefR98hgjFgIMCI/UhA==}
 
@@ -4516,21 +4505,6 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
-  '@filoz/synapse-core@0.10.3(typescript@7.0.2)(viem@2.57.19(typescript@7.0.2)(zod@4.6.7))':
-    dependencies:
-      '@hugomrdias/commp-wasm': 0.1.4
-      dnum: 2.17.0
-      iso-web: 3.1.2
-      multiformats: 14.0.5
-      ox: 0.14.34(typescript@7.0.2)(zod@4.4.3)
-      p-locate: 7.0.0
-      p-some: 7.0.0
-      sync-multihash-sha2: 1.0.0
-      viem: 2.57.19(typescript@7.0.2)(zod@4.6.7)
-      zod: 4.4.3
-    transitivePeerDependencies:
-      - typescript
-
   '@filoz/synapse-core@0.11.0(typescript@7.0.2)(viem@2.57.19(typescript@7.0.2)(zod@4.6.7))':
     dependencies:
       '@hugomrdias/commp-wasm': 0.1.4
@@ -4546,10 +4520,10 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@filoz/synapse-react@0.5.1(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(@wagmi/core@3.6.9(@tanstack/query-core@5.107.1)(@types/react@19.3.0)(react@19.3.1)(typescript@7.0.2)(use-sync-external-store@1.4.0(react@19.3.1))(viem@2.57.19(typescript@7.0.2)(zod@4.6.7)))(iso-filecoin@7.4.7(typescript@7.0.2))(typescript@7.0.2)(viem@2.57.19(typescript@7.0.2)(zod@4.6.7))(wagmi@3.7.11(@tanstack/query-core@5.107.1)(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(react@19.3.1)(typescript@7.0.2)(viem@2.57.19(typescript@7.0.2)(zod@4.6.7)))':
+  '@filoz/synapse-react@0.6.0(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(@wagmi/core@3.6.9(@tanstack/query-core@5.107.1)(@types/react@19.3.0)(react@19.3.1)(typescript@7.0.2)(use-sync-external-store@1.4.0(react@19.3.1))(viem@2.57.19(typescript@7.0.2)(zod@4.6.7)))(iso-filecoin@7.4.7(typescript@7.0.2))(typescript@7.0.2)(viem@2.57.19(typescript@7.0.2)(zod@4.6.7))(wagmi@3.7.11(@tanstack/query-core@5.107.1)(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(react@19.3.1)(typescript@7.0.2)(viem@2.57.19(typescript@7.0.2)(zod@4.6.7)))':
     dependencies:
-      '@filoz/synapse-core': 0.10.3(typescript@7.0.2)(viem@2.57.19(typescript@7.0.2)(zod@4.6.7))
-      '@filoz/synapse-sdk': 2.0.2(typescript@7.0.2)(viem@2.57.19(typescript@7.0.2)(zod@4.6.7))
+      '@filoz/synapse-core': 0.11.0(typescript@7.0.2)(viem@2.57.19(typescript@7.0.2)(zod@4.6.7))
+      '@filoz/synapse-sdk': 3.0.0(typescript@7.0.2)(viem@2.57.19(typescript@7.0.2)(zod@4.6.7))
       '@hugomrdias/filsnap-adapter': 3.3.9(iso-filecoin@7.4.7(typescript@7.0.2))
       '@tanstack/react-query': 5.107.1(@types/react@19.3.0)(react@19.3.1)
       '@wagmi/core': 3.6.9(@tanstack/query-core@5.107.1)(@types/react@19.3.0)(react@19.3.1)(typescript@7.0.2)(use-sync-external-store@1.4.0(react@19.3.1))(viem@2.57.19(typescript@7.0.2)(zod@4.6.7))
@@ -4559,9 +4533,9 @@ snapshots:
       - iso-filecoin
       - typescript
 
-  '@filoz/synapse-sdk@2.0.2(typescript@7.0.2)(viem@2.57.19(typescript@7.0.2)(zod@4.6.7))':
+  '@filoz/synapse-sdk@3.0.0(typescript@7.0.2)(viem@2.57.19(typescript@7.0.2)(zod@4.6.7))':
     dependencies:
-      '@filoz/synapse-core': 0.10.3(typescript@7.0.2)(viem@2.57.19(typescript@7.0.2)(zod@4.6.7))
+      '@filoz/synapse-core': 0.11.0(typescript@7.0.2)(viem@2.57.19(typescript@7.0.2)(zod@4.6.7))
       multiformats: 14.0.5
       viem: 2.57.19(typescript@7.0.2)(zod@4.6.7)
     transitivePeerDependencies:
@@ -5715,11 +5689,6 @@ snapshots:
       typescript: 7.0.2
       zod: 4.6.7
 
-  abitype@1.3.0(typescript@7.0.2)(zod@4.4.3):
-    optionalDependencies:
-      typescript: 7.0.2
-      zod: 4.4.3
-
   abitype@1.3.0(typescript@7.0.2)(zod@4.6.6):
     optionalDependencies:
       typescript: 7.0.2
@@ -6357,14 +6326,6 @@ snapshots:
       iso-kv: 3.2.0
       p-retry: 7.1.1
 
-  iso-web@3.1.2:
-    dependencies:
-      '@standard-schema/spec': 1.1.0
-      delay: 7.0.0
-      is-network-error: 1.3.2
-      iso-kv: 3.2.0
-      p-retry: 8.0.1
-
   iso-web@4.0.0:
     dependencies:
       '@standard-schema/spec': 1.1.0
@@ -6692,21 +6653,6 @@ snapshots:
       strip-ansi: 7.2.0
 
   outvariant@1.4.3: {}
-
-  ox@0.14.34(typescript@7.0.2)(zod@4.4.3):
-    dependencies:
-      '@adraffy/ens-normalize': 1.11.1
-      '@noble/ciphers': 1.3.0
-      '@noble/curves': 1.9.1
-      '@noble/hashes': 1.8.0
-      '@scure/bip32': 1.7.0
-      '@scure/bip39': 1.6.0
-      abitype: 1.3.0(typescript@7.0.2)(zod@4.4.3)
-      eventemitter3: 5.0.1
-    optionalDependencies:
-      typescript: 7.0.2
-    transitivePeerDependencies:
-      - zod
 
   ox@0.14.34(typescript@7.0.2)(zod@4.6.6):
     dependencies:
@@ -7481,8 +7427,6 @@ snapshots:
       '@speed-highlight/core': 1.2.24
       cookie: 1.1.1
       youch-core: 0.3.3
-
-  zod@4.4.3: {}
 
   zod@4.6.6: {}
 

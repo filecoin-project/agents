@@ -108,18 +108,18 @@ interface RailFields {
  */
 function railItems(network: Network, rail: RailFields): DetailItem[] {
   const genesis = CHAINS[network].genesisTimestamp
-  const epoch = (value: bigint | string | null) =>
-    value && toBigInt(value) > 0n ? (
+  const epoch = (value: bigint | string | null) => {
+    if (!value || toBigInt(value) <= 0n) return '—'
+    // Past the Date range, such as a "never" sentinel: show the epoch alone.
+    const date = epochToDate(value, genesis)
+    if (!date) return String(value)
+    return (
       <>
         {String(value)} (
-        <LocalTime
-          seconds={Math.floor(epochToDate(value, genesis).getTime() / 1000)}
-        />
-        )
+        <LocalTime seconds={Math.floor(date.getTime() / 1000)} />)
       </>
-    ) : (
-      '—'
     )
+  }
   return [
     { label: 'Payer', value: <Address network={network} value={rail.payer} /> },
     { label: 'Payee', value: <Address network={network} value={rail.payee} /> },

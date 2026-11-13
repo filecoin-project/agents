@@ -25,7 +25,8 @@ minimumReleaseAgeExclude:
   - iso-conf@1.0.0
   - clipact@0.7.0
   - "@filoz/synapse-core@0.11.0"
-  - "@filoz/synapse-react@0.5.1"
+  - "@filoz/synapse-react@0.6.0"
+  - "@filoz/synapse-sdk@3.0.0"
   - "@hugomrdias/commp-wasm@0.1.4"
 
 patchedDependencies:

@@ -63,7 +63,7 @@ export function useDeletePieces(props?: UseDeletePiecesProps) {
         clientDataSetId: dataSet.clientDataSetId,
         pieceIds,
       })
-      props?.onHash?.(result.hash)
+      props?.onHash?.(result.txHash)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: synapseKeys.dataSets }),
         queryClient.invalidateQueries({ queryKey: synapseKeys.pdpDataSet }),
