@@ -8,7 +8,7 @@ This document describes how the `filecoin` prototype in [`packages/filecoin-cli`
 
 - **One command for files and folders.** `filecoin put <path>` stores a file as a raw piece. It packs a folder into a UnixFS CAR.
 - **One copy.** Each upload has one copy on one provider.
-- **synapse-core only.** The CLI calls [synapse-core](https://github.com/FilOzone/synapse-sdk/tree/master/packages/synapse-core) directly and does not use synapse-sdk.
+- **synapse-core for the chain and providers.** The CLI calls [synapse-core](https://github.com/FilOzone/synapse-sdk/tree/master/packages/synapse-core) directly and does not use synapse-sdk. Only `datasets` reads filecoin-api instead, through `@filecoin-project/api-client`.
 - **Delegated signing.** A session key signs uploads and removals. The wallet owner approves the key in the [Filecoin Pay console](https://pay.filecoin.cloud/console), and the owner's wallet pays for storage.
 - **Recoverable operations.** `filecoin` saves each `put` and `delete` as an operation in SQLite before it changes anything outside the machine. `filecoin operations resume` never commits an interrupted operation twice.
 - **Machine contract.** [clipact](https://github.com/hugomrdias/agents/blob/main/packages/clipact/README.md) implements the [CLI guidelines for agents](https://github.com/hugomrdias/agents/blob/main/docs/agent-cli/guidelines.md). It gives `filecoin` one JSON result on stdout, exit codes `0` and `1`, and errors with `retryable` and `next` steps marked `by: "agent"` or `by: "user"`. It also provides an offline `schema` command, confirmation prompts, signal handling, and lazily loaded handlers.
@@ -22,7 +22,7 @@ flowchart LR
   owner([Wallet owner]) -- approves key, funds account --> app[Filecoin Pay console<br/>/console]
   app -- login tx --> chain
   cli -- get downloads /piece --> curio
-  cli -. returns /get links, inspect --check .-> api[filecoin-api<br/>/get/cid]
+  cli -. returns /get links, inspect --check, datasets reads .-> api[filecoin-api<br/>/get/cid, REST]
   api -- redirects --> curio
   cli --- local[(config.json<br/>state.db<br/>staging/)]
 ```
@@ -44,12 +44,14 @@ packages/filecoin-cli/
     │   ├── shared.ts     account input fragment, paging, output schemas
     │   ├── login.ts  logout.ts  status.ts  doctor.ts
     │   ├── put.ts  get.ts  ls.ts  inspect.ts  delete.ts
+    │   ├── datasets/     ls.ts  inspect.ts
     │   ├── operations/   ls.ts  inspect.ts  resume.ts
-    │   └── index.ts      the command tree and the operations group
+    │   └── index.ts      the command tree and the datasets and operations groups
     ├── handlers/         one handler per command, loaded only when it runs
     │   ├── context.ts    appFor(ctx), account scope, jobContext, lookups
     │   └── …             same layout as commands/
-    ├── map-error.ts      viem and synapse-core errors → service_unavailable, timeout
+    ├── map-error.ts      viem, synapse-core, and filecoin-api errors → service_unavailable, timeout
+    ├── api.ts            filecoin-api client bound to the signal, and its data set and piece mappers
     ├── network.ts        network names, free of imports
     ├── app.ts            per-invocation context: network, chain, signal-bound clients, config, lazy DB
     ├── config.ts         clipact store (config.json) and network resolution
@@ -302,6 +304,19 @@ If the transaction reverts, the resource stays `active` and the delete fails wit
 
 The provider removes the piece later, at a proving boundary. `ls` hides resources that are pending removal unless you pass `--all`.
 
+## Data set reads
+
+`filecoin datasets ls` and `filecoin datasets inspect <id>` read the wallet's data sets from filecoin-api through `@filecoin-project/api-client`, not from the chain. They need the wallet address, from a saved session or `FILECOIN_ROOT_ADDRESS`, but no scopes, because they sign nothing.
+
+- `datasets ls` calls `GET /{network}/data-sets` with `owner` set to the payer. It sends `deleted=false` unless you pass `--all`, and `provider_id` for `--provider`. The `--cursor` value is filecoin-api's own cursor, passed through unchanged.
+- `datasets inspect` calls `GET /{network}/data-sets/{id}` and `GET /{network}/data-sets/{id}/pieces` in parallel, then `GET /{network}/providers/{providerId}`. It sends `removed=false` unless you pass `--removed`. It adds a `resourceRef` to each piece that a managed resource has a copy at, matching the copy's `dataSetId` and `pieceId` in `state.db`. A data set that filecoin-api doesn't have, or that another wallet pays for, is `not_found`.
+
+The output keeps filecoin-api's fields and drops the ones it reports as `null`. A `pdpEndEpoch` of `0` means the service is not terminated, so the CLI omits it too.
+
+`api.ts` builds the client from `FILECOIN_API_URL`. Each request aborts with the handler's signal or after 30 seconds. `map-error.ts` maps a 429 response to `rate_limited`, a 5xx response or a failed `fetch` to `service_unavailable`, and the timeout to `timeout`. clipact marks all three retryable for these read-only commands.
+
+filecoin-api reads the chain through its indexer, so a data set or piece added in the last few minutes can be missing. Commands that change state, such as `put` and `delete`, still read the chain.
+
 ## Local state
 
 ```text
@@ -325,22 +340,22 @@ clipact writes the results. In machine mode, stdout carries one compact JSON obj
 
 The JSON object has `data` on success or `error` on failure, then optional `next` steps. The exit code is `0` when the result has `data` and `1` when it has `error`. On-chain IDs and amounts are decimal strings. Progress goes to stderr. A human sees a status line that `filecoin` rewrites in place. An agent sees a plain line for every event. When nothing new happens for 15 seconds, such as during the commit wait, clipact repeats the latest event with its elapsed time, then every 30 seconds.
 
-Errors are clipact `CliError`s with a stable snake_case `code`, a `retryable` flag, optional `details`, and `next` steps. Each command lists its codes in its definition, and `schema` and help show them. An error from viem or synapse-core that is not a `CliError` goes through the lazily loaded `map-error.ts`. That module maps RPC and HTTP failures to `service_unavailable` or `timeout`. clipact marks those two codes retryable only for read-only and idempotent commands. Any other error becomes `internal_error`.
+Errors are clipact `CliError`s with a stable snake_case `code`, a `retryable` flag, optional `details`, and `next` steps. Each command lists its codes in its definition, and `schema` and help show them. An error from viem or synapse-core that is not a `CliError` goes through the lazily loaded `map-error.ts`. That module maps RPC and HTTP failures to `service_unavailable` or `timeout`, and a filecoin-api 429 to `rate_limited`. clipact marks those codes retryable only for read-only and idempotent commands. Any other error becomes `internal_error`.
 
 | Code | Next step | Raised by |
 | --- | --- | --- |
 | `auth_required`, `login_pending`, `session_expired`, `permission_denied` | The user logs in or approves scopes | Session checks, login |
 | `session_conflict` | The agent keeps the saved key with `filecoin login --check`, or the user agrees to replace it with `--fresh` | login |
 | `insufficient_funds` | The user funds the account or approves Warm Storage at the console funding link | The put funding check |
-| `not_found` | The agent lists resources or operations | Lookups |
+| `not_found` | The agent lists resources, operations, or data sets | Lookups |
 | `output_exists` | The agent chooses another path or passes `--force` | get |
 | `operation_failed`, `commit_rejected`, `removal_reverted`, `source_changed`, `staging_missing`, `operation_running` | The agent resumes or inspects the operation | put, delete, resume |
 | `verification_failed`, `unsafe_path` | None | get |
-| `invalid_input`, `confirmation_required`, `interrupted`, `internal_error`, `service_unavailable`, `timeout` | Built into clipact | clipact |
+| `invalid_input`, `confirmation_required`, `interrupted`, `internal_error`, `rate_limited`, `service_unavailable`, `timeout` | Built into clipact | clipact |
 
 ## Testing
 
-The tests use the Node test runner and need no network. `pnpm --filter filecoin test` runs them, and `pnpm check` runs them with the other checks.
+The tests use the Node test runner and need no network. msw replaces `fetch` for the filecoin-api tests. `pnpm --filter filecoin test` runs them, and `pnpm check` runs them with the other checks.
 
 | Test | Covers |
 | --- | --- |
@@ -353,6 +368,7 @@ The tests use the Node test runner and need no network. `pnpm --filter filecoin 
 | `cli.test.ts` | The whole CLI in process through `clipact/testing` in strict mode. It covers definitions, schemas, auth and pending-login errors, the logout revoke link, confirmation, a dry run without a session, secrets kept out of flags and output, and the globals in root help, `schema --list`, validation, and `doctor` sources, including the folder from `FILECOIN_CONFIG_DIR` or the platform default. Globals and the folder come from the env passed to `invoke`, not from `process.env` |
 | `contract.test.ts` | The built binary without a TTY. It covers one JSON line on stdout, exit codes, no leaked session key, and a SIGTERM during a hanging RPC call that gives an `interrupted` result and exit 143 |
 | `app.test.ts` | The signal-bound RPC transport and `abortable()`, including a call that fails after the abort |
+| `datasets.test.ts` | `datasets ls` and `datasets inspect` in process against filecoin-api responses mocked with [msw](https://mswjs.io/), which fails on any request without a handler. It covers the query each flag sends, the mapping of `null` fields and a zero `pdpEndEpoch`, pieces linked to local resources, `not_found` for an unknown data set and another wallet's data set, `rate_limited` for 429, and `service_unavailable` for 503 and a network failure |
 | `config.test.ts` | Network resolution, the `0700` folder clipact creates, a relative `FILECOIN_CONFIG_DIR`, and a corrupt `config.json` |
 
 ### Calibration run on 2026-09-29
@@ -368,6 +384,7 @@ The tests use the Node test runner and need no network. `pnpm --filter filecoin 
 - A put that fails before any external change, such as with `insufficient_funds`, stays listed as an incomplete operation.
 - `inspect --check` sends a HEAD request to `urls.piece` and follows filecoin-api's redirect. It does not check each file of a folder or the inbrowser.link page.
 - `urls.piece` and a file's `urls.browser` return 404 until filecoin-api's indexer has the piece.
+- `datasets ls` and `datasets inspect` show only what filecoin-api's indexer has. A new data set or piece can be missing for a few minutes.
 - `logout` deletes the local key but does not revoke it on chain. It returns the console's revoke link, which the owner signs.
 - A pending login that resumes much later scans every block since `fromBlock`. `--fresh` starts over with a new key.
 - `status` reads every rail and every data set of the wallet from the chain. `Pay.getAccountSummary` sums the fixed lockup of each rail, and `getAccountTotalStorageSize` reads each data set's size. On calibration's dealbot wallet, with 362 live data sets, `status` took 51 seconds through the Glif RPC on 2026-10-20, and the rail read took 48 of them.

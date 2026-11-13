@@ -85,7 +85,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **synapse-core is enough.** The CLI and the app call synapse-core directly. Neither uses synapse-sdk.
 - **Content fits in one piece.** A file, or the CAR of a folder, must be between 127 and 1,065,353,216 bytes.
 - **Browsers render files from Curio and folders through a gateway.** Curio's `/piece` endpoint serves a file inline with a detected content type, so a browser renders it. Its `/ipfs` endpoint returns only blocks and CARs, so browser links to folders go to [inbrowser.link](https://inbrowser.link), a public gateway that runs in a service worker.
-- **filecoin-api serves most reads.** The CLI will read most data from filecoin-api. It will fall back to chain reads through synapse-core only where filecoin-api cannot serve a read. Today the CLI reads all chain data through synapse-core.
+- **filecoin-api serves most reads.** The CLI will read most data from filecoin-api. It will fall back to chain reads through synapse-core only where filecoin-api cannot serve a read. Today only `filecoin datasets` reads filecoin-api. Every other command reads the chain through synapse-core.
 - **The indexer runs outside this repository.** filecoin-api reads the `ozone` schema that the [FilOzone indexer](https://github.com/FilOzone/indexer) writes to Postgres. It never writes to the database. The databases run in Helsinki, and filecoin-api runs in Frankfurt, next to Hyperdrive's connection pool ([placement](../../apps/filecoin-api/README.md#placement)).
 - **Calibration first.** The CLI defaults to calibration. Every part also supports mainnet, but the only recorded end-to-end run of the CLI was on calibration, on 2026-09-29.
 
@@ -96,7 +96,8 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **Flat commands.** `put`, `get`, `ls`, `inspect`, and `delete` handle both files and folders and pick the handling from the input. There are no separate command groups for files and folders.
 - **Plain-text session key.** `filecoin` stores the key in `config.json` with mode `0600`, not in an OS keychain.
 - **`logout` leaves the key valid on chain.** It deletes the key on this machine and returns the console's revoke link, but the owner must sign the revocation.
-- **Local view only.** `filecoin ls` lists only the resources in this machine's state database. It cannot see content stored from another machine, from a cloud sandbox that was reset, or from the app. [Retrieve and verify](https://poc.filecoin.cloud/docs/retrieve#find-stored-content) shows how to find that content by wallet.
+- **Local view of files and folders.** `filecoin ls` lists only the resources in this machine's state database. It cannot see content stored from another machine, from a cloud sandbox that was reset, or from the app. `filecoin datasets ls` and `filecoin datasets inspect` list every data set and piece the wallet pays for, from filecoin-api, but as pieces, not as named files and folders. [Retrieve and verify](https://poc.filecoin.cloud/docs/retrieve#find-stored-content) shows how to find that content by wallet.
+- **Data set reads wait for the indexer.** `filecoin datasets` reads filecoin-api, so a data set or piece added in the last few minutes can be missing.
 - **Piece removal stops at `removal_pending`.** Nothing tracks when the provider removes the piece.
 - **Every transfer hashes the whole content.** `put`, `operations resume`, and `get` each compute the PieceCID of all of it, at about 6 seconds per GiB.
 - **Shallow folder check.** `inspect --check` probes only the piece URL, not each file of a folder.
@@ -155,7 +156,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **MCP catalogs.** Publish the MCP server to the [MCP registry](https://registry.modelcontextprotocol.io) as `io.filecoin/mcp`, the server card's name, from the release workflow ([#75](https://github.com/filecoin-project/agents/issues/75)). After filecoin-app deploys its API catalog `item` and `/.well-known/integrations.json`, map poc.filecoin.cloud on [integrations.sh](https://integrations.sh), which feeds `npx add-mcp find` ([#10](https://github.com/filecoin-project/agents/issues/10)).
 - **Browser verification.** Add a WebMCP tool that checks a file against its PieceCID in the page, and let the upload page store folders.
 - **Two copies.** Store two copies by default in the CLI and the app's upload, as synapse-sdk does.
-- **CLI reads.** Move most CLI reads to filecoin-api through `@filecoin-project/api-client`. Keep synapse-core chain reads as the fallback.
+- **CLI reads.** Move most CLI reads to filecoin-api through `@filecoin-project/api-client`. Keep synapse-core chain reads as the fallback. `filecoin datasets ls` and `filecoin datasets inspect` are the first commands to read filecoin-api. `status` is next.
 - **CLI keys.** Store the session key in the OS keychain.
 - **CLI cancellation.** Pass the abort signal to viem once its actions and `fallback` transport accept one. Then remove `withSignal()` and `abortable()` ([#12](https://github.com/filecoin-project/agents/issues/12)).
 - **CLI dependencies.** Drop the protons-runtime patch in `patches/` once a release with [ipfs/protons#212](https://github.com/ipfs/protons/pull/212) is on npm ([folder packing](architecture.md#folder-packing)).
