@@ -3,6 +3,7 @@ import { sessionKeyRegistry } from '@filoz/synapse-core/abis'
 import type { FilecoinChain } from '@filoz/synapse-core/chains'
 import {
   type Expirations,
+  FwssPermissions,
   getExpirations,
 } from '@filoz/synapse-core/session-key'
 import {
@@ -16,7 +17,7 @@ import { getBlockNumber, getLogs } from 'viem/actions'
 import type { Network } from '../network.ts'
 import { APPLICATION_SOURCE } from '../source.ts'
 import { formatUsdfc } from '../usdfc.ts'
-import { SCOPES, type ScopeId, toPermissions } from './scopes.ts'
+import { type ScopeId, toPermissions } from './scopes.ts'
 
 /** Read client for the target chain. */
 type ChainClient = Client<Transport, FilecoinChain>
@@ -279,7 +280,7 @@ export function classifyScopes(
   const missing: ScopeId[] = []
   let expiresAt: bigint | undefined
   for (const scope of scopes) {
-    const expiry = expirations[SCOPES[scope]] ?? 0n
+    const expiry = expirations[FwssPermissions[scope]] ?? 0n
     if (expiry > now) {
       granted.push(scope)
       if (expiresAt === undefined || expiry < expiresAt) expiresAt = expiry

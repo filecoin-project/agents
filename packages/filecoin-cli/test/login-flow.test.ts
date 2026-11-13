@@ -10,6 +10,7 @@ import { join } from 'node:path'
 import { after, before, beforeEach, test } from 'node:test'
 import { sessionKeyRegistry } from '@filoz/synapse-core/abis'
 import { calibration } from '@filoz/synapse-core/chains'
+import { FwssPermissions } from '@filoz/synapse-core/session-key'
 import { assertContract, invoke } from 'clipact/testing'
 import {
   type Address,
@@ -23,7 +24,7 @@ import {
   multicall3Abi,
   numberToHex,
 } from 'viem'
-import { SCOPES, type ScopeId } from '../src/auth/scopes.ts'
+import type { ScopeId } from '../src/auth/scopes.ts'
 import { cli } from '../src/cli.ts'
 import type { StoredSession } from '../src/config.ts'
 import { openConfig, tempDir } from './helpers.ts'
@@ -77,7 +78,7 @@ function authorizationLog(grant: Grant) {
       [
         grant.signer,
         grant.expiry,
-        grant.scopes.map((scope) => SCOPES[scope]),
+        grant.scopes.map((scope) => FwssPermissions[scope]),
         'filecoin',
       ]
     ),
@@ -102,7 +103,7 @@ function expiryOf(callData: Hex): Hex {
     if (
       isAddressEqual(identity, OWNER) &&
       isAddressEqual(signer, grant.signer) &&
-      grant.scopes.some((scope) => SCOPES[scope] === permission)
+      grant.scopes.some((scope) => FwssPermissions[scope] === permission)
     ) {
       expiry = grant.expiry
     }
