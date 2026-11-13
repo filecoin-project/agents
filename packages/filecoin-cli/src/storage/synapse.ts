@@ -1,19 +1,21 @@
 import { createReadStream } from 'node:fs'
 import { Readable } from 'node:stream'
 import type { ReadableStream } from 'node:stream/web'
-import { TransactionNotAppliedError } from '@filoz/synapse-core/errors'
+import {
+  NoEndorsedProviderError,
+  TransactionNotAppliedError,
+} from '@filoz/synapse-core/errors'
 import * as Pay from '@filoz/synapse-core/pay'
 import * as PDPVerifier from '@filoz/synapse-core/pdp-verifier'
 import * as Piece from '@filoz/synapse-core/piece'
 import * as SP from '@filoz/synapse-core/sp'
-import * as SPRegistry from '@filoz/synapse-core/sp-registry'
 import * as WarmStorage from '@filoz/synapse-core/warm-storage'
 import { CliError } from 'clipact'
 import type { App } from '../app.ts'
 import { buildFundingUrl, targetBalance } from '../auth/login.ts'
 import type { SessionKey } from '../auth/session.ts'
 import { ErrorCodes, notFound } from '../errors.ts'
-import type { Placement, StorageBackend } from './types.ts'
+import type { StorageBackend } from './types.ts'
 
 /**
  * Create the synapse-core storage backend: one copy on one Curio provider,
@@ -37,8 +39,8 @@ export function createSynapseBackend(
   >()
 
   /**
-   * Read a data set once per invocation; placement and quote share it. A
-   * failed read is forgotten so the next call tries again.
+   * Read a data set once per invocation. A failed read is forgotten so the
+   * next call tries again.
    */
   function getDataSet(dataSetId: bigint) {
     let dataSet = dataSets.get(dataSetId)
@@ -50,65 +52,51 @@ export function createSynapseBackend(
     return dataSet
   }
 
-  /** Whether a provider answers its PDP ping. */
-  async function isReachable(serviceURL: string): Promise<boolean> {
-    try {
-      await SP.ping(serviceURL, { signal })
-      return true
-    } catch (error) {
-      if (signal?.aborted) throw error
-      return false
-    }
-  }
-
   return {
     async selectPlacement({ metadata, providerId }) {
-      const [input, provider] = await Promise.all([
-        WarmStorage.fetchProviderSelectionInput(client, { address: payer }),
-        providerId == null
-          ? undefined
-          : SPRegistry.getPDPProvider(client, { providerId }),
-      ])
-      if (providerId != null) {
-        if (!provider) {
-          throw notFound(`Provider ${providerId} has no active PDP offering.`)
+      let location: WarmStorage.ResolvedLocation | undefined
+      if (providerId == null) {
+        try {
+          // Only endorsed providers, the best one that answers its ping.
+          ;[location] = await WarmStorage.selectReachableProviders(client, {
+            address: payer,
+            metadata,
+            requireEndorsedPrimary: true,
+            signal,
+          })
+        } catch (error) {
+          if (!NoEndorsedProviderError.is(error)) throw error
         }
-        const matches = WarmStorage.findMatchingDataSets(
-          input.clientDataSets.filter((ds) => ds.providerId === providerId),
-          metadata,
-          input.legacyPieceStorageIdLimit
-        )
-        return withDataSet({
-          providerId,
-          serviceURL: provider.pdp.serviceURL,
-          payee: provider.payee,
-          dataSetId: matches[0]?.dataSetId,
-        })
-      }
-      const excluded: bigint[] = []
-      for (;;) {
-        const [location] = WarmStorage.selectProviders({
-          ...input,
-          count: 1,
-          metadata,
-          excludeProviderIds: excluded,
-        })
         if (!location) {
           throw new CliError({
             code: 'service_unavailable',
             message: 'No reachable storage provider is available.',
           })
         }
-        const candidate = location.provider
-        if (await isReachable(candidate.pdp.serviceURL)) {
-          return withDataSet({
-            providerId: candidate.id,
-            serviceURL: candidate.pdp.serviceURL,
-            payee: candidate.payee,
-            dataSetId: location.dataSetId ?? undefined,
-          })
+      } else {
+        // A named provider is used as is: no ping, and endorsed or not.
+        const input = await WarmStorage.fetchProviderSelectionInput(client, {
+          address: payer,
+        })
+        ;[location] = WarmStorage.selectProviders({
+          ...input,
+          metadata,
+          providerId,
+        })
+        if (!location) {
+          throw notFound(
+            `Provider ${providerId} is not an approved Warm Storage provider.`
+          )
         }
-        excluded.push(candidate.id)
+      }
+      const { provider, dataSetId, clientDataSetId } = location
+      return {
+        providerId: provider.id,
+        serviceURL: provider.pdp.serviceURL,
+        payee: provider.payee,
+        ...(dataSetId == null || clientDataSetId == null
+          ? {}
+          : { dataSetId, clientDataSetId }),
       }
     },
 
@@ -152,17 +140,11 @@ export function createSynapseBackend(
     },
 
     async hasPiece({ serviceURL, pieceCid }) {
-      try {
-        await SP.findPiece({
-          serviceURL,
-          pieceCid: Piece.from(pieceCid),
-          signal,
-        })
-        return true
-      } catch (error) {
-        if (signal?.aborted) throw error
-        return false
-      }
+      return await SP.hasPiece({
+        serviceURL,
+        pieceCid: Piece.from(pieceCid),
+        signal,
+      })
     },
 
     async upload({ serviceURL, path, size, pieceCid }) {
@@ -289,14 +271,6 @@ export function createSynapseBackend(
         throw error
       }
     },
-  }
-
-  /** Attach the client data set ID when reusing a data set. */
-  async function withDataSet(placement: Placement): Promise<Placement> {
-    if (placement.dataSetId == null) return placement
-    const dataSet = await getDataSet(placement.dataSetId)
-    if (!dataSet) return { ...placement, dataSetId: undefined }
-    return { ...placement, clientDataSetId: dataSet.clientDataSetId }
   }
 
   /** Inputs `getUploadCosts` needs for an existing data set. */
