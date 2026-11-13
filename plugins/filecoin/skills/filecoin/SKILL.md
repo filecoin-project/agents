@@ -23,7 +23,7 @@ Don't guess flags or fields. The installed CLI describes itself:
 1. `filecoin status` shows whether a session key is approved and the account is funded.
 2. `filecoin put <path> --dry-run` reports the size, provider, cost, and missing authorization without storing anything.
 3. `filecoin put <path>` stores it. Give the user `data.urls.browser` exactly as returned, with `data.resource.ref`.
-4. `filecoin get <ref>` downloads the content and verifies it. `filecoin ls` and `filecoin inspect <ref>` find what was stored.
+4. `filecoin get <ref>` downloads the content and verifies it. `filecoin ls` and `filecoin inspect <ref>` find what this machine stored. `filecoin datasets ls` and `filecoin datasets inspect <id>` list every data set and piece the wallet pays for.
 
 ## Rules
 
