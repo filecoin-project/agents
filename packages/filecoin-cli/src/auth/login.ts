@@ -1,19 +1,12 @@
 import { setTimeout as sleep } from 'node:timers/promises'
-import { sessionKeyRegistry } from '@filoz/synapse-core/abis'
 import type { FilecoinChain } from '@filoz/synapse-core/chains'
 import {
   type Expirations,
   FwssPermissions,
+  findAuthorizers,
   getExpirations,
 } from '@filoz/synapse-core/session-key'
-import {
-  type Address,
-  type Client,
-  getAbiItem,
-  isAddressEqual,
-  type Transport,
-} from 'viem'
-import { getBlockNumber, getLogs } from 'viem/actions'
+import type { Address, Client, Transport } from 'viem'
 import type { Network } from '../network.ts'
 import { APPLICATION_SOURCE } from '../source.ts'
 import { formatUsdfc } from '../usdfc.ts'
@@ -209,56 +202,6 @@ export function targetBalance(account: {
   return target > 0n ? target : 0n
 }
 
-/**
- * Block span of one `eth_getLogs` request, below Glif's limit of 360 blocks
- * per request (`to - from + 1`).
- */
-export const LOG_WINDOW = 300n
-
-/** Options for {@link findAuthorizer}. */
-export type FindAuthorizerOptions = {
-  client: ChainClient
-  /** Session key address to look for. */
-  signer: Address
-  /** First block to scan: the block when the key was created. */
-  fromBlock: bigint
-}
-
-/**
- * Find the wallet that authorized `signer`. `signer` is not an indexed event
- * field, so this scans the registry's `AuthorizationsUpdated` events from
- * `fromBlock` in bounded windows and matches the signer locally. Returns the
- * most recent authorizing identity, or `undefined`.
- */
-export async function findAuthorizer(
-  options: FindAuthorizerOptions
-): Promise<Address | undefined> {
-  const { client, signer } = options
-  const event = getAbiItem({
-    abi: sessionKeyRegistry,
-    name: 'AuthorizationsUpdated',
-  })
-  const latest = await getBlockNumber(client, { cacheTime: 0 })
-  let found: Address | undefined
-  for (let from = options.fromBlock; from <= latest; from += LOG_WINDOW + 1n) {
-    // biome-ignore lint/complexity/useMathMinMax: Math.min throws on bigint
-    const to = from + LOG_WINDOW > latest ? latest : from + LOG_WINDOW
-    const logs = await getLogs(client, {
-      address: client.chain.contracts.sessionKeyRegistry.address,
-      event,
-      fromBlock: from,
-      toBlock: to,
-      strict: true,
-    })
-    for (const log of logs) {
-      if (isAddressEqual(log.args.signer, signer)) {
-        found = log.args.identity
-      }
-    }
-  }
-  return found
-}
-
 /** Per-scope state of a session key read from the registry. */
 export type ScopeGrants = {
   granted: ScopeId[]
@@ -328,13 +271,20 @@ export type CheckAuthorizationOptions = {
 
 /**
  * Check once whether the owner has acted on a pending session key: find the
- * owner, then read the requested scopes.
+ * wallet that most recently authorized it, then read the requested scopes.
  */
 export async function checkAuthorization(
   options: CheckAuthorizationOptions
 ): Promise<AuthorizationState> {
-  const root = await findAuthorizer(options)
-  if (!root) return { status: 'pending' }
+  // synapse-core lists the wallets that authorized the key, most recent
+  // first, scanning the registry's events in windows under Glif's
+  // 360-block limit.
+  const [latest] = await findAuthorizers(options.client, {
+    signer: options.signer,
+    fromBlock: options.fromBlock,
+  })
+  if (!latest) return { status: 'pending' }
+  const root = latest.identity
   const grants = await readScopes({ ...options, root })
   const status =
     grants.missing.length === 0
