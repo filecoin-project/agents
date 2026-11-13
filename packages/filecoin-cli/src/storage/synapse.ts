@@ -1,6 +1,4 @@
 import { createReadStream } from 'node:fs'
-import { Readable } from 'node:stream'
-import type { ReadableStream } from 'node:stream/web'
 import {
   NoEndorsedProviderError,
   TransactionNotAppliedError,
@@ -116,15 +114,14 @@ export function createSynapseBackend(
     },
 
     async upload({ serviceURL, path, size, pieceCid }) {
-      const cid = Piece.from(pieceCid)
       await SP.uploadPieceStreaming({
         serviceURL,
-        data: Readable.toWeb(createReadStream(path)) as ReadableStream,
+        data: createReadStream(path, { signal }),
         size,
-        pieceCid: cid,
+        pieceCid: Piece.from(pieceCid),
         signal,
+        waitForParked: true,
       })
-      await SP.findPiece({ serviceURL, pieceCid: cid, poll: true, signal })
     },
 
     async signCommit({ placement, pieceCid, metadata, pieceMetadata }) {
