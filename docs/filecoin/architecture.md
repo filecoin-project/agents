@@ -276,7 +276,7 @@ The lock is a compare-and-swap `UPDATE` on `(execution_status, pid)`. If an oper
 
 clipact aborts `ctx.signal` on the first SIGINT, SIGTERM, or SIGHUP. Handlers pass the signal to `createApp`, which binds it to the RPC transport. After the abort, every chain read through synapse-core or viem rejects at once, and no new request starts. A request already in flight keeps running, because passing the signal to viem's HTTP transport would replace the transport's own timeout.
 
-`storage/synapse.ts` passes `app.signal` to every provider call: ping, upload, piece polling, commit submission, the wait for a commit, and removal. The abort cancels the HTTP request in flight. synapse-core checks the signal before it sends a commit or a removal, so neither starts after an abort. A resume then looks up the commit by its nonce before it sends the saved signature again. viem's receipt wait for a removal takes no signal, so `storage/synapse.ts` races it against the signal with `abortable()`, and the handler returns without waiting. [#12](https://github.com/filecoin-project/agents/issues/12) tracks the viem support that would remove both workarounds.
+`storage/synapse.ts` passes `app.signal` to every provider call: ping, upload, piece polling, commit submission, the wait for a commit, and removal. The abort cancels the HTTP request in flight. synapse-core checks the signal before it sends a commit or a removal, so neither starts after an abort. A resume then looks up the commit by its nonce before it sends the saved signature again. synapse-core's receipt waits race viem's receipt wait, which takes no signal, against the signal, so the handler returns without waiting. [#12](https://github.com/filecoin-project/agents/issues/12) tracks the viem support that would remove the transport workaround.
 
 `runOperation` marks the operation `failed` with the error `Interrupted`. clipact then writes an `interrupted` result with the resume step from the latest checkpoint and re-raises the signal, so the shell sees `130`, `143`, or `129`.
 
@@ -298,10 +298,10 @@ Extraction checks the bytes of every block against its CID, as `ipfs-car unpack 
 
 1. Read `clientDataSetId` from the data set and call `SP.schedulePieceDeletions`.
 2. Save the transaction hash.
-3. Wait for the receipt and check its status.
+3. Call `SP.waitForDeletePieces`, which waits for the receipt and checks that its `PiecesScheduledForRemoval` event names the piece. It skips Filecoin's null rounds while it waits.
 4. In one transaction, mark the resource `removal_pending` and complete the operation.
 
-If the transaction reverts, the resource stays `active` and the delete fails with `removal_reverted`. `filecoin` clears the saved hash, so a resume signs a new removal ([#2](https://github.com/filecoin-project/agents/issues/2)).
+If the transaction reverts or schedules no removal of the piece, synapse-core throws `TransactionNotAppliedError`. The resource stays `active` and the delete fails with `removal_reverted`. `filecoin` clears the saved hash, so a resume signs a new removal ([#2](https://github.com/filecoin-project/agents/issues/2)).
 
 The provider removes the piece later, at a proving boundary. `ls` hides resources that are pending removal unless you pass `--all`.
 

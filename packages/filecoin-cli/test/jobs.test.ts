@@ -165,12 +165,12 @@ function fakeBackend(options: FakeOptions = {}) {
       calls.remove++
       return Promise.resolve({ transactionHash: TX })
     },
-    waitForTransaction() {
+    waitForRemoval() {
       if (once.revertOnce) {
         once.revertOnce = false
-        return Promise.resolve({ status: 'reverted' as const })
+        return Promise.resolve({ scheduled: false })
       }
-      return Promise.resolve({ status: 'success' as const })
+      return Promise.resolve({ scheduled: true })
     },
   }
   return { backend, calls }

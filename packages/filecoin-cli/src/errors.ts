@@ -130,7 +130,7 @@ export const errors = {
     details: z.strictObject(operation),
   },
   [ErrorCodes.removalReverted]: {
-    description: 'The removal transaction reverted.',
+    description: 'The removal transaction reverted or scheduled no removal.',
     details: z.strictObject(operation),
   },
 } satisfies ErrorRegistry
