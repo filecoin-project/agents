@@ -75,7 +75,7 @@ A new skill must also be listed in the marketplace entry's `skills`; `pnpm check
 
 ## Build and check
 
-Use Node.js 24 or newer and pnpm 12.14.0, which provisions the configured Node.js 24 runtime. Run commands from the repository root:
+Use Node.js 24 or newer and pnpm 12.18.0, which provisions the configured Node.js 26 runtime. Run commands from the repository root:
 
 ```sh
 pnpm install --frozen-lockfile
