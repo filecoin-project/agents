@@ -306,7 +306,7 @@ The provider removes the piece later, at a proving boundary. `ls` hides resource
 
 ## Data set reads
 
-`filecoin datasets ls` and `filecoin datasets inspect <id>` read the wallet's data sets from filecoin-api through `@filecoin-project/api-client`, not from the chain. They need the wallet address, from a saved session or `FILECOIN_ROOT_ADDRESS`, but no scopes, because they sign nothing.
+`filecoin datasets ls` and `filecoin datasets inspect <id>` read the wallet's data sets from filecoin-api through `@filecoin-project/api-client`, not from the chain. Like `ls`, they need credentials: a saved session, or both `FILECOIN_SESSION_KEY` and `FILECOIN_ROOT_ADDRESS`. They use only the wallet address and sign nothing, so the session key needs no scopes.
 
 - `datasets ls` calls `GET /{network}/data-sets` with `owner` set to the payer. It sends `deleted=false` unless you pass `--all`, and `provider_id` for `--provider`. The `--cursor` value is filecoin-api's own cursor, passed through unchanged.
 - `datasets inspect` calls `GET /{network}/data-sets/{id}` and `GET /{network}/data-sets/{id}/pieces` in parallel, then `GET /{network}/providers/{providerId}`. It sends `removed=false` unless you pass `--removed`. It adds a `resourceRef` to each piece that a managed resource has a copy at, matching the copy's `dataSetId` and `pieceId` in `state.db`. A data set that filecoin-api doesn't have, or that another wallet pays for, is `not_found`.
