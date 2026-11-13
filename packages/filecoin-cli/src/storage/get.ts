@@ -20,8 +20,9 @@ export type DownloadPieceOptions = {
 
 /**
  * Stream a piece to `output` while hashing it, and keep the file only when
- * the bytes match the expected PieceCID. Unlike synapse-core's
- * `downloadAndValidate`, this never buffers the whole piece in memory.
+ * the bytes match the expected PieceCID. synapse-core's `Piece.downloadStream`
+ * validates the same way, but its `DownloadPieceError` drops the HTTP status,
+ * so a 404 could not become `not_found`.
  */
 export async function downloadPiece(
   options: DownloadPieceOptions
