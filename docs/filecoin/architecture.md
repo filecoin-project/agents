@@ -284,7 +284,7 @@ clipact aborts `ctx.signal` on the first SIGINT, SIGTERM, or SIGHUP. Handlers pa
 
 `get <ref|pieceCid>` always downloads the stored piece from `/piece/<pieceCid>`. That is the only form whose bytes `filecoin` can check against the PieceCID. For a managed resource, `get` uses the `serviceURL` of the saved copy and skips filecoin-api, so a download never waits for the indexer.
 
-- **Files.** `get.ts` streams the response through `Piece.hasher()` into `<output>.filecoin-partial`. It renames the file to its final name only if the computed PieceCID matches. synapse-core's `downloadAndValidate` would hold the whole piece in memory.
+- **Files.** `get.ts` streams the response through `Piece.hasher()` into `<output>.filecoin-partial`. It renames the file to its final name only if the computed PieceCID matches. synapse-core's `Piece.downloadStream` validates a stream the same way, but its `DownloadPieceError` drops the HTTP status, so `get` could no longer return `not_found` for a 404.
 - **Folders.** The CLI downloads and verifies the CAR the same way, then opens it with `CarIndexedReader`. It checks that the root in the CAR header equals the saved `rootCid`. It walks the DAG with `ipfs-unixfs-exporter` and extracts into a temporary directory, which it then renames into place. It rejects an entry name that contains a path separator or resolves outside the output directory.
 - **Unmanaged PieceCIDs.** The CLI finds a provider with `resolvePieceUrl`, then downloads and verifies the piece the same way.
 
