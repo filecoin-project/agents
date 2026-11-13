@@ -143,12 +143,13 @@ export function ratePerDay(ratePerEpoch: bigint | number | string) {
  *
  * @param epoch - Chain epoch.
  * @param genesisTimestamp - Chain genesis in Unix seconds.
+ * @returns The Date, or `null` when the epoch is past the `Date` range.
  */
 export function epochToDate(
   epoch: bigint | number | string,
   genesisTimestamp: number
 ) {
-  return coreEpochToDate(Number(toBigInt(epoch)), genesisTimestamp)
+  return coreEpochToDate(toBigInt(epoch), genesisTimestamp)
 }
 
 /**

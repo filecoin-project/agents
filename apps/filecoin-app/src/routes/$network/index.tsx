@@ -82,11 +82,7 @@ function ExplorerHome() {
                 </>
               }
               key={dataSet.dataSetId}
-              time={
-                dataSet.createdAtBlock
-                  ? formatRelative(epochToDate(dataSet.createdAtBlock, genesis))
-                  : undefined
-              }
+              time={createdAt(dataSet.createdAtBlock, genesis)}
               title={
                 <>
                   <DataSetLink id={dataSet.dataSetId} network={network} />
@@ -144,4 +140,19 @@ function ExplorerHome() {
       </section>
     </div>
   )
+}
+
+/**
+ * How long ago a data set was created, or `undefined` when its block is
+ * unknown or past the `Date` range.
+ *
+ * @param block - Creation block (epoch).
+ * @param genesis - Chain genesis in Unix seconds.
+ */
+function createdAt(
+  block: bigint | number | string | null | undefined,
+  genesis: number
+) {
+  const date = block ? epochToDate(block, genesis) : null
+  return date ? formatRelative(date) : undefined
 }

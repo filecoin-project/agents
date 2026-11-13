@@ -70,7 +70,11 @@ describe('format', () => {
   it('converts epochs to dates', () => {
     const genesis = 1_598_306_400
     const date = epochToDate(2880, genesis)
-    assert.equal(date.getTime(), (genesis + 2880 * 30) * 1000)
+    assert.equal(date?.getTime(), (genesis + 2880 * 30) * 1000)
+  })
+
+  it('returns null for epochs past the Date range', () => {
+    assert.equal(epochToDate(2n ** 255n, 1_598_306_400), null)
   })
 
   it('formats durations and epochs', () => {
