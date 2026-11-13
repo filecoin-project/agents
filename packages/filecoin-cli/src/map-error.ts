@@ -15,6 +15,21 @@ const UNAVAILABLE = new Set([
 /** Error names for a request that took too long. */
 const TIMEOUT = new Set(['TimeoutError'])
 
+/**
+ * HTTP status of a filecoin-api error, or `undefined` for any other error.
+ * Matched by name, like the others, so this module does not import the API
+ * client.
+ */
+function apiStatus(error: Error): number | undefined {
+  if (error.name !== 'ApiError' || !('status' in error)) return undefined
+  return Number(error.status)
+}
+
+/** Whether `error` is undici's failure to reach a host, from `fetch`. */
+function isFetchFailure(error: Error): boolean {
+  return error instanceof TypeError && error.message === 'fetch failed'
+}
+
 /** The error and its causes, outermost first. */
 function* causes(error: unknown): Generator<Error> {
   let current = error
@@ -30,7 +45,7 @@ export function firstLine(error: Error): string {
 }
 
 /**
- * Translate RPC and HTTP failures from viem and synapse-core into
+ * Translate RPC and HTTP failures from viem, synapse-core, and filecoin-api into
  * clipact's transient codes. clipact marks them retryable only for read-only
  * and idempotent commands; put and delete wrap errors with their operation
  * first, so they never reach this hook. Loaded only when a handler throws
@@ -40,6 +55,14 @@ export function firstLine(error: Error): string {
  */
 export default function mapError(error: unknown): CliError | undefined {
   for (const cause of causes(error)) {
+    const status = apiStatus(cause)
+    if (status === 429) {
+      return new CliError({
+        code: 'rate_limited',
+        message: `filecoin-api limited the request rate: ${firstLine(cause)}`,
+        cause: error,
+      })
+    }
     if (TIMEOUT.has(cause.name)) {
       return new CliError({
         code: 'timeout',
@@ -47,7 +70,11 @@ export default function mapError(error: unknown): CliError | undefined {
         cause: error,
       })
     }
-    if (UNAVAILABLE.has(cause.name)) {
+    if (
+      UNAVAILABLE.has(cause.name) ||
+      (status !== undefined && status >= 500) ||
+      isFetchFailure(cause)
+    ) {
       return new CliError({
         code: 'service_unavailable',
         message: `A service did not respond: ${firstLine(cause)}`,

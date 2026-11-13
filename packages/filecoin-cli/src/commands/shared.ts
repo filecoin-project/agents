@@ -115,3 +115,30 @@ export function formatBytes(bytes: number): string {
   }
   return `${unit === 0 ? value : value.toFixed(1)} ${units[unit]}`
 }
+
+/**
+ * A Warm Storage data set as filecoin-api indexes it. IDs and epochs are
+ * decimal strings; fields the indexer has not filled are omitted.
+ *
+ * @see ../../../filecoin-api-client/src/schema.ts
+ */
+export const dataSet = z.object({
+  dataSetId: z.string(),
+  providerId: z.string().optional(),
+  source: z
+    .string()
+    .optional()
+    .describe('Application that created it, from its source metadata'),
+  withIpfsIndexing: z
+    .boolean()
+    .describe('The provider indexes its CARs and announces them to IPNI'),
+  withCdn: z.boolean(),
+  metadata: z.record(z.string(), z.unknown()),
+  pdpRailId: z.string().describe('Filecoin Pay storage rail'),
+  pdpEndEpoch: z
+    .string()
+    .optional()
+    .describe('Epoch the service ends at; set once it is terminated'),
+  deleted: z.boolean().describe('Deleted on chain'),
+  createdAtBlock: z.string().optional(),
+})

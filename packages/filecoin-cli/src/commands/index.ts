@@ -1,4 +1,6 @@
 import { type CommandNode, defineGroup } from 'clipact'
+import { inspect as inspectDataSet } from './datasets/inspect.ts'
+import { ls as listDataSets } from './datasets/ls.ts'
 import { remove } from './delete.ts'
 import { doctor } from './doctor.ts'
 import { get } from './get.ts'
@@ -19,6 +21,13 @@ export const operations = defineGroup({
   commands: [listOperations, inspectOperation, resume],
 })
 
+/** `filecoin datasets`: the wallet's data sets, read from filecoin-api. */
+export const datasets = defineGroup({
+  name: 'datasets',
+  description: "Read the wallet's data sets and their pieces from filecoin-api",
+  commands: [listDataSets, inspectDataSet],
+})
+
 /** The `filecoin` command tree: definitions only, no handlers or SDKs. */
 export const commands: CommandNode[] = [
   login,
@@ -30,5 +39,6 @@ export const commands: CommandNode[] = [
   ls,
   inspect,
   remove,
+  datasets,
   operations,
 ]

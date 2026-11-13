@@ -80,6 +80,18 @@ Packing skips dotfiles and rejects symlinks. The file or the packed CAR must be 
 
 `delete` schedules removal, and the provider then deletes the stored copy. The resource state becomes `removal_pending`. Without `--yes`, `delete` asks a human at a terminal to confirm. In every other case, including for agents, it returns `confirmation_required` with a step for the user (`by: "user"`).
 
+## List the wallet's data sets
+
+```sh
+filecoin datasets ls                 # add --all to include data sets deleted on chain
+filecoin datasets ls --provider 9    # only data sets with storage provider 9
+filecoin datasets inspect 39723      # the data set, its provider, and a page of its pieces
+```
+
+`filecoin ls` shows only what this machine stored. `filecoin datasets` reads filecoin-api instead, so it shows every data set the wallet pays for, whichever tool created it. `datasets inspect` gives each piece the `resourceRef` of the managed resource stored as that piece, when this machine has one. Add `--removed` to include removed pieces.
+
+filecoin-api learns about new data sets and pieces from its indexer, so one added in the last few minutes can be missing. When filecoin-api limits the request rate, the result is a retryable `rate_limited` error. When it fails or can't be reached, the result is a retryable `service_unavailable`.
+
 ## Resume an interrupted put or delete
 
 ```sh
@@ -136,7 +148,7 @@ Ctrl+C, SIGTERM, or SIGHUP stops the work at the next step. `filecoin` returns a
 | `FILECOIN_CONFIG_DIR` | Absolute path of the folder that holds `config.json`, `state.db`, and staged folders. Default: `~/Library/Application Support/filecoin` on macOS, `%LOCALAPPDATA%\filecoin` on Windows, and `$XDG_DATA_HOME/filecoin` (`~/.local/share/filecoin`) elsewhere |
 | `FILECOIN_RPC_URL` | RPC endpoint. Default: synapse-core's fallback transport for the chain |
 | `FILECOIN_CONSOLE_URL` | Filecoin Pay console origin for approval, funding, and revoke links, such as `https://filecoin-pay-explorer-staging.vercel.app` for staging. Default: `https://pay.filecoin.cloud` |
-| `FILECOIN_API_URL` | filecoin-api origin for retrieval links, such as `http://localhost:8787` for a local API. Default: `https://api.filecoin.io` |
+| `FILECOIN_API_URL` | filecoin-api origin for retrieval links and `datasets` reads, such as `http://localhost:8787` for a local API. Default: `https://api.filecoin.io` |
 | `DO_NOT_TRACK`, `FILECOIN_TELEMETRY` | `DO_NOT_TRACK=1` or `FILECOIN_TELEMETRY=0` drops the `utm_*` tags from console links, as clipact's telemetry opt-outs. The tags tell the console's analytics that the visit came from the `filecoin` CLI, which flow printed the link, and which agent ran it, if any |
 | `FILECOIN_OUTPUT`, `FILECOIN_AGENT` | Override clipact's output mode and agent detection |
 
