@@ -241,34 +241,3 @@ export function notFound(message: string, next?: Next): CliError {
     ...(next ? { next: [next] } : {}),
   })
 }
-
-/**
- * Reject when `signal` aborts, for SDK calls that cannot be cancelled. The
- * call keeps running in the background, but the handler returns so clipact
- * can report the interruption. The call's own outcome is always handled, so
- * a late failure never becomes an unhandled rejection.
- */
-export function abortable<T>(
-  promise: Promise<T>,
-  signal: AbortSignal | undefined
-): Promise<T> {
-  if (!signal) return promise
-  if (signal.aborted) {
-    promise.catch(() => undefined)
-    return Promise.reject(signal.reason)
-  }
-  return new Promise<T>((resolve, reject) => {
-    const onAbort = () => reject(signal.reason)
-    signal.addEventListener('abort', onAbort, { once: true })
-    promise.then(
-      (value) => {
-        signal.removeEventListener('abort', onAbort)
-        resolve(value)
-      },
-      (error: unknown) => {
-        signal.removeEventListener('abort', onAbort)
-        reject(error)
-      }
-    )
-  })
-}

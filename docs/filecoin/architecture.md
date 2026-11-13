@@ -55,7 +55,7 @@ packages/filecoin-cli/
     ├── network.ts        network names, free of imports
     ├── app.ts            per-invocation context: network, chain, signal-bound clients, config, lazy DB
     ├── config.ts         clipact store (config.json) and network resolution
-    ├── errors.ts         error codes, operationError(), abortable()
+    ├── errors.ts         error codes, operationError()
     ├── usdfc.ts          USDFC amount formatting
     ├── runway.ts         account health and runway for `status`
     ├── auth/
@@ -274,7 +274,7 @@ The lock is a compare-and-swap `UPDATE` on `(execution_status, pid)`. If an oper
 
 ### Cancellation
 
-clipact aborts `ctx.signal` on the first SIGINT, SIGTERM, or SIGHUP. Handlers pass the signal to `createApp`, which binds it to the RPC transport. After the abort, every chain read through synapse-core or viem rejects at once, and no new request starts. A request already in flight keeps running, because passing the signal to viem's HTTP transport would replace the transport's own timeout.
+clipact aborts `ctx.signal` on the first SIGINT, SIGTERM, or SIGHUP. Handlers pass the signal to `createApp`, which binds it to the RPC transport with synapse-core's `getTransport(chain, { signal })`, or `withSignal` for `FILECOIN_RPC_URL`. After the abort, every chain read through synapse-core or viem rejects at once, and no new request starts. A request already in flight keeps running, because passing the signal to viem's HTTP transport would replace the transport's own timeout.
 
 `storage/synapse.ts` passes `app.signal` to every provider call: ping, upload, piece polling, commit submission, the wait for a commit, and removal. The abort cancels the HTTP request in flight. synapse-core checks the signal before it sends a commit or a removal, so neither starts after an abort. A resume then looks up the commit by its nonce before it sends the saved signature again. synapse-core's receipt waits race viem's receipt wait, which takes no signal, against the signal, so the handler returns without waiting. [#12](https://github.com/filecoin-project/agents/issues/12) tracks the viem support that would remove the transport workaround.
 
@@ -368,7 +368,7 @@ The tests use the Node test runner and need no network. msw replaces `fetch` for
 | `urls.test.ts` | The filecoin-api piece and browser URLs for files and folders, an API base path, an unknown chain ID, and the provider URL for `get` |
 | `cli.test.ts` | The whole CLI in process through `clipact/testing` in strict mode. It covers definitions, schemas, auth and pending-login errors, the logout revoke link, confirmation, a dry run without a session, secrets kept out of flags and output, and the globals in root help, `schema --list`, validation, and `doctor` sources, including the folder from `FILECOIN_CONFIG_DIR` or the platform default. Globals and the folder come from the env passed to `invoke`, not from `process.env` |
 | `contract.test.ts` | The built binary without a TTY. It covers one JSON line on stdout, exit codes, no leaked session key, and a SIGTERM during a hanging RPC call that gives an `interrupted` result and exit 143 |
-| `app.test.ts` | The signal-bound RPC transport and `abortable()`, including a call that fails after the abort |
+| `app.test.ts` | The signal-bound RPC transport: it rejects requests once the signal aborts and keeps its request timeout |
 | `datasets.test.ts` | `datasets ls` and `datasets inspect` in process against filecoin-api responses mocked with [msw](https://mswjs.io/), which fails on any request without a handler. It covers the query each flag sends, the mapping of `null` fields and a zero `pdpEndEpoch`, pieces linked to local resources, `not_found` for an unknown data set and another wallet's data set, `rate_limited` for 429, and `service_unavailable` for 503 and a network failure |
 | `config.test.ts` | Network resolution, the `0700` folder clipact creates, a relative `FILECOIN_CONFIG_DIR`, and a corrupt `config.json` |
 

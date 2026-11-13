@@ -1,8 +1,8 @@
+import { abortable } from '@filoz/synapse-core/utils'
 import { defineHandler, isCliError } from 'clipact'
 import { getBlockNumber } from 'viem/actions'
 import { resolveCredentials } from '../auth/session.ts'
 import { doctor } from '../commands/doctor.ts'
-import { abortable } from '../errors.ts'
 import { DEFAULT_API_URL, DEFAULT_CONSOLE_URL } from '../globals.ts'
 import { firstLine } from '../map-error.ts'
 import { appFor } from './context.ts'
@@ -50,11 +50,12 @@ export default defineHandler(doctor, async (ctx) => {
     })
   }
 
+  const deadline = AbortSignal.timeout(RPC_TIMEOUT)
   try {
     // The app's transport already stops on ctx.signal; this adds a deadline.
     const block = await abortable(
       getBlockNumber(app.client, { cacheTime: 0 }),
-      AbortSignal.timeout(RPC_TIMEOUT)
+      deadline
     )
     checks.push({
       name: 'rpc',
@@ -66,12 +67,11 @@ export default defineHandler(doctor, async (ctx) => {
     checks.push({
       name: 'rpc',
       ok: false,
-      message:
-        error instanceof DOMException && error.name === 'TimeoutError'
-          ? `No answer within ${RPC_TIMEOUT / 1000} s`
-          : error instanceof Error
-            ? firstLine(error)
-            : String(error),
+      message: deadline.aborted
+        ? `No answer within ${RPC_TIMEOUT / 1000} s`
+        : error instanceof Error
+          ? firstLine(error)
+          : String(error),
     })
   }
 

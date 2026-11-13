@@ -6,10 +6,10 @@ import {
   mainnet,
 } from '@filoz/synapse-core/chains'
 import { getTransport } from '@filoz/synapse-core/client'
+import { withSignal } from '@filoz/synapse-core/utils'
 import { type Client, createPublicClient, http, type Transport } from 'viem'
 import type { LinkTags } from './auth/login.ts'
 import { type Config, type Network, resolveNetwork } from './config.ts'
-import { abortable } from './errors.ts'
 import {
   DEFAULT_API_URL,
   DEFAULT_CONSOLE_URL,
@@ -72,29 +72,6 @@ export type CreateAppOptions = Partial<GlobalSettings> & {
 }
 
 /**
- * Bind `transport` to `signal`: a request rejects as soon as the signal
- * aborts, and none starts after it. synapse-core and viem read actions take
- * no signal of their own. The signal is not passed down: viem's http
- * transport would use it in place of its own timeout, so requests would no
- * longer time out, and the fallback transport drops it anyway.
- */
-export function withSignal(
-  transport: Transport,
-  signal: AbortSignal
-): Transport {
-  return (options) => {
-    const inner = transport(options)
-    return {
-      ...inner,
-      request: (args, requestOptions) =>
-        signal.aborted
-          ? Promise.reject(signal.reason)
-          : abortable(inner.request(args, requestOptions), signal),
-    }
-  }
-}
-
-/**
  * Build the invocation context from a command's account input. Handlers call
  * this directly; clipact has no middleware. `rpcUrl` replaces the chain's
  * default fallback transport.
@@ -103,8 +80,11 @@ export function createApp(options: CreateAppOptions): App {
   const { config, dir } = options
   const network = resolveNetwork(options.network, config)
   const chain = network === 'mainnet' ? mainnet : calibration
-  const base = options.rpcUrl ? http(options.rpcUrl) : getTransport(chain)
-  const transport = options.signal ? withSignal(base, options.signal) : base
+  // A request rejects once the signal aborts, and none starts after it. The
+  // transport keeps its own request timeout.
+  const transport = options.rpcUrl
+    ? withSignal(http(options.rpcUrl), options.signal)
+    : getTransport(chain, { signal: options.signal })
   let db: DatabaseSync | undefined
   return {
     network,
