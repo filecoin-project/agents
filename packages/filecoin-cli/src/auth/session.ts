@@ -1,4 +1,4 @@
-import { fromSecp256k1 } from '@filoz/synapse-core/session-key'
+import { FwssPermissions, fromSecp256k1 } from '@filoz/synapse-core/session-key'
 import { CliError } from 'clipact'
 import { type Address, getAddress, type Hex, isAddress } from 'viem'
 import type { App } from '../app.ts'
@@ -7,7 +7,6 @@ import { buildAuthorizeUrl } from './login.ts'
 import {
   DEFAULT_SCOPES,
   isScopeId,
-  SCOPES,
   type ScopeId,
   toPermissions,
 } from './scopes.ts'
@@ -151,7 +150,9 @@ export async function missingScopes(
 ): Promise<ScopeId[]> {
   const permissions = toPermissions(scopes)
   await sessionKey.syncExpirations(permissions)
-  return scopes.filter((scope) => !sessionKey.hasPermission(SCOPES[scope]))
+  return scopes.filter(
+    (scope) => !sessionKey.hasPermission(FwssPermissions[scope])
+  )
 }
 
 /**

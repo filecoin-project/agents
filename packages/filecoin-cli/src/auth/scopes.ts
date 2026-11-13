@@ -1,26 +1,20 @@
 import {
-  AddPiecesPermission,
-  CreateDataSetPermission,
+  FwssPermissions,
   type Permission,
-  SchedulePieceRemovalsPermission,
-  TerminateServicePermission,
 } from '@filoz/synapse-core/session-key'
-import type { ScopeId } from './scope-ids.ts'
+import { SCOPE_IDS, type ScopeId } from './scope-ids.ts'
 
 export { DEFAULT_SCOPES, type ScopeId } from './scope-ids.ts'
 
 /**
- * Session-key scopes by the IDs the Filecoin Pay console accepts in its
- * `scopes` link parameter, mapped to FWSS permission typehashes.
+ * Every scope ID names an FWSS permission in synapse-core's
+ * `FwssPermissions`, which maps the IDs the Filecoin Pay console accepts in
+ * its `scopes` link parameter to permission typehashes. This fails to
+ * compile if `SCOPE_IDS` names an ID that synapse-core lacks.
  *
- * @see https://github.com/FilOzone/synapse-sdk/blob/master/docs/src/content/docs/developer-guides/session-keys.mdx
+ * @see https://github.com/FilOzone/synapse-sdk/blob/master/packages/synapse-core/src/session-key/permissions.ts
  */
-export const SCOPES = {
-  createDataSet: CreateDataSetPermission,
-  addPieces: AddPiecesPermission,
-  schedulePieceRemovals: SchedulePieceRemovalsPermission,
-  terminateService: TerminateServicePermission,
-} as const satisfies Record<ScopeId, Permission>
+FwssPermissions satisfies Record<ScopeId, Permission>
 
 /** Scopes a `put` needs: it may create a data set or add to one. */
 export const PUT_SCOPES: ScopeId[] = ['createDataSet', 'addPieces']
@@ -30,10 +24,10 @@ export const RM_SCOPES: ScopeId[] = ['schedulePieceRemovals']
 
 /** Whether `value` is a known scope ID. */
 export function isScopeId(value: string): value is ScopeId {
-  return Object.hasOwn(SCOPES, value)
+  return (SCOPE_IDS as readonly string[]).includes(value)
 }
 
 /** Map scope IDs to their permission hashes. */
 export function toPermissions(scopes: readonly ScopeId[]): Permission[] {
-  return scopes.map((scope) => SCOPES[scope])
+  return scopes.map((scope) => FwssPermissions[scope])
 }

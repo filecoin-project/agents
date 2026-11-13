@@ -1,6 +1,9 @@
 import * as ERC20 from '@filoz/synapse-core/erc20'
 import * as Pay from '@filoz/synapse-core/pay'
-import { getExpirations } from '@filoz/synapse-core/session-key'
+import {
+  FwssPermissions,
+  getExpirations,
+} from '@filoz/synapse-core/session-key'
 import * as WarmStorage from '@filoz/synapse-core/warm-storage'
 import { defineHandler, isCliError } from 'clipact'
 import { formatEther, type Hex } from 'viem'
@@ -11,7 +14,6 @@ import {
   buildFundingUrl,
   targetBalance,
 } from '../auth/login.ts'
-import { SCOPES } from '../auth/scopes.ts'
 import { resolveCredentials } from '../auth/session.ts'
 import { status } from '../commands/status.ts'
 import { ErrorCodes } from '../errors.ts'
@@ -56,7 +58,7 @@ export default defineHandler(status, async (ctx) => {
     getExpirations(app.client, {
       address: root,
       sessionKeyAddress: signer,
-      permissions: Object.values(SCOPES),
+      permissions: Object.values(FwssPermissions),
     }),
     Pay.getAccountSummary(app.client, { address: root }),
     WarmStorage.getUploadCosts(app.client, {
@@ -70,7 +72,7 @@ export default defineHandler(status, async (ctx) => {
   ])
   const now = BigInt(Math.floor(Date.now() / 1000))
   const scopes = Object.fromEntries(
-    Object.entries(SCOPES).map(([id, permission]) => {
+    Object.entries(FwssPermissions).map(([id, permission]) => {
       const expiry = expirations[permission] ?? 0n
       return [
         id,

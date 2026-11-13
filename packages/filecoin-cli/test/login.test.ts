@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { sessionKeyRegistry } from '@filoz/synapse-core/abis'
 import { calibration } from '@filoz/synapse-core/chains'
+import { FwssPermissions } from '@filoz/synapse-core/session-key'
 import {
   type Address,
   createPublicClient,
@@ -22,7 +23,6 @@ import {
   LOG_WINDOW,
   targetBalance,
 } from '../src/auth/login.ts'
-import { SCOPES } from '../src/auth/scopes.ts'
 import { loginCommand } from '../src/auth/session.ts'
 
 const OWNER = '0x1111111111111111111111111111111111111111' as Address
@@ -173,9 +173,9 @@ test('classifyScopes splits live and missing scopes', () => {
   const grants = classifyScopes(
     ['createDataSet', 'addPieces', 'schedulePieceRemovals'],
     {
-      [SCOPES.createDataSet]: 200n,
-      [SCOPES.addPieces]: 150n,
-      [SCOPES.schedulePieceRemovals]: 50n,
+      [FwssPermissions.createDataSet]: 200n,
+      [FwssPermissions.addPieces]: 150n,
+      [FwssPermissions.schedulePieceRemovals]: 50n,
     },
     100n
   )
@@ -206,7 +206,7 @@ function authorizationLog(identity: Address, signer: Address, block: bigint) {
         { type: 'bytes32[]' },
         { type: 'string' },
       ],
-      [signer, 9999999999n, [SCOPES.addPieces], 'filecoin']
+      [signer, 9999999999n, [FwssPermissions.addPieces], 'filecoin']
     ),
     blockNumber: numberToHex(block),
     blockHash: `0x${'ab'.repeat(32)}`,
