@@ -126,7 +126,7 @@ export const errors = {
     details: z.strictObject(operation),
   },
   [ErrorCodes.commitRejected]: {
-    description: 'The provider rejected the commit transaction.',
+    description: 'The commit transaction reverted or added no piece.',
     details: z.strictObject(operation),
   },
   [ErrorCodes.removalReverted]: {

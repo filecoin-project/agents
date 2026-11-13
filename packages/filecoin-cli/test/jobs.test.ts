@@ -3,14 +3,16 @@ import { randomBytes } from 'node:crypto'
 import { mkdir, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { test } from 'node:test'
+import type { Commit } from '@filoz/synapse-core/sp'
 import { CliError } from 'clipact'
 import type { Hex } from 'viem'
 import { invalidInput, operationError } from '../src/errors.ts'
 import { openDatabase } from '../src/state/db.ts'
 import {
   getOperation,
+  type LegacyCommit,
   listOperations,
-  type SignedCommit,
+  updateOperation,
 } from '../src/state/operations.ts'
 import { getResource } from '../src/state/resources.ts'
 import {
@@ -26,6 +28,7 @@ import type { CommittedPiece, StorageBackend } from '../src/storage/types.ts'
 import { tempDir } from './helpers.ts'
 
 const TX = `0x${'aa'.repeat(32)}` as Hex
+const PAYER: Hex = '0x00000000000000000000000000000000000000aa'
 
 /** Options for {@link fakeBackend}. */
 type FakeOptions = {
@@ -58,6 +61,7 @@ function fakeBackend(options: FakeOptions = {}) {
     upload: 0,
     sign: 0,
     submitted: [] as Hex[],
+    commits: [] as Commit[],
     find: 0,
     wait: 0,
     remove: 0,
@@ -91,41 +95,56 @@ function fakeBackend(options: FakeOptions = {}) {
       calls.upload++
       return Promise.resolve()
     },
-    signCommit({ placement }) {
+    signCommit({ placement, pieceCid, metadata, pieceMetadata }) {
       calls.sign++
-      const commit: SignedCommit = {
-        created: placement.dataSetId == null,
+      const signed = {
         nonce: String(calls.sign),
-        extraData: `0x0${calls.sign}`,
+        payer: PAYER,
+        pieces: [{ pieceCid, metadata: pieceMetadata }],
+        extraData: `0x0${calls.sign}` as Hex,
       }
+      const commit: Commit =
+        placement.dataSetId == null
+          ? {
+              ...signed,
+              kind: 'createDataSetAndAddPieces',
+              clientDataSetId: '77',
+              payee: placement.payee,
+              metadata,
+              cdn: false,
+            }
+          : {
+              ...signed,
+              kind: 'addPieces',
+              dataSetId: placement.dataSetId.toString(),
+              clientDataSetId: String(placement.clientDataSetId),
+            }
       return Promise.resolve(commit)
     },
     submitCommit({ commit }) {
       calls.submitted.push(commit.extraData)
+      calls.commits.push(commit)
       if (once.failSubmitOnce) {
         once.failSubmitOnce = false
         return Promise.reject(new Error('connect ECONNREFUSED'))
       }
       landed.set(commit.nonce, {
-        dataSetId: commit.created ? 100n : 42n,
+        dataSetId: commit.kind === 'addPieces' ? 42n : 100n,
         pieceId: 5n,
       })
       if (once.loseResponseOnce) {
         once.loseResponseOnce = false
         return Promise.reject(new Error('socket hang up'))
       }
-      return Promise.resolve({
-        transactionHash: TX,
-        statusUrl: `https://sp.example/status/${commit.nonce}`,
-      })
+      return Promise.resolve({ transactionHash: TX })
     },
-    findCommit({ nonce }) {
+    findCommit({ commit }) {
       calls.find++
-      return Promise.resolve(landed.get(nonce.toString()))
+      return Promise.resolve(landed.get(commit.nonce))
     },
-    waitForCommit({ statusUrl }) {
+    waitForCommit({ commit }) {
       calls.wait++
-      const nonce = statusUrl.split('/').at(-1) ?? ''
+      const { nonce } = commit
       if (once.failWaitOnce) {
         once.failWaitOnce = false
         return Promise.reject(new Error('connection reset'))
@@ -169,7 +188,7 @@ async function context(
     db: openDatabase(join(root, 'state')),
     backend,
     chainId: '314159',
-    payer: '0xpayer',
+    payer: PAYER,
     apiUrl: 'https://api.example',
     stagingDir: (id) => join(root, 'state', 'staging', id),
     onOperation: (op) => started.push(op.id),
@@ -379,7 +398,7 @@ test('resume after a lost commit response does not commit twice (#1)', async () 
   const path = await file(ctx, 'data.bin', 2048)
   await assert.rejects(startPut(ctx, { path }), { code: 'operation_failed' })
   const failed = onlyOperation(ctx)
-  assert.equal(failed.checkpoint.statusUrl, undefined)
+  assert.equal(failed.checkpoint.transactionHash, undefined)
   assert.ok(failed.checkpoint.commit)
 
   const result = await runOperation(ctx, failed.id)
@@ -407,12 +426,82 @@ test('a rejected commit is resent with the same signature on resume', async () =
   const path = await file(ctx, 'data.bin', 2048)
   await assert.rejects(startPut(ctx, { path }), { code: 'commit_rejected' })
   const failed = onlyOperation(ctx)
-  assert.equal(failed.checkpoint.statusUrl, undefined)
+  assert.equal(failed.checkpoint.transactionHash, undefined)
 
   const result = await runOperation(ctx, failed.id)
   assert.equal(result.state, 'ready')
   assert.equal(calls.sign, 1)
   assert.deepEqual(calls.submitted, ['0x01', '0x01'])
+})
+
+/**
+ * Rewrite an operation's saved commit in the shape `filecoin` 0.7.0 saved,
+ * with the provider status URL it saved after sending.
+ */
+function saveLegacyCommit(
+  ctx: JobContext,
+  id: string,
+  options: { statusUrl?: string } = {}
+): LegacyCommit {
+  const op = getOperation(ctx.db, id)
+  const commit = op?.checkpoint.commit
+  assert.ok(commit && 'kind' in commit)
+  const legacy: LegacyCommit = {
+    created: commit.kind === 'createDataSetAndAddPieces',
+    nonce: commit.nonce,
+    ...(commit.kind === 'createDataSetAndAddPieces'
+      ? { clientDataSetId: commit.clientDataSetId }
+      : {}),
+    extraData: commit.extraData,
+  }
+  updateOperation(ctx.db, id, {
+    checkpoint: { commit: legacy, ...options },
+  })
+  return legacy
+}
+
+test('resume sends a commit saved by filecoin 0.7.0 as a synapse-core commit', async () => {
+  const { backend, calls } = fakeBackend({ failSubmitOnce: true })
+  const ctx = await context(backend)
+  const path = await file(ctx, 'data.bin', 2048)
+  await assert.rejects(startPut(ctx, { path }))
+  const failed = onlyOperation(ctx)
+  const legacy = saveLegacyCommit(ctx, failed.id)
+
+  const result = await runOperation(ctx, failed.id)
+  assert.equal(result.state, 'ready')
+  assert.equal(calls.sign, 1)
+  assert.deepEqual(calls.commits[1], {
+    kind: 'createDataSetAndAddPieces',
+    clientDataSetId: legacy.clientDataSetId,
+    nonce: legacy.nonce,
+    payee: '0x0000000000000000000000000000000000000007',
+    payer: PAYER,
+    metadata: FILE_DATA_SET_METADATA,
+    cdn: false,
+    pieces: [
+      { pieceCid: result.resource.pieceCid, metadata: { name: 'data.bin' } },
+    ],
+    extraData: legacy.extraData,
+  })
+  assert.deepEqual(calls.commits[1], calls.commits[0])
+})
+
+test('resume finds a landed commit saved by filecoin 0.7.0 with its status URL', async () => {
+  const { backend, calls } = fakeBackend({
+    existingDataSet: true,
+    failWaitOnce: true,
+  })
+  const ctx = await context(backend)
+  const path = await file(ctx, 'data.bin', 2048)
+  await assert.rejects(startPut(ctx, { path }))
+  const failed = onlyOperation(ctx)
+  saveLegacyCommit(ctx, failed.id, { statusUrl: 'https://sp.example/status/1' })
+
+  const result = await runOperation(ctx, failed.id)
+  assert.equal(result.resource.copies[0]?.dataSetId, '42')
+  assert.equal(calls.submitted.length, 1)
+  assert.equal(calls.find, 1)
 })
 
 test('resume of a completed operation returns its saved outcome (#4)', async () => {

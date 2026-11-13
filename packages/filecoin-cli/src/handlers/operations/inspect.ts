@@ -10,21 +10,7 @@ export default defineHandler(inspect, async (ctx) => {
   const app = await appFor(ctx)
   const op = findOperation(app, ctx.input.id)
   const { commit, ...checkpoint } = op.checkpoint
-  return ctx.ok({
-    ...op,
-    checkpoint: {
-      ...checkpoint,
-      ...(commit
-        ? {
-            commit: {
-              created: commit.created,
-              nonce: commit.nonce,
-              ...(commit.clientDataSetId
-                ? { clientDataSetId: commit.clientDataSetId }
-                : {}),
-            },
-          }
-        : {}),
-    },
-  })
+  if (!commit) return ctx.ok(op)
+  const { extraData: _, ...summary } = commit
+  return ctx.ok({ ...op, checkpoint: { ...checkpoint, commit: summary } })
 })
