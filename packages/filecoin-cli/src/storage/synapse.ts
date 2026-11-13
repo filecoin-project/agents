@@ -1,35 +1,20 @@
 import { createReadStream } from 'node:fs'
 import { Readable } from 'node:stream'
 import type { ReadableStream } from 'node:stream/web'
-import {
-  WaitForAddPiecesRejectedError,
-  WaitForCreateDataSetRejectedError,
-} from '@filoz/synapse-core/errors'
+import { TransactionNotAppliedError } from '@filoz/synapse-core/errors'
 import * as Pay from '@filoz/synapse-core/pay'
 import * as PDPVerifier from '@filoz/synapse-core/pdp-verifier'
 import * as Piece from '@filoz/synapse-core/piece'
 import * as SP from '@filoz/synapse-core/sp'
 import * as SPRegistry from '@filoz/synapse-core/sp-registry'
-import {
-  signAddPieces,
-  signCreateDataSetAndAddPieces,
-} from '@filoz/synapse-core/typed-data'
-import {
-  datasetMetadataObjectToEntry,
-  pieceMetadataObjectToEntry,
-  randU256,
-} from '@filoz/synapse-core/utils'
 import * as WarmStorage from '@filoz/synapse-core/warm-storage'
 import { CliError } from 'clipact'
-import { readContract, waitForTransactionReceipt } from 'viem/actions'
+import { waitForTransactionReceipt } from 'viem/actions'
 import type { App } from '../app.ts'
 import { buildFundingUrl, targetBalance } from '../auth/login.ts'
 import type { SessionKey } from '../auth/session.ts'
 import { abortable, ErrorCodes, notFound } from '../errors.ts'
 import type { Placement, StorageBackend } from './types.ts'
-
-/** Low 128 bits of a `clientNonces` value: the data set ID. */
-const LOW_128 = (1n << 128n) - 1n
 
 /**
  * Create the synapse-core storage backend: one copy on one Curio provider,
@@ -194,111 +179,82 @@ export function createSynapseBackend(
     },
 
     async signCommit({ placement, pieceCid, metadata, pieceMetadata }) {
-      const nonce = randU256()
       const pieces = [
-        {
-          pieceCid: Piece.from(pieceCid),
-          metadata: pieceMetadataObjectToEntry(pieceMetadata),
-        },
+        { pieceCid: Piece.from(pieceCid), metadata: pieceMetadata },
       ]
       if (placement.dataSetId == null) {
-        const clientDataSetId = randU256()
-        const extraData = await signCreateDataSetAndAddPieces(signer, {
-          clientDataSetId,
-          nonce,
+        return await SP.prepareCreateDataSetAndAddPieces(signer, {
           // FWSS verifies the signature against the registry payee.
           payee: placement.payee,
           // Without this the session key address would be the payer.
           payer,
-          metadata: datasetMetadataObjectToEntry(metadata, { cdn: false }),
+          metadata,
           pieces,
         })
-        return {
-          created: true,
-          nonce: nonce.toString(),
-          clientDataSetId: clientDataSetId.toString(),
-          extraData,
-        }
       }
       if (placement.clientDataSetId == null) {
         throw new Error('Adding to a data set requires its client data set ID.')
       }
-      const extraData = await signAddPieces(signer, {
-        clientDataSetId: placement.clientDataSetId,
-        nonce,
-        pieces,
-      })
-      return { created: false, nonce: nonce.toString(), extraData }
-    },
-
-    async submitCommit({ placement, pieceCid, commit, pieceMetadata }) {
-      const pieces = [
-        { pieceCid: Piece.from(pieceCid), metadata: pieceMetadata },
-      ]
-      // synapse-core never sends a paid mutation once the signal has aborted.
-      if (commit.created) {
-        const result = await SP.createDataSetAndAddPieces(signer, {
-          serviceURL: placement.serviceURL,
-          payee: placement.payee,
-          payer,
-          pieces,
-          extraData: commit.extraData,
-          signal,
-        })
-        return { transactionHash: result.txHash, statusUrl: result.statusUrl }
-      }
-      if (placement.dataSetId == null || placement.clientDataSetId == null) {
-        throw new Error('Adding to a data set requires its IDs.')
-      }
-      const result = await SP.addPieces(signer, {
-        serviceURL: placement.serviceURL,
+      return await SP.prepareAddPieces(signer, {
         dataSetId: placement.dataSetId,
         clientDataSetId: placement.clientDataSetId,
+        payer,
         pieces,
-        extraData: commit.extraData,
+      })
+    },
+
+    async submitCommit({ serviceURL, commit }) {
+      // synapse-core never sends a paid mutation once the signal has aborted.
+      const result = await SP.submitCommit(client, {
+        serviceURL,
+        commit,
         signal,
       })
-      return { transactionHash: result.txHash, statusUrl: result.statusUrl }
+      return { transactionHash: result.txHash }
     },
 
-    async findCommit({ nonce }) {
-      // FWSS stores ((firstAdded + count) << 128) | dataSetId for each used
-      // add-pieces nonce, including the add half of create-and-add.
-      const value = await readContract(client, {
-        address: client.chain.contracts.fwssView.address,
-        abi: client.chain.contracts.fwssView.abi,
-        functionName: 'clientNonces',
-        args: [payer, nonce],
-      })
-      if (value === 0n) return undefined
-      return { dataSetId: value & LOW_128, pieceId: (value >> 128n) - 1n }
+    async findCommit({ commit }) {
+      // FWSS records each used add-pieces nonce, including the add half of
+      // create-and-add.
+      const { extraData } = commit
+      const pieceCount = commit.pieces.length
+      const result =
+        commit.kind === 'addPieces'
+          ? await WarmStorage.getAddPiecesResult(client, {
+              payer: commit.payer,
+              extraData,
+              pieceCount,
+            })
+          : await WarmStorage.getCreateDataSetAndAddPiecesResult(client, {
+              extraData,
+              pieceCount,
+            })
+      if (!('dataSetId' in result)) return undefined
+      return { dataSetId: result.dataSetId, pieceId: firstId(result.pieceIds) }
     },
 
-    async waitForCommit({ statusUrl, created }) {
+    async waitForCommit({ commit, transactionHash }) {
+      const options = {
+        client,
+        txHash: transactionHash,
+        extraData: commit.extraData,
+        pieceCount: commit.pieces.length,
+        signal,
+      }
       try {
-        if (created) {
-          const result = await SP.waitForCreateDataSetAddPieces({
-            statusUrl,
-            signal,
-          })
-          return {
-            dataSetId: result.dataSetId,
-            pieceId: firstId(result.piecesIds),
-          }
-        }
-        const result = await SP.waitForAddPieces({ statusUrl, signal })
+        const result =
+          commit.kind === 'addPieces'
+            ? await SP.waitForAddPieces({ ...options, payer: commit.payer })
+            : await SP.waitForCreateDataSetAddPieces(options)
         return {
           dataSetId: result.dataSetId,
-          pieceId: firstId(result.confirmedPieceIds),
+          pieceId: firstId(result.pieceIds),
         }
       } catch (error) {
-        if (
-          WaitForAddPiecesRejectedError.is(error) ||
-          WaitForCreateDataSetRejectedError.is(error)
-        ) {
+        if (TransactionNotAppliedError.is(error)) {
           throw new CliError({
             code: ErrorCodes.commitRejected,
-            message: 'The provider reported the commit transaction as failed.',
+            message: `Commit transaction ${transactionHash} did not add the piece.`,
             cause: error,
           })
         }
@@ -316,7 +272,7 @@ export function createSynapseBackend(
         pieceIds: [pieceId],
         signal,
       })
-      return { transactionHash: result.hash }
+      return { transactionHash: result.txHash }
     },
 
     async waitForTransaction(transactionHash) {
@@ -353,9 +309,9 @@ export function createSynapseBackend(
   }
 }
 
-/** First confirmed piece ID from a provider status response. */
+/** First piece ID of a confirmed commit. */
 function firstId(ids: readonly bigint[]): bigint {
   const [id] = ids
-  if (id == null) throw new Error('Provider confirmed no piece IDs.')
+  if (id == null) throw new Error('The commit added no piece IDs.')
   return id
 }

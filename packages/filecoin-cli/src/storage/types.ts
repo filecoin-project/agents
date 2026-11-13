@@ -1,6 +1,6 @@
+import type { Commit } from '@filoz/synapse-core/sp'
 import type { MetadataObject } from '@filoz/synapse-core/utils'
 import type { Address, Hex } from 'viem'
-import type { SignedCommit } from '../state/operations.ts'
 
 /** Provider and data set chosen for a single-copy upload. */
 export type Placement = {
@@ -12,8 +12,12 @@ export type Placement = {
   clientDataSetId?: bigint
 }
 
-/** A provider submission awaiting confirmation. */
-export type Submission = { transactionHash: Hex; statusUrl: string }
+/**
+ * A commit the provider accepted, awaiting confirmation on chain. The signed
+ * `extraData` and the piece count stay in the saved {@link Commit}, which
+ * recovers the piece IDs if the receipt wait times out.
+ */
+export type Submission = { transactionHash: Hex }
 
 /** A confirmed piece in a data set. */
 export type CommittedPiece = { dataSetId: bigint; pieceId: bigint }
@@ -61,34 +65,32 @@ export interface StorageBackend {
   /**
    * Sign a commit without sending it: create-and-add when the placement has
    * no data set, add otherwise. The nonce and client data set ID are chosen
-   * here and saved with the signature.
+   * here. The commit is JSON-safe and saved before it is sent.
    */
   signCommit(options: {
     placement: Placement
     pieceCid: string
     metadata: MetadataObject
     pieceMetadata: MetadataObject
-  }): Promise<SignedCommit>
+  }): Promise<Commit>
   /** Send a signed commit to the provider. */
   submitCommit(options: {
-    placement: Placement
-    pieceCid: string
-    commit: SignedCommit
-    pieceMetadata: MetadataObject
+    serviceURL: string
+    commit: Commit
   }): Promise<Submission>
   /**
-   * Find a commit on chain by its nonce. Returns the piece when FWSS has
-   * recorded the nonce, or `undefined` when the commit has not landed.
+   * Find a commit on chain by the nonce in its signed `extraData`. Returns
+   * the piece when FWSS has recorded the nonce, or `undefined` when the
+   * commit has not landed.
    */
-  findCommit(options: { nonce: bigint }): Promise<CommittedPiece | undefined>
+  findCommit(options: { commit: Commit }): Promise<CommittedPiece | undefined>
   /**
-   * Wait for a submission; `created` selects the create-and-add status
-   * flow. Throws `commit_rejected` when the provider reports a failed
-   * transaction.
+   * Wait on chain for a submitted commit. Throws `commit_rejected` when the
+   * transaction reverted or did not add the piece.
    */
   waitForCommit(options: {
-    statusUrl: string
-    created: boolean
+    commit: Commit
+    transactionHash: Hex
   }): Promise<CommittedPiece>
   /** Sign and submit a piece removal. */
   schedulePieceRemoval(options: {

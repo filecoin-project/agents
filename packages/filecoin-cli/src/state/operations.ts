@@ -1,4 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite'
+import type { Commit } from '@filoz/synapse-core/sp'
 import { CliError } from 'clipact'
 import { ErrorCodes, notFound } from '../errors.ts'
 import { decodeCursor, type Page, toPage } from './cursor.ts'
@@ -29,10 +30,11 @@ export type OperationInput = {
 }
 
 /**
- * A commit signed before it is sent, so a resume can tell whether it landed
- * and, if not, send the same signature again.
+ * A commit saved by `filecoin` 0.7.0 and earlier, before synapse-core
+ * 0.11.0 made the signed commit JSON-safe. A resume converts it to a
+ * synapse-core {@link Commit}.
  */
-export type SignedCommit = {
+export type LegacyCommit = {
   /** `true` when the commit also creates the data set. */
   created: boolean
   /** Add-pieces nonce; FWSS records it in `clientNonces` when the commit lands. */
@@ -59,10 +61,17 @@ export type Checkpoint = {
   clientDataSetId?: string
   /** Set once the provider has parked the piece. */
   stored?: boolean
-  /** Signed commit, saved before it is sent. */
-  commit?: SignedCommit
-  /** Provider status URL for the commit or removal submission. */
+  /**
+   * Signed commit, saved before it is sent, so a resume can tell whether it
+   * landed and, if not, send the same signature again.
+   */
+  commit?: Commit | LegacyCommit
+  /**
+   * Provider status URL saved by `filecoin` 0.7.0 and earlier. synapse-core
+   * 0.11.0 waits on chain instead, so it is no longer read.
+   */
   statusUrl?: string
+  /** Commit or removal transaction, saved once the provider accepts it. */
   transactionHash?: string
   pieceId?: string
 }

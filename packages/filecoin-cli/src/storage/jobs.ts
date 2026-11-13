@@ -3,8 +3,10 @@ import { rm, stat } from 'node:fs/promises'
 import { basename, join, resolve } from 'node:path'
 import type { DatabaseSync } from 'node:sqlite'
 import * as Piece from '@filoz/synapse-core/piece'
-import { SIZE_CONSTANTS } from '@filoz/synapse-core/utils'
+import type { Commit } from '@filoz/synapse-core/sp'
+import { type MetadataObject, SIZE_CONSTANTS } from '@filoz/synapse-core/utils'
 import { CliError, isCliError } from 'clipact'
+import type { Address, Hex } from 'viem'
 import {
   ErrorCodes,
   invalidInput,
@@ -19,6 +21,7 @@ import {
   type Checkpoint,
   createOperation,
   getOperation,
+  type LegacyCommit,
   type Operation,
   releaseOperation,
   updateOperation,
@@ -523,71 +526,120 @@ async function commit(
   piece: { pieceCid: string; name: string },
   onSent?: () => void
 ): Promise<CommittedPiece> {
+  const metadata = metadataFor(op.input.kind ?? 'file')
   const pieceMetadata: Record<string, string> = {
     name: piece.name.slice(0, MAX_METADATA_VALUE),
     ...(op.checkpoint.rootCid ? { ipfsRootCID: op.checkpoint.rootCid } : {}),
   }
-  const saved = op.checkpoint.commit
-  if (saved) {
-    const landed = await ctx.backend.findCommit({ nonce: BigInt(saved.nonce) })
+  let signed: Commit | undefined
+  if (op.checkpoint.commit) {
+    signed = toCommit(op.checkpoint.commit, {
+      placement,
+      payer: op.payer as Address,
+      pieceCid: piece.pieceCid,
+      metadata,
+      pieceMetadata,
+    })
+    const landed = await ctx.backend.findCommit({ commit: signed })
     if (landed) return landed
   }
 
-  op = save(ctx, op, {}, 'committing')
-  let signed = saved
+  op = save(ctx, op, signed ? { commit: signed } : {}, 'committing')
   if (!signed) {
     ctx.progress?.({ phase: 'committing', message: 'Signing the commit' })
     signed = await ctx.backend.signCommit({
       placement,
       pieceCid: piece.pieceCid,
-      metadata: metadataFor(op.input.kind ?? 'file'),
+      metadata,
       pieceMetadata,
     })
     op = save(ctx, op, { commit: signed })
   }
 
-  if (!op.checkpoint.statusUrl) {
+  if (!op.checkpoint.transactionHash) {
     ctx.progress?.({
       phase: 'committing',
-      message: signed.created
-        ? 'Creating data set and adding piece'
-        : 'Adding piece',
+      message:
+        signed.kind === 'createDataSetAndAddPieces'
+          ? 'Creating data set and adding piece'
+          : 'Adding piece',
     })
     const submission = await ctx.backend.submitCommit({
-      placement,
-      pieceCid: piece.pieceCid,
+      serviceURL: placement.serviceURL,
       commit: signed,
-      pieceMetadata,
     })
-    op = save(ctx, op, {
-      statusUrl: submission.statusUrl,
-      transactionHash: submission.transactionHash,
-    })
+    op = save(ctx, op, { transactionHash: submission.transactionHash })
   }
 
   onSent?.()
   // clipact repeats this line with the elapsed time while the wait lasts, so
   // the user can look the transaction up meanwhile.
-  const { transactionHash } = op.checkpoint
+  const transactionHash = op.checkpoint.transactionHash as Hex
   ctx.progress?.({
     phase: 'committing',
-    message: transactionHash
-      ? `Waiting for confirmation of transaction ${transactionHash}`
-      : 'Waiting for on-chain confirmation',
-    ...(transactionHash ? { data: { transactionHash } } : {}),
+    message: `Waiting for confirmation of transaction ${transactionHash}`,
+    data: { transactionHash },
   })
   try {
-    return await ctx.backend.waitForCommit({
-      statusUrl: op.checkpoint.statusUrl as string,
-      created: signed.created,
-    })
+    return await ctx.backend.waitForCommit({ commit: signed, transactionHash })
   } catch (error) {
     if (isCliError(error) && error.code === ErrorCodes.commitRejected) {
-      // A failed transaction leaves the nonce unused; forget its status so a
-      // resume sends the same signature again.
+      // The transaction did not use the nonce; forget it so a resume sends
+      // the same signature again.
       save(ctx, op, { statusUrl: undefined, transactionHash: undefined })
     }
     throw error
+  }
+}
+
+/**
+ * The synapse-core {@link Commit} of a saved commit. A {@link LegacyCommit}
+ * saved by `filecoin` 0.7.0 and earlier holds only the signature and its
+ * IDs; the rest comes from the placement and the piece it was signed for.
+ * `submitCommit` sends only the pieces' CIDs and the signed `extraData`.
+ */
+function toCommit(
+  saved: Commit | LegacyCommit,
+  signedFor: {
+    placement: Placement
+    payer: Address
+    pieceCid: string
+    metadata: MetadataObject
+    pieceMetadata: MetadataObject
+  }
+): Commit {
+  if ('kind' in saved) return saved
+  const { placement, payer } = signedFor
+  const pieces = [
+    { pieceCid: signedFor.pieceCid, metadata: signedFor.pieceMetadata },
+  ]
+  if (saved.created) {
+    if (saved.clientDataSetId == null) {
+      throw new Error('A saved create commit has no client data set ID.')
+    }
+    return {
+      kind: 'createDataSetAndAddPieces',
+      clientDataSetId: saved.clientDataSetId,
+      nonce: saved.nonce,
+      payee: placement.payee,
+      payer,
+      metadata: signedFor.metadata,
+      cdn: false,
+      pieces,
+      extraData: saved.extraData,
+    }
+  }
+  if (placement.dataSetId == null || placement.clientDataSetId == null) {
+    throw new Error('A saved add commit has no data set IDs.')
+  }
+  return {
+    kind: 'addPieces',
+    dataSetId: placement.dataSetId.toString(),
+    clientDataSetId: placement.clientDataSetId.toString(),
+    nonce: saved.nonce,
+    payer,
+    pieces,
+    extraData: saved.extraData,
   }
 }
 
