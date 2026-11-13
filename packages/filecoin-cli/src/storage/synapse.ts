@@ -9,18 +9,17 @@ import * as SP from '@filoz/synapse-core/sp'
 import * as SPRegistry from '@filoz/synapse-core/sp-registry'
 import * as WarmStorage from '@filoz/synapse-core/warm-storage'
 import { CliError } from 'clipact'
-import { waitForTransactionReceipt } from 'viem/actions'
 import type { App } from '../app.ts'
 import { buildFundingUrl, targetBalance } from '../auth/login.ts'
 import type { SessionKey } from '../auth/session.ts'
-import { abortable, ErrorCodes, notFound } from '../errors.ts'
+import { ErrorCodes, notFound } from '../errors.ts'
 import type { Placement, StorageBackend } from './types.ts'
 
 /**
  * Create the synapse-core storage backend: one copy on one Curio provider,
  * signed by the session key and paid for by its root wallet. Chain reads are
- * cancelled by `app.transport`, provider calls take `app.signal`, and the
- * viem receipt wait is wrapped with {@link abortable}.
+ * cancelled by `app.transport`, and provider calls and receipt waits take
+ * `app.signal`.
  *
  * @see https://github.com/FilOzone/synapse-sdk/tree/master/packages/synapse-core
  */
@@ -275,13 +274,20 @@ export function createSynapseBackend(
       return { transactionHash: result.txHash }
     },
 
-    async waitForTransaction(transactionHash) {
-      // viem's receipt wait takes no signal.
-      const receipt = await abortable(
-        waitForTransactionReceipt(client, { hash: transactionHash }),
-        signal
-      )
-      return { status: receipt.status }
+    async waitForRemoval({ transactionHash, dataSetId, pieceId }) {
+      try {
+        await SP.waitForDeletePieces({
+          client,
+          txHash: transactionHash,
+          dataSetId,
+          pieceIds: [pieceId],
+          signal,
+        })
+        return { scheduled: true }
+      } catch (error) {
+        if (TransactionNotAppliedError.is(error)) return { scheduled: false }
+        throw error
+      }
     },
   }
 

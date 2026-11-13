@@ -755,13 +755,17 @@ async function runRemove(ctx: JobContext, op: Operation): Promise<JobResult> {
     message: `Waiting for confirmation of removal transaction ${hash}`,
     data: { transactionHash: hash },
   })
-  const receipt = await ctx.backend.waitForTransaction(hash)
-  if (receipt.status !== 'success') {
-    // The reverted transaction had no effect; a resume signs a new one.
+  const { scheduled } = await ctx.backend.waitForRemoval({
+    transactionHash: hash,
+    dataSetId: BigInt(dataSetId),
+    pieceId: BigInt(pieceId),
+  })
+  if (!scheduled) {
+    // The transaction had no effect; a resume signs a new one.
     save(ctx, op, { transactionHash: undefined })
     throw new CliError({
       code: ErrorCodes.removalReverted,
-      message: `Removal transaction ${hash} reverted; the piece is still stored.`,
+      message: `Removal transaction ${hash} did not schedule the piece for removal; it is still stored.`,
     })
   }
   const updated: Resource = { ...resource, status: 'removal_pending' }

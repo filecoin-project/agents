@@ -98,8 +98,13 @@ export interface StorageBackend {
     dataSetId: bigint
     pieceId: bigint
   }): Promise<{ transactionHash: Hex }>
-  /** Wait for a chain transaction and report whether it succeeded. */
-  waitForTransaction(
+  /**
+   * Wait on chain for a removal and report whether its transaction
+   * scheduled the piece for removal.
+   */
+  waitForRemoval(options: {
     transactionHash: Hex
-  ): Promise<{ status: 'success' | 'reverted' }>
+    dataSetId: bigint
+    pieceId: bigint
+  }): Promise<{ scheduled: boolean }>
 }
