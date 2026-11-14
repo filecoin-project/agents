@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.0](https://github.com/filecoin-project/agents/compare/filecoin-cli-v0.7.0...filecoin-cli-v0.8.0) (2026-11-14)
+
+
+### Features
+
+* **filecoin-cli:** add datasets ls and datasets inspect ([fd2d711](https://github.com/filecoin-project/agents/commit/fd2d711e339ddd3131c61b232b0a2885e86ff330))
+
+
+### Dependencies
+
+* **filecoin-cli:** update viem to 2.57.19 and zod to 4.6.7 ([a826f08](https://github.com/filecoin-project/agents/commit/a826f08df6cb32fdd94d6dd403b388f3e47d84ea))
+
 ## [0.7.0](https://github.com/filecoin-project/agents/compare/filecoin-cli-v0.6.0...filecoin-cli-v0.7.0) (2026-10-23)
 
 
