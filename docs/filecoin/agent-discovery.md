@@ -55,6 +55,7 @@ Each cell has one of these values:
 | [`integrations.json`](#integrationsjson) | Vendor format | Served | Not applicable | Not applicable | Theirs, missing | Not applicable |
 | [MCP server card](#mcp-server-card) | Final (SEP-2127) | Served, as a redirect | Served | Served | Not applicable | Theirs, served for its own server |
 | [AI Catalog](#ai-catalog) | Draft | Served | Not applicable | Not applicable | Theirs, missing | Theirs, served for its own server |
+| [ARD](#ai-catalog) | Proposal (v0.91) | Missing | Not applicable | Not applicable | Theirs, missing | Theirs, missing |
 | [MCP registry `server.json`](#mcp-registry-serverjson) | Preview | Not applicable | Not applicable | Not applicable | Theirs, for the HTTP ownership proof | Not applicable |
 | [Agent skills discovery](#agent-skills-discovery) | Draft | Served | Not applicable | Not applicable | Theirs, missing | Not applicable |
 | [WebMCP](#webmcp) | Draft | Served | Not applicable | Not applicable | Theirs, not served | Theirs, served |
@@ -132,7 +133,14 @@ poc.filecoin.cloud builds no card of its own. Its two older paths return a `308`
 
 **What we serve.** poc.filecoin.cloud serves a catalog with a `host` block and one entry: `identifier` `urn:air:filecoin.io:mcp:mcp`, `type` `application/mcp-server-card+json`, and `url` `https://mcp.filecoin.io/server-card`. The identifier comes from the card's name, `io.filecoin/mcp`. The entry repeats none of the card's title, description, or version, so the two can't disagree. The [AI Catalog specification](https://github.com/Agent-Card/ai-catalog/blob/main/specification/ai-catalog.md) asks for this: `displayName` is optional, and an entry that points to an MCP server card should omit it, because the card's `title` is the source of truth. docs.filecoin.io serves a catalog from GitBook, with one entry for its docs MCP server.
 
-**What's missing.** The catalog follows the specification, but ora rejects it. ora checks the same file against a second spec, which it calls ARD v0.91. That spec needs a `displayName` in every entry, and it moves the file to `/.well-known/ard.json`. [#121](https://github.com/filecoin-project/agents/issues/121) weighs adding `displayName` against keeping the catalog as the specification says. www.filecoin.io should serve the same one-entry catalog ([recommendation](filecoin-io-agent-support.md#things-to-add-to-filecoinio)).
+[Agentic Resource Discovery](https://agenticresourcediscovery.org/spec/) (ARD) is a proposal, at v0.91, by authors from Google and Hugging Face. It describes the same file for a different job. AI Catalog is how a provider publishes its own artifacts. ARD is how a discovery service indexes them, and a search result needs a name. The two groups agreed on a loose coupling ([ARD ADR 0010](https://github.com/ards-project/ard-spec/blob/main/adr/0010-ard-and-ai-catalog-loose-coupling.md)). An ARD entry keeps every AI Catalog field with the same meaning, and adds fields of its own. ARD v0.91 then differs from AI Catalog in these ways:
+
+- The file is at `/.well-known/ard.json`, and its link relation is `ard`. A consumer may also check `ai-catalog.json`, which ARD calls its predecessor path.
+- Every entry needs a `displayName`.
+- Each entry should have two to five `representativeQueries`. Without them, the entry gets a warning.
+- An entry carries one `trustManifest`, not a `trustManifests` array.
+
+**What's missing.** The catalog follows AI Catalog, but it fails ARD. It has no `displayName`, and it isn't at `/.well-known/ard.json`. ora and the ARD audit in Google Lighthouse check ARD. One document can pass both specs, because AI Catalog allows a `displayName` and ARD ignores `specVersion` and `host`. The cost is a `displayName` that repeats the card's `title` ([#121](https://github.com/filecoin-project/agents/issues/121)). www.filecoin.io should serve the same one-entry catalog ([recommendation](filecoin-io-agent-support.md#things-to-add-to-filecoinio)).
 
 **Where it belongs.** The sites serve it. filecoin-api serves none, because a client that already has `mcp.filecoin.io` can fetch the card directly.
 
@@ -251,7 +259,7 @@ These pieces are ours:
 - Add `Organization` JSON-LD and the About, Contact, Privacy, and Pricing pages ([#62](https://github.com/filecoin-project/agents/issues/62))
 - Choose a Content-Signal policy for poc.filecoin.cloud's `robots.txt` ([#107](https://github.com/filecoin-project/agents/issues/107))
 - Shorten the server card's description to 100 characters, so the card passes its schema ([#120](https://github.com/filecoin-project/agents/issues/120))
-- Decide whether the AI Catalog entry gets a `displayName` and a copy at `/.well-known/ard.json` ([#121](https://github.com/filecoin-project/agents/issues/121))
+- Serve an ARD file at `/.well-known/ard.json`, and decide whether the AI Catalog entry gets a `displayName` ([#121](https://github.com/filecoin-project/agents/issues/121))
 - Call `registerTool` on `document.modelContext` directly, so that scanners credit the WebMCP tools ([#122](https://github.com/filecoin-project/agents/issues/122))
 - Serve explorer pages as Markdown ([#123](https://github.com/filecoin-project/agents/issues/123)), and add frontmatter to the Markdown pages ([#124](https://github.com/filecoin-project/agents/issues/124))
 - Link the npm packages to poc.filecoin.cloud ([#125](https://github.com/filecoin-project/agents/issues/125))
@@ -270,7 +278,7 @@ Most of ora's findings match a gap in this document, or a spec that this documen
 | ora checks | Where this document covers them |
 | --- | --- |
 | MCP server card, MCP server or manifest, MCP well-known discovery | [MCP server card](#mcp-server-card): the card fails its schema ([#120](https://github.com/filecoin-project/agents/issues/120)) |
-| ARD discovery, ARD entry validity | [AI Catalog](#ai-catalog): ora needs a `displayName` that the specification says to omit ([#121](https://github.com/filecoin-project/agents/issues/121)) |
+| ARD discovery, ARD entry validity | [AI Catalog](#ai-catalog): ARD needs a `displayName` that AI Catalog says to omit, and the file at `/.well-known/ard.json` ([#121](https://github.com/filecoin-project/agents/issues/121)) |
 | WebMCP support | [WebMCP](#webmcp): ora can't trace the `registerTool` call ([#122](https://github.com/filecoin-project/agents/issues/122)) |
 | Markdown URL fallback, Markdown frontmatter metadata | [Markdown versions of pages](#markdown-versions-of-pages) ([#123](https://github.com/filecoin-project/agents/issues/123), [#124](https://github.com/filecoin-project/agents/issues/124)) |
 | NPM or PyPI SDK package, CLI tool available | [`llms.txt`](#llmstxt-and-llms-fulltxt): ora doesn't match the packages to the site ([#125](https://github.com/filecoin-project/agents/issues/125)) |
@@ -287,7 +295,7 @@ ora also checks specs that this document doesn't cover yet: [auth.md](https://gi
 for h in poc.filecoin.cloud api.filecoin.io mcp.filecoin.io www.filecoin.io docs.filecoin.io; do
 	for p in /llms.txt /llms-full.txt /index.md /robots.txt /sitemap.xml /openapi.json /server-card /mcp/server-card \
 		/.well-known/api-catalog /.well-known/integrations.json /.well-known/mcp/server-card.json \
-		/.well-known/mcp-server-card /.well-known/ai-catalog.json /.well-known/agent-skills/index.json \
+		/.well-known/mcp-server-card /.well-known/ai-catalog.json /.well-known/ard.json /.well-known/agent-skills/index.json \
 		/.well-known/oauth-protected-resource /.well-known/agent-card.json; do
 		curl -s -o /dev/null -w "$h$p %{http_code} %{content_type}\n" "https://$h$p"
 	done
