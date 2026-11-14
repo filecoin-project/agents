@@ -68,7 +68,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 | --- | --- |
 | [CLI architecture](architecture.md) | How the CLI works: modules, login, put, get, delete, local state, and recovery |
 | [Agent support on docs.filecoin.io](filecoin-docs-agent-support.md) | What GitBook gives agents on docs.filecoin.io, what is missing compared with filecoin-app, and what GitBook lets the docs team change |
-| [Agent discovery on filecoin.io](filecoin-io-agent-support.md) | How www.filecoin.io compares with poc.filecoin.cloud for agent discovery, the Is Agentic scores of both sites, and what filecoin.io should fix and add |
+| [Agent discovery on filecoin.io](filecoin-io-agent-support.md) | How filecoin.io compares with poc.filecoin.cloud for agent discovery, the Is Agentic scores of both sites, and what filecoin.io should fix and add |
 | [Agent discovery](agent-discovery.md) | Every agent discovery spec that applies to Filecoin for Agents, what each host serves today, what is missing, and which host should serve each file |
 | [Retrieval through `/get/{cid}`](retrieval.md) | filecoin-api's `/get/{cid}` route: its parameters, responses, and cache, how it finds a provider through the indexer, the `provider` hint, and cid.contact, what IPNI knows about FWSS content, and the decisions behind the order |
 | [Deployments and domains](deployments.md) | How filecoin-api, filecoin-app, and their domains relate, the `filecoin.io` and `filecoin.cloud` hostnames that serve filecoin-api and its MCP server, and the Cloudflare for SaaS setup behind `filecoin.io` |

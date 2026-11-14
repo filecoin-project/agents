@@ -11,17 +11,17 @@ We checked each host with `curl` on 2026-10-21, after [#76](https://github.com/f
 | `poc.filecoin.cloud` | The Filecoin for Agents site, with the landing page, docs, Agents page, explorer, and dashboard ([`apps/filecoin-app`](../../apps/filecoin-app/README.md)) | Us |
 | `api.filecoin.io` | The REST API, and the MCP server at `/mcp` ([`apps/filecoin-api`](../../apps/filecoin-api/README.md)) | Us |
 | `mcp.filecoin.io` | The MCP server only, from the same Worker as `api.filecoin.io` | Us |
-| `www.filecoin.io` | The Filecoin website, a Next.js site on Vercel. `filecoin.io` redirects to it with a `308`, and its owners plan to remove that redirect | The filecoin.io web team |
+| `filecoin.io` | The Filecoin website, a Next.js site on Vercel. `filecoin.io` redirects to it with a `301` | The filecoin.io web team |
 | `docs.filecoin.io` | The Filecoin docs, on GitBook, with GitBook's docs MCP server | The Filecoin docs team, through GitBook |
 
-In this document, "the sites" means `poc.filecoin.cloud`, `www.filecoin.io`, and `docs.filecoin.io`. "filecoin-api's hosts" means `api.filecoin.io` and `mcp.filecoin.io`. `api.filecoin.cloud` and `mcp.filecoin.cloud` run the same Worker as `api.filecoin.io` and `mcp.filecoin.io`, so they serve the same files ([Deployments and domains](deployments.md)).
+In this document, "the sites" means `poc.filecoin.cloud`, `filecoin.io`, and `docs.filecoin.io`. "filecoin-api's hosts" means `api.filecoin.io` and `mcp.filecoin.io`. `api.filecoin.cloud` and `mcp.filecoin.cloud` run the same Worker as `api.filecoin.io` and `mcp.filecoin.io`, so they serve the same files ([Deployments and domains](deployments.md)).
 
 ## What goes where
 
 ```mermaid
 flowchart LR
   poc[poc.filecoin.cloud] -- AI Catalog --> card[mcp.filecoin.io/server-card]
-  www[www.filecoin.io] -- AI Catalog, planned --> card
+  fio[filecoin.io] -- AI Catalog, planned --> card
   poc -- API catalog, integrations.json, llms.txt --> openapi[api.filecoin.io/openapi.json]
   poc -- API catalog item, integrations.json --> mcp[mcp.filecoin.io]
   card -- describes --> mcp
@@ -30,10 +30,10 @@ flowchart LR
 ```
 
 - **The MCP server card lives on filecoin-api, next to its endpoint.** [SEP-2127](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/seps/2127-mcp-server-cards.md) reserves `<streamable-http-url>/server-card`, so the card is at `https://mcp.filecoin.io/server-card` and `https://api.filecoin.io/mcp/server-card`. Every other file that describes the MCP server should link to this card, not copy it.
-- **Domain-level files live on the sites and point to filecoin-api.** The AI Catalog, `llms.txt`, the API catalog, `integrations.json`, the agent skills index, the sitemap, and `robots.txt` describe what a domain offers. poc.filecoin.cloud serves them for Filecoin for Agents. The filecoin.io web team chooses which ones www.filecoin.io serves.
+- **Domain-level files live on the sites and point to filecoin-api.** The AI Catalog, `llms.txt`, the API catalog, `integrations.json`, the agent skills index, the sitemap, and `robots.txt` describe what a domain offers. poc.filecoin.cloud serves them for Filecoin for Agents. The filecoin.io web team chooses which ones filecoin.io serves.
 - **filecoin-api serves no `ai-catalog.json`.** An AI Catalog lists the servers on a domain, so that a client can find them from the domain name. A client that already has `mcp.filecoin.io` can fetch the card directly. filecoin-api's hosts serve only the API and MCP, so they also serve no `llms.txt`, sitemap, or `robots.txt`.
 - **filecoin-api serves the files that describe the API and the MCP server.** These are the OpenAPI document, the server card, and the `RateLimit-Policy` header. They describe filecoin-api itself, not a domain.
-- **www.filecoin.io lists the card but doesn't copy it.** It should serve a one-entry AI Catalog that points to `https://mcp.filecoin.io/server-card`. The entry is the same as poc.filecoin.cloud's.
+- **filecoin.io lists the card but doesn't copy it.** It should serve a one-entry AI Catalog that points to `https://mcp.filecoin.io/server-card`. The entry is the same as poc.filecoin.cloud's.
 - **docs.filecoin.io describes only its own docs MCP server.** GitBook serves its files, and nobody can add a file there without a proxy.
 
 ## What each host serves
@@ -47,7 +47,7 @@ Each cell has one of these values:
 | Not applicable | The spec doesn't apply to this host |
 | Theirs | Another team runs the host. The rest of the cell says what the host serves today |
 
-| Spec | Spec status | poc.filecoin.cloud | api.filecoin.io | mcp.filecoin.io | www.filecoin.io | docs.filecoin.io |
+| Spec | Spec status | poc.filecoin.cloud | api.filecoin.io | mcp.filecoin.io | filecoin.io | docs.filecoin.io |
 | --- | --- | --- | --- | --- | --- | --- |
 | [`llms.txt`, `llms-full.txt`](#llmstxt-and-llms-fulltxt) | Proposal | Served | Not applicable | Not applicable | Theirs, missing | Theirs, served |
 | [Markdown versions of pages](#markdown-versions-of-pages) | Convention | Served | Not applicable | Not applicable | Theirs, missing | Theirs, served in part |
@@ -77,7 +77,7 @@ No host serves the MCP registry's `server.json`. We publish it to the registry, 
 
 **What it is.** [llms.txt](https://llmstxt.org) is a proposal, not a standard. `/llms.txt` is a Markdown index of a site for language models. `/llms-full.txt` holds the site's content in one file.
 
-**What we serve.** poc.filecoin.cloud serves both files. Its `llms.txt` has a summary and the way in for each kind of agent. It links each page's Markdown version, the OpenAPI document, the MCP server, filecoin-api's server card, the AI Catalog, the `filecoin` CLI and the API client on npm, and the agent skill. docs.filecoin.io serves both files through GitBook. www.filecoin.io serves neither.
+**What we serve.** poc.filecoin.cloud serves both files. Its `llms.txt` has a summary and the way in for each kind of agent. It links each page's Markdown version, the OpenAPI document, the MCP server, filecoin-api's server card, the AI Catalog, the `filecoin` CLI and the API client on npm, and the agent skill. docs.filecoin.io serves both files through GitBook. filecoin.io serves neither.
 
 **What's missing.** Nothing is missing in the files. ora finds neither npm package that `llms.txt` links. The packages' `homepage` fields point to their READMEs on GitHub, so nothing on npm names poc.filecoin.cloud ([#125](https://github.com/filecoin-project/agents/issues/125)).
 
@@ -89,7 +89,7 @@ No host serves the MCP registry's `server.json`. We publish it to the registry, 
 
 **What we serve.** poc.filecoin.cloud serves each site page at a `.md` URL and for `Accept: text/markdown`, with `Vary: Accept`. Each HTML page links its Markdown version in a `Link` header and a `<link>` tag. A missing page gets a Markdown `404` ([filecoin-app README](../../apps/filecoin-app/README.md#website)).
 
-docs.filecoin.io serves `.md` URLs, answers `Accept: text/markdown`, and has the `<link>` tag. It sends `Vary: Accept` on the Markdown response but not on the HTML response, and it sends no `Link` header. A missing page in Markdown gets a `200`. www.filecoin.io serves no Markdown.
+docs.filecoin.io serves `.md` URLs, answers `Accept: text/markdown`, and has the `<link>` tag. It sends `Vary: Accept` on the Markdown response but not on the HTML response, and it sends no `Link` header. A missing page in Markdown gets a `200`. filecoin.io serves no Markdown.
 
 **What's missing.** Explorer pages have no Markdown version, so `https://poc.filecoin.cloud/calibration.md` returns an HTML `404` ([#123](https://github.com/filecoin-project/agents/issues/123)). The Markdown pages also start with no frontmatter block, so an agent gets no title, description, or canonical URL without parsing the body ([#124](https://github.com/filecoin-project/agents/issues/124)).
 
@@ -103,7 +103,7 @@ docs.filecoin.io serves `.md` URLs, answers `Accept: text/markdown`, and has the
 
 **What's missing.** Nothing is missing on our hosts. [#56](https://github.com/filecoin-project/agents/issues/56) tracks why Is Agentic and ora find the OpenAPI document from poc.filecoin.cloud but no API.
 
-**Where it belongs.** The sites serve the catalog, because it describes what a domain publishes. www.filecoin.io could serve the same linkset ([recommendation](filecoin-io-agent-support.md#things-to-add-to-filecoinio)). filecoin-api's hosts don't serve one.
+**Where it belongs.** The sites serve the catalog, because it describes what a domain publishes. filecoin.io could serve the same linkset ([recommendation](filecoin-io-agent-support.md#things-to-add-to-filecoinio)). filecoin-api's hosts don't serve one.
 
 ### `integrations.json`
 
@@ -140,7 +140,7 @@ poc.filecoin.cloud builds no card of its own. Its two older paths return a `308`
 - Each entry should have two to five `representativeQueries`. Without them, the entry gets a warning.
 - An entry carries one `trustManifest`, not a `trustManifests` array.
 
-**What's missing.** The catalog follows AI Catalog, but it fails ARD. It has no `displayName`, and it isn't at `/.well-known/ard.json`. ora and the ARD audit in Google Lighthouse check ARD. One document can pass both specs, because AI Catalog allows a `displayName` and ARD ignores `specVersion` and `host`. The cost is a `displayName` that repeats the card's `title` ([#121](https://github.com/filecoin-project/agents/issues/121)). www.filecoin.io should serve the same one-entry catalog ([recommendation](filecoin-io-agent-support.md#things-to-add-to-filecoinio)).
+**What's missing.** The catalog follows AI Catalog, but it fails ARD. It has no `displayName`, and it isn't at `/.well-known/ard.json`. ora and the ARD audit in Google Lighthouse check ARD. One document can pass both specs, because AI Catalog allows a `displayName` and ARD ignores `specVersion` and `host`. The cost is a `displayName` that repeats the card's `title` ([#121](https://github.com/filecoin-project/agents/issues/121)). filecoin.io should serve the same one-entry catalog ([recommendation](filecoin-io-agent-support.md#things-to-add-to-filecoinio)).
 
 **Where it belongs.** The sites serve it. filecoin-api serves none, because a client that already has `mcp.filecoin.io` can fetch the card directly.
 
@@ -150,7 +150,7 @@ poc.filecoin.cloud builds no card of its own. Its two older paths return a `308`
 
 **What we serve.** The registry has no Filecoin server.
 
-**What's missing.** The release workflow should publish `io.filecoin/mcp`, with a remote-only `server.json` that comes from the same source as the server card ([#75](https://github.com/filecoin-project/agents/issues/75)). The registry needs proof that we control `filecoin.io`. The proof is a DNS TXT record on the apex, or a file at `https://filecoin.io/.well-known/mcp-registry-auth`. The registry's HTTP check doesn't follow redirects, so the file works only after `filecoin.io` stops redirecting to `www`.
+**What's missing.** The release workflow should publish `io.filecoin/mcp`, with a remote-only `server.json` that comes from the same source as the server card ([#75](https://github.com/filecoin-project/agents/issues/75)). The registry needs proof that we control `filecoin.io`. The proof is a DNS TXT record on the apex, or a file at `https://filecoin.io/.well-known/mcp-registry-auth`. The registry's HTTP check doesn't follow redirects. `filecoin.io` serves the site without a redirect, so the file works there.
 
 **Where it belongs.** The entry is on the registry, not on a host we run. The ownership proof is on `filecoin.io`, which its owners control.
 
@@ -160,7 +160,7 @@ poc.filecoin.cloud builds no card of its own. Its two older paths return a `308`
 
 **What we serve.** poc.filecoin.cloud serves the index and the `filecoin` skill. [`@hugomrdias/vite-plugin-agent-skills`](https://github.com/hugomrdias/agents/blob/main/packages/vite-plugin-agent-skills/README.md) builds them from the plugin's `skills/` directory.
 
-**What's missing.** Nothing is missing on our hosts. www.filecoin.io could publish an index of the Filecoin skills ([recommendation](filecoin-io-agent-support.md#things-to-add-to-filecoinio)).
+**What's missing.** Nothing is missing on our hosts. filecoin.io could publish an index of the Filecoin skills ([recommendation](filecoin-io-agent-support.md#things-to-add-to-filecoinio)).
 
 **Where it belongs.** The sites serve it. GitBook can't serve custom files on docs.filecoin.io.
 
@@ -198,7 +198,7 @@ poc.filecoin.cloud builds no card of its own. Its two older paths return a `308`
 
 **What it is.** `robots.txt` ([RFC 9309](https://www.rfc-editor.org/rfc/rfc9309)) is final. Content-Signal is a line in `robots.txt` from Cloudflare's [Content Signals Policy](https://contentsignals.org), and it isn't a standard. The line states whether a crawler may use the content for search, AI input, and AI training. The IETF [AI Preferences](https://datatracker.ietf.org/wg/aipref/about/) working group is writing a standard vocabulary for the same purpose.
 
-**What we serve.** All three sites allow every crawler and link their sitemap. docs.filecoin.io also sends `Content-Signal: ai-train=yes, search=yes, ai-input=yes`. www.filecoin.io's `robots.txt` links `https://filecoin.io/sitemap.xml`, which redirects to `www`.
+**What we serve.** All three sites allow every crawler and link their sitemap. docs.filecoin.io also sends `Content-Signal: ai-train=yes, search=yes, ai-input=yes`. filecoin.io's `robots.txt` links `https://filecoin.io/sitemap.xml`.
 
 **What's missing.** poc.filecoin.cloud has no Content-Signal line. Someone has to choose the policy before anyone writes the line ([#107](https://github.com/filecoin-project/agents/issues/107)).
 
@@ -210,7 +210,7 @@ poc.filecoin.cloud builds no card of its own. Its two older paths return a `308`
 
 **What we serve.** poc.filecoin.cloud's sitemap lists 9 URLs, for the site pages and each network's explorer. Every site page has a canonical URL and Open Graph tags. The landing page also has a schema.org `SoftwareApplication`.
 
-www.filecoin.io's sitemap lists 751 URLs. It has `Organization`, `WebSite`, `WebPage`, and `BreadcrumbList` JSON-LD. Its canonical URLs and sitemap use `https://filecoin.io`, which redirects. docs.filecoin.io has a sitemap, canonical URLs, and Open Graph tags, but no JSON-LD.
+filecoin.io's sitemap lists 751 URLs. It has `Organization`, `WebSite`, `WebPage`, and `BreadcrumbList` JSON-LD. Its canonical URLs and sitemap use `https://filecoin.io`, the host that serves the site. docs.filecoin.io has a sitemap, canonical URLs, and Open Graph tags, but no JSON-LD.
 
 **What's missing.** poc.filecoin.cloud's JSON-LD has no `Organization`, and its only `sameAs` link is the GitHub repository. The site has no About, Contact, Privacy, or Pricing page, and no `/pricing.md`. The release needs them ([#62](https://github.com/filecoin-project/agents/issues/62)).
 
@@ -266,7 +266,7 @@ These pieces are ours:
 
 These pieces belong to other teams:
 
-- www.filecoin.io needs a one-entry AI Catalog that points to `https://mcp.filecoin.io/server-card`. It also needs `llms.txt`, Markdown versions of pages, the API catalog, `integrations.json`, an agent skills index, and one canonical hostname. [Agent discovery on filecoin.io](filecoin-io-agent-support.md) has the full list for the filecoin.io web team.
+- filecoin.io needs a one-entry AI Catalog that points to `https://mcp.filecoin.io/server-card`. It also needs `llms.txt`, Markdown versions of pages, the API catalog, `integrations.json`, and an agent skills index. [Agent discovery on filecoin.io](filecoin-io-agent-support.md) has the full list for the filecoin.io web team.
 - docs.filecoin.io needs `Vary: Accept` and a `Link` header on HTML responses, and a `404` for a missing page in Markdown. [Agent support on docs.filecoin.io](filecoin-docs-agent-support.md) has the questions for GitBook.
 
 ## What ora reports
@@ -292,7 +292,7 @@ ora also checks specs that this document doesn't cover yet: [auth.md](https://gi
 
 ```bash
 # Discovery files on every host
-for h in poc.filecoin.cloud api.filecoin.io mcp.filecoin.io www.filecoin.io docs.filecoin.io; do
+for h in poc.filecoin.cloud api.filecoin.io mcp.filecoin.io filecoin.io docs.filecoin.io; do
 	for p in /llms.txt /llms-full.txt /index.md /robots.txt /sitemap.xml /openapi.json /server-card /mcp/server-card \
 		/.well-known/api-catalog /.well-known/integrations.json /.well-known/mcp/server-card.json \
 		/.well-known/mcp-server-card /.well-known/ai-catalog.json /.well-known/ard.json /.well-known/agent-skills/index.json \
@@ -312,7 +312,7 @@ curl -s -X POST https://mcp.filecoin.io \
 	-d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"curl","version":"0"}}}'
 
 # Markdown negotiation, Vary, and Link headers
-for u in https://poc.filecoin.cloud/ https://www.filecoin.io/ https://docs.filecoin.io/getting-started/what-is-filecoin; do
+for u in https://poc.filecoin.cloud/ https://filecoin.io/ https://docs.filecoin.io/getting-started/what-is-filecoin; do
 	curl -sI -H "Accept: text/markdown" "$u" | grep -iE "^(content-type|vary|link):"
 done
 
