@@ -1,12 +1,12 @@
 # Agent discovery on filecoin.io
 
-This report compares how AI agents discover and read [www.filecoin.io](https://www.filecoin.io) and [poc.filecoin.cloud](https://poc.filecoin.cloud), the [filecoin-app](../../apps/filecoin-app/README.md#website) prototype. It lists the problems to fix and the things to add on filecoin.io, for the filecoin.io web team. The gaps it found in Filecoin for Agents are tracked in issues [#56](https://github.com/filecoin-project/agents/issues/56) to [#63](https://github.com/filecoin-project/agents/issues/63).
+This report compares how AI agents discover and read [filecoin.io](https://filecoin.io) and [poc.filecoin.cloud](https://poc.filecoin.cloud), the [filecoin-app](../../apps/filecoin-app/README.md#website) prototype. It lists the problems to fix and the things to add on filecoin.io, for the filecoin.io web team. The gaps it found in Filecoin for Agents are tracked in issues [#56](https://github.com/filecoin-project/agents/issues/56) to [#63](https://github.com/filecoin-project/agents/issues/63).
 
-The checks ran on 2026-10-20, with `curl` against the live sites and with [Is Agentic](https://is-agentic.com) reports from the same day. We had no access to the filecoin.io source.
+The checks ran on 2026-10-20, with `curl` against the live sites and with [Is Agentic](https://is-agentic.com) reports from the same day. We had no access to the filecoin.io source. On 2026-11-14 we found that the redirect between `filecoin.io` and `www.filecoin.io` had reversed, and updated this report for it. The rest of the report describes 2026-10-20.
 
 ## Summary
 
-filecoin.io is a Next.js site on Vercel, and `filecoin.io` redirects to `www.filecoin.io` with a `308`. The site serves a sitemap, a `robots.txt`, JSON-LD, and Open Graph tags, and the server renders each page. It serves none of the files that tell agents where the docs, the API, the MCP server, and the agent skills are. It has no `llms.txt`, no Markdown versions of its pages, and nothing under `/.well-known/`.
+filecoin.io is a Next.js site on Vercel. `www.filecoin.io` redirects to `filecoin.io` with a `301`. On 2026-10-20 the redirect went the other way. The site serves a sitemap, a `robots.txt`, JSON-LD, and Open Graph tags, and the server renders each page. It serves none of the files that tell agents where the docs, the API, the MCP server, and the agent skills are. It has no `llms.txt`, no Markdown versions of its pages, and nothing under `/.well-known/`.
 
 Is Agentic scores filecoin.io 83 and poc.filecoin.cloud 88. The site itself earns less than 83. Is Agentic also gives filecoin.io credit for services on other hostnames:
 
@@ -14,15 +14,14 @@ Is Agentic scores filecoin.io 83 and poc.filecoin.cloud 88. The site itself earn
 - The `llms.txt` and the MCP server of docs.filecoin.io.
 - The `filecoin` CLI on npm.
 
-No page on www.filecoin.io links agents to any of them.
+No page on filecoin.io links agents to any of them.
 
 Next.js can serve every file and header in this report, with route handlers, middleware, and headers in `next.config`. filecoin.io needs no proxy, unlike [docs.filecoin.io on GitBook](filecoin-docs-agent-support.md).
 
-Do these three things on filecoin.io first:
+Do these two things on filecoin.io first:
 
-1. Pick one hostname, and use it in the canonical URLs and the sitemap.
-2. Add a `/llms.txt` that says when to use Filecoin and links the docs, the API, the MCP server, and the agent skill.
-3. Serve each page as Markdown at a `.md` URL and for `Accept: text/markdown`, with `Vary: Accept`.
+1. Add a `/llms.txt` that says when to use Filecoin and links the docs, the API, the MCP server, and the agent skill.
+2. Serve each page as Markdown at a `.md` URL and for `Accept: text/markdown`, with `Vary: Accept`.
 
 ## Is Agentic scores
 
@@ -63,7 +62,6 @@ The scans ran at 13:30 and 13:33 UTC. Is Agentic infers a site type and scores t
 
 ## Problems to fix on filecoin.io
 
-- **Canonical URLs redirect.** The canonical tag and all 751 sitemap entries use `https://filecoin.io/…`. Each of those URLs returns a `308` to `www.filecoin.io`, so every crawler and agent request makes an extra request. Use `https://www.filecoin.io` in both places. Or serve the site from `filecoin.io` and redirect `www` to it.
 - **Pages don't answer `Accept: text/markdown`.** The home page returns HTML for that header, and `Vary` doesn't name `Accept`. Is Agentic counts this as a failed essential check. It tests the home page, so Markdown on docs pages alone doesn't pass. When a request names `text/markdown`, return Markdown with `Content-Type: text/markdown` and `Vary: Accept`. Keep returning HTML to browsers.
 - **Missing pages have no Markdown body.** A missing page returns the correct `404`, but only as HTML. For `Accept: text/markdown`, return a short Markdown body that links to `llms.txt` and the sitemap.
 - **Pages are mostly markup.** The home page has about 896 KB of HTML for about 6 KB of text, so text is about 0.7% of the HTML. Is Agentic measures differently. It counted 5,225 characters of content, reported a content ratio of 1.3%, and sets a target of 5%. An agent that reads the HTML fills its context with markup. Markdown versions solve this for agents. For the HTML, move inline data and repeated markup out of the server response where you can.
@@ -82,14 +80,13 @@ The scans ran at 13:30 and 13:33 UTC. Is Agentic infers a site type and scores t
 - **Markdown versions of pages.** Serve each content page at `<path>.md`. Link it from the page's `<head>` with `<link rel="alternate" type="text/markdown">`, and send the same link in a `Link` header. Add `/llms-full.txt` if the content is small enough to read as one file.
 - **`/.well-known/api-catalog`.** Serve an RFC 9727 linkset to `https://api.filecoin.io/openapi.json`, its reference, and its health check, like [poc.filecoin.cloud's API catalog](https://poc.filecoin.cloud/.well-known/api-catalog). Serve it as `application/linkset+json`, and answer `HEAD` with the `api-catalog` link relation.
 - **An AI Catalog that lists the MCP server card.** filecoin-api serves the card at `https://mcp.filecoin.io/server-card`, the location [SEP-2127](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/seps/2127-mcp-server-cards.md) reserves. filecoin.io needs no copy of it. Serve an [AI Catalog](https://github.com/Agent-Card/ai-catalog) at `/.well-known/ai-catalog.json`, as `application/ai-catalog+json`, with one entry: `"identifier": "urn:air:filecoin.io:mcp:mcp"`, `"type": "application/mcp-server-card+json"`, and `"url": "https://mcp.filecoin.io/server-card"`. Is Agentic found the MCP server, but gave half credit for discovery, because no file on filecoin.io lists it.
-- **`/.well-known/agent-skills/index.json`.** Publish an index of the Filecoin agent skills, so that `npx skills add https://www.filecoin.io` works. Is Agentic found one official skill on [skills.sh/filecoin-project](https://skills.sh/filecoin-project). poc.filecoin.cloud publishes the `filecoin` skill with [`@hugomrdias/vite-plugin-agent-skills`](https://github.com/hugomrdias/agents/blob/main/packages/vite-plugin-agent-skills/README.md).
+- **`/.well-known/agent-skills/index.json`.** Publish an index of the Filecoin agent skills, so that `npx skills add https://filecoin.io` works. Is Agentic found one official skill on [skills.sh/filecoin-project](https://skills.sh/filecoin-project). poc.filecoin.cloud publishes the `filecoin` skill with [`@hugomrdias/vite-plugin-agent-skills`](https://github.com/hugomrdias/agents/blob/main/packages/vite-plugin-agent-skills/README.md).
 - **`/.well-known/integrations.json`.** Declare the REST API, the MCP server, and the `filecoin` CLI for integrations.sh, so that `npx add-mcp find` lists them.
 - **Developer links on the home page.** The home page links to docs.filecoin.io pages and to the Filecoin Pay console. It doesn't link to the API reference, the MCP server, or a page for agents. Is Agentic searched for these by name and found none on filecoin.io. Link them from the home page and the footer, with "Filecoin" in their titles.
 - **Content signals in `robots.txt`.** This is optional. docs.filecoin.io sends `Content-Signal: ai-train=yes, search=yes, ai-input=yes`. The same line on filecoin.io states the site's policy for AI use.
 
 ## Questions for the filecoin.io team
 
-- Which hostname is canonical, `www.filecoin.io` or `filecoin.io`?
 - Which site do agents reach first, filecoin.io or docs.filecoin.io? That site should serve `llms.txt` and the `/.well-known/` files and link to the others.
 - Can the site add Next.js middleware that answers `Accept: text/markdown`? Does the Markdown come from the CMS, or from a conversion of the rendered HTML?
 
@@ -97,7 +94,7 @@ The scans ran at 13:30 and 13:33 UTC. Is Agentic infers a site type and scores t
 
 ```bash
 # llms.txt, Markdown, and discovery files
-for h in www.filecoin.io poc.filecoin.cloud; do
+for h in filecoin.io poc.filecoin.cloud; do
 	for p in /llms.txt /llms-full.txt /index.md /.well-known/api-catalog /.well-known/integrations.json \
 		/.well-known/mcp/server-card.json /.well-known/mcp-server-card /.well-known/agent-skills/index.json \
 		/.well-known/ai-catalog.json; do
@@ -106,14 +103,14 @@ for h in www.filecoin.io poc.filecoin.cloud; do
 done
 
 # Canonical hostname
-curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" https://filecoin.io/blog
+curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" https://www.filecoin.io/blog
 
 # Markdown negotiation, Vary, and Link headers
-curl -sI -H "Accept: text/markdown" https://www.filecoin.io/ | grep -iE "^(content-type|vary|link):"
+curl -sI -H "Accept: text/markdown" https://filecoin.io/ | grep -iE "^(content-type|vary|link):"
 curl -sI -H "Accept: text/markdown" https://poc.filecoin.cloud/ | grep -iE "^(content-type|vary|link):"
 
 # Missing page in Markdown
-curl -s -o /dev/null -w "%{http_code} %{content_type}\n" -H "Accept: text/markdown" https://www.filecoin.io/nope
+curl -s -o /dev/null -w "%{http_code} %{content_type}\n" -H "Accept: text/markdown" https://filecoin.io/nope
 
 # Is Agentic reports. These calls are read-only and start no scan
 curl -s "https://is-agentic.com/api/v1/report?url=https%3A%2F%2Ffilecoin.io"
