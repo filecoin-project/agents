@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.0](https://github.com/filecoin-project/agents/compare/filecoin-app-v0.8.0...filecoin-app-v0.9.0) (2026-11-14)
+
+
+### Features
+
+* **filecoin-app:** link npm packages and the MCP card from llms.txt ([09c7d4b](https://github.com/filecoin-project/agents/commit/09c7d4bbf2dca0b12c2ba77ab7cc2282fb20254f)), closes [#63](https://github.com/filecoin-project/agents/issues/63)
+
+
+### Dependencies
+
+* **filecoin-app:** update minor and patch dependencies ([173f2d4](https://github.com/filecoin-project/agents/commit/173f2d47105a47d6f97717b2aafb9104887cce4c))
+
 ## [0.8.0](https://github.com/filecoin-project/agents/compare/filecoin-app-v0.7.0...filecoin-app-v0.8.0) (2026-10-22)
 
 
