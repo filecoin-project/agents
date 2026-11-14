@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0](https://github.com/filecoin-project/agents/compare/filecoin-api-v0.6.0...filecoin-api-v0.7.0) (2026-11-14)
+
+
+### Features
+
+* **filecoin-api:** add MCP server icons and a service-desc link ([158b2e0](https://github.com/filecoin-project/agents/commit/158b2e074535b60259f17d93b2e5ec16d6f82e52))
+
+
+### Dependencies
+
+* **filecoin-api:** update dependencies, vitest 5, and postgres 4 ([4db0646](https://github.com/filecoin-project/agents/commit/4db0646a66f4b2c553d3ab79095eec338c96fa2a))
+
 ## [0.6.0](https://github.com/filecoin-project/agents/compare/filecoin-api-v0.5.0...filecoin-api-v0.6.0) (2026-11-10)
 
 
