@@ -63,6 +63,16 @@ export interface StorageBackend {
     pieceCid: string
   }): Promise<void>
   /**
+   * Upload a stream of `size` bytes, compute its PieceCID on the way, and
+   * wait until the provider has parked the piece. Used for CARs, whose
+   * PieceCID is unknown until their bytes are written.
+   */
+  uploadStream(options: {
+    serviceURL: string
+    data: AsyncIterable<Uint8Array>
+    size: number
+  }): Promise<{ pieceCid: string }>
+  /**
    * Sign a commit without sending it: create-and-add when the placement has
    * no data set, add otherwise. The nonce and client data set ID are chosen
    * here. The commit is JSON-safe and saved before it is sent.

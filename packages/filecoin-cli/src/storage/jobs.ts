@@ -1,6 +1,6 @@
 import { createReadStream } from 'node:fs'
 import { rm, stat } from 'node:fs/promises'
-import { basename, join, resolve } from 'node:path'
+import { basename, resolve } from 'node:path'
 import type { DatabaseSync } from 'node:sqlite'
 import * as Piece from '@filoz/synapse-core/piece'
 import type { Commit } from '@filoz/synapse-core/sp'
@@ -12,6 +12,7 @@ import {
   invalidInput,
   notFound,
   operationError,
+  sourceChanged,
 } from '../errors.ts'
 import { APPLICATION_SOURCE } from '../source.ts'
 import { transaction } from '../state/db.ts'
@@ -28,7 +29,8 @@ import {
   updateOperation,
 } from '../state/operations.ts'
 import { getResource, type Resource, saveResource } from '../state/resources.ts'
-import { listEntries, packDirectory, packFile } from './pack.ts'
+import { type DfsCar, planDirectory, planFile } from './dfs-car.ts'
+import { listEntries } from './pack.ts'
 import type {
   CommittedPiece,
   Placement,
@@ -211,8 +213,8 @@ export async function estimatePut(
       files: 1,
     }
   } else {
-    const pack = source.kind === 'folder' ? packDirectory : packFile
-    const packed = await pack(source.sourcePath, undefined, PACK_OPTIONS)
+    const plan = source.kind === 'folder' ? planDirectory : planFile
+    const packed = await plan(source.sourcePath, PACK_OPTIONS)
     assertPieceSize(packed.size)
     estimate = {
       kind: source.kind,
@@ -386,113 +388,90 @@ async function runPut(ctx: JobContext, op: Operation): Promise<JobResult> {
   const signal = ctx.signal
   if (!input.sourcePath) throw new Error(`Operation ${op.id} has no source.`)
 
-  // Prepare the bytes to store.
-  let uploadPath = input.sourcePath
+  const stored = Boolean(op.checkpoint.commit || op.checkpoint.stored)
+  let placement: Placement
   if (format === 'car') {
-    uploadPath = join(ctx.stagingDir(op.id), `${kind}.car`)
-    const staged = await stat(uploadPath).catch(() => undefined)
-    if (!staged) {
-      if (op.checkpoint.pieceCid) {
-        throw new CliError({
-          code: ErrorCodes.stagingMissing,
-          message: `The staged CAR of ${op.id} is missing, so it cannot be resumed.`,
-          next: [
-            {
-              by: 'agent',
-              command: `filecoin put ${input.sourcePath}`,
-              description: `Start a new put of the same ${kind}`,
-            },
-          ],
-        })
-      }
+    // First pass: build the DAG, unless the piece is already stored.
+    let car: DfsCar | undefined
+    if (!stored) {
       op = save(ctx, op, {}, 'packing')
       ctx.progress?.({
         phase: 'packing',
         message: `Packing ${input.sourcePath}`,
       })
-      const pack = kind === 'folder' ? packDirectory : packFile
-      // Nothing staged is usable after a failed pack: the CAR is renamed into
-      // place only once complete. Remove the folder so it does not pile up.
-      const packed = await pack(
-        input.sourcePath,
-        uploadPath,
-        PACK_OPTIONS
-      ).catch(async (error: unknown) => {
-        await rm(ctx.stagingDir(op.id), { recursive: true, force: true })
-        throw error
-      })
-      op = save(ctx, op, {
-        rootCid: packed.rootCid.toString(),
-        size: packed.size,
-      })
+      const plan = kind === 'folder' ? planDirectory : planFile
+      car = await plan(input.sourcePath, PACK_OPTIONS)
+      const rootCid = car.rootCid.toString()
+      if (op.checkpoint.rootCid && op.checkpoint.rootCid !== rootCid) {
+        throw sourceChanged(
+          `${input.sourcePath} changed since operation ${op.id} started.`,
+          input.sourcePath
+        )
+      }
+      // A PieceCID saved without `stored` is from a staged CAR of an older
+      // version. The DFS CAR has other bytes, so the upload replaces it.
+      op = save(
+        ctx,
+        op,
+        { rootCid, size: car.size, pieceCid: undefined },
+        'storing'
+      )
     }
-  }
+    const size = op.checkpoint.size
+    if (size == null) throw new Error(`Operation ${op.id} has no CAR size.`)
+    assertPieceSize(size)
+    ;({ op, placement } = await place(ctx, op, size))
 
-  signal?.throwIfAborted()
-  const size = (await stat(uploadPath)).size
-  assertPieceSize(size)
-  ctx.progress?.({ phase: 'hashing', message: 'Computing PieceCID' })
-  const pieceCid = await pieceCidOf(uploadPath, signal)
-  if (op.checkpoint.pieceCid && op.checkpoint.pieceCid !== pieceCid) {
-    throw new CliError({
-      code: ErrorCodes.sourceChanged,
-      message: `${uploadPath} changed since operation ${op.id} started.`,
-      next: [
-        {
-          by: 'agent',
-          command: `filecoin put ${input.sourcePath}`,
-          description: 'Start a new put with the current content',
-        },
-      ],
-    })
-  }
-  op = save(ctx, op, { pieceCid, size }, 'storing')
-
-  // Choose a provider once; resumes reuse it.
-  let placement = placementOf(op.checkpoint)
-  if (!placement) {
-    ctx.progress?.({
-      phase: 'placing',
-      message: 'Selecting a storage provider',
-    })
-    placement = await ctx.backend.selectPlacement({
-      metadata: metadataFor(format),
-      providerId: input.providerId ? BigInt(input.providerId) : undefined,
-    })
-    const quote = await ctx.backend.quote({ size, placement })
-    if (!quote.ready) throw insufficientFunds(quote)
-    op = save(ctx, op, {
-      providerId: placement.providerId.toString(),
-      serviceURL: placement.serviceURL,
-      payee: placement.payee,
-      ...(placement.dataSetId == null
-        ? {}
-        : {
-            dataSetId: placement.dataSetId.toString(),
-            clientDataSetId: placement.clientDataSetId?.toString(),
-          }),
-    })
-  }
-
-  // Upload unless the provider already has the piece.
-  if (!(op.checkpoint.commit || op.checkpoint.stored)) {
-    const present = await ctx.backend.hasPiece({
-      serviceURL: placement.serviceURL,
-      pieceCid,
-    })
-    if (!present) {
+    // Second pass: stream the CAR to the provider, which hashes it on the
+    // way. The PieceCID is known only afterward, so `hasPiece` cannot skip
+    // the upload.
+    if (car) {
       ctx.progress?.({
         phase: 'uploading',
         message: `Uploading ${size} bytes to provider ${placement.providerId}`,
       })
-      await ctx.backend.upload({
+      const { pieceCid } = await uploadCar(ctx, placement, car)
+      op = save(ctx, op, { pieceCid, stored: true })
+    }
+  } else {
+    signal?.throwIfAborted()
+    const size = (await stat(input.sourcePath)).size
+    assertPieceSize(size)
+    ctx.progress?.({ phase: 'hashing', message: 'Computing PieceCID' })
+    const pieceCid = await pieceCidOf(input.sourcePath, signal)
+    if (op.checkpoint.pieceCid && op.checkpoint.pieceCid !== pieceCid) {
+      throw sourceChanged(
+        `${input.sourcePath} changed since operation ${op.id} started.`,
+        input.sourcePath
+      )
+    }
+    op = save(ctx, op, { pieceCid, size }, 'storing')
+    ;({ op, placement } = await place(ctx, op, size))
+
+    // Upload unless the provider already has the piece.
+    if (!stored) {
+      const present = await ctx.backend.hasPiece({
         serviceURL: placement.serviceURL,
-        path: uploadPath,
-        size,
         pieceCid,
       })
+      if (!present) {
+        ctx.progress?.({
+          phase: 'uploading',
+          message: `Uploading ${size} bytes to provider ${placement.providerId}`,
+        })
+        await ctx.backend.upload({
+          serviceURL: placement.serviceURL,
+          path: input.sourcePath,
+          size,
+          pieceCid,
+        })
+      }
+      op = save(ctx, op, { stored: true })
     }
-    op = save(ctx, op, { stored: true })
+  }
+  const { pieceCid, size } = op.checkpoint
+  if (!pieceCid || size == null) {
+    throw new Error(`Operation ${op.id} has no stored piece.`)
   }
 
   // Links that work before the commit confirms. The provider hint makes
@@ -561,6 +540,71 @@ async function runPut(ctx: JobContext, op: Operation): Promise<JobResult> {
     )
   }
   return { operationId: op.id, state: 'ready', resource, urls }
+}
+
+/**
+ * Choose a provider for `size` bytes once and check the payer can afford
+ * it. A resume reuses the saved placement.
+ */
+async function place(
+  ctx: JobContext,
+  op: Operation,
+  size: number
+): Promise<{ op: Operation; placement: Placement }> {
+  const saved = placementOf(op.checkpoint)
+  if (saved) return { op, placement: saved }
+  ctx.progress?.({
+    phase: 'placing',
+    message: 'Selecting a storage provider',
+  })
+  const placement = await ctx.backend.selectPlacement({
+    metadata: metadataFor(formatOf(op.input)),
+    providerId: op.input.providerId ? BigInt(op.input.providerId) : undefined,
+  })
+  const quote = await ctx.backend.quote({ size, placement })
+  if (!quote.ready) throw insufficientFunds(quote)
+  op = save(ctx, op, {
+    providerId: placement.providerId.toString(),
+    serviceURL: placement.serviceURL,
+    payee: placement.payee,
+    ...(placement.dataSetId == null
+      ? {}
+      : {
+          dataSetId: placement.dataSetId.toString(),
+          clientDataSetId: placement.clientDataSetId?.toString(),
+        }),
+  })
+  return { op, placement }
+}
+
+/**
+ * Stream a planned CAR to the provider and return the PieceCID computed on
+ * the way. A failure of the CAR stream, such as `source_changed`, wins over
+ * the error the upload reports for the broken body.
+ */
+async function uploadCar(
+  ctx: JobContext,
+  placement: Placement,
+  car: DfsCar
+): Promise<{ pieceCid: string }> {
+  let streamError: unknown
+  async function* body(): AsyncGenerator<Uint8Array> {
+    try {
+      yield* car.stream({ signal: ctx.signal })
+    } catch (error) {
+      streamError = error
+      throw error
+    }
+  }
+  try {
+    return await ctx.backend.uploadStream({
+      serviceURL: placement.serviceURL,
+      data: body(),
+      size: car.size,
+    })
+  } catch (error) {
+    throw streamError ?? error
+  }
 }
 
 /**

@@ -135,6 +135,18 @@ export function createSynapseBackend(
       })
     },
 
+    async uploadStream({ serviceURL, data, size }) {
+      // Without `pieceCid`, synapse-core hashes the body as it sends it.
+      const result = await SP.uploadPieceStreaming({
+        serviceURL,
+        data,
+        size,
+        signal,
+        waitForParked: true,
+      })
+      return { pieceCid: result.pieceCid.toString() }
+    },
+
     async signCommit({ placement, pieceCid, metadata, pieceMetadata }) {
       const pieces = [
         { pieceCid: Piece.from(pieceCid), metadata: pieceMetadata },

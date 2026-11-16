@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
-import { mkdir, stat, truncate, writeFile } from 'node:fs/promises'
+import { mkdir, rm, stat, truncate, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { test } from 'node:test'
+import * as Piece from '@filoz/synapse-core/piece'
 import type { Commit } from '@filoz/synapse-core/sp'
 import { SIZE_CONSTANTS } from '@filoz/synapse-core/utils'
 import { CliError } from 'clipact'
@@ -49,6 +50,8 @@ type FakeOptions = {
   rejectOnce?: boolean
   /** The first removal transaction reverts. */
   revertOnce?: boolean
+  /** The first streamed upload fails after reading its body. */
+  failUploadOnce?: boolean
 }
 
 /**
@@ -60,6 +63,8 @@ function fakeBackend(options: FakeOptions = {}) {
   const calls = {
     select: [] as unknown[],
     upload: 0,
+    /** PieceCIDs of the streamed uploads, in order. */
+    streamed: [] as string[],
     sign: 0,
     submitted: [] as Hex[],
     commits: [] as Commit[],
@@ -95,6 +100,23 @@ function fakeBackend(options: FakeOptions = {}) {
     upload() {
       calls.upload++
       return Promise.resolve()
+    },
+    async uploadStream({ data, size }) {
+      calls.upload++
+      let length = 0
+      const hasher = Piece.hasher()
+      for await (const chunk of data) {
+        hasher.write(chunk)
+        length += chunk.length
+      }
+      assert.equal(length, size)
+      const pieceCid = hasher.finalize().toString()
+      calls.streamed.push(pieceCid)
+      if (once.failUploadOnce) {
+        once.failUploadOnce = false
+        throw new Error('connection reset')
+      }
+      return { pieceCid }
     },
     signCommit({ placement, pieceCid, metadata, pieceMetadata }) {
       calls.sign++
@@ -617,16 +639,106 @@ test('put asks only for the approval when no deposit is needed', async () => {
   )
 })
 
-test('put skips the upload when the provider already has the piece', async () => {
+test('put --raw skips the upload when the provider already has the piece', async () => {
   const { backend, calls } = fakeBackend({ stored: true })
   const ctx = await context(backend)
   const phases: string[] = []
   ctx.progress = (event) => phases.push(event.phase)
   const path = await file(ctx, 'data.bin', 1024)
-  await startPut(ctx, { path })
+  await startPut(ctx, { path, raw: true })
   assert.equal(calls.upload, 0)
   assert.equal(calls.submitted.length, 1)
   assert.ok(phases.includes('link'))
+})
+
+test('put streams a CAR even when the provider has the piece', async () => {
+  const { backend, calls } = fakeBackend({ stored: true })
+  const ctx = await context(backend)
+  const path = await file(ctx, 'data.bin', 1024)
+  const result = await startPut(ctx, { path })
+  assert.equal(calls.upload, 1)
+  assert.deepEqual(calls.streamed, [result.resource.pieceCid])
+})
+
+test('a CAR put resumed after a failed upload streams the same piece', async () => {
+  const { backend, calls } = fakeBackend({ failUploadOnce: true })
+  const ctx = await context(backend)
+  const dir = join(ctx.root, 'site')
+  await mkdir(dir)
+  await writeFile(join(dir, 'a.bin'), randomBytes(2_500_000))
+  await writeFile(join(dir, 'b.txt'), 'hello world'.repeat(20))
+  await assert.rejects(startPut(ctx, { path: dir }))
+  const failed = onlyOperation(ctx)
+  assert.equal(failed.checkpoint.stored, undefined)
+  assert.equal(failed.checkpoint.pieceCid, undefined)
+  assert.ok(failed.checkpoint.rootCid)
+
+  const result = await runOperation(ctx, failed.id)
+  assert.equal(result.resource.rootCid, failed.checkpoint.rootCid)
+  assert.equal(calls.streamed.length, 2)
+  assert.equal(calls.streamed[0], calls.streamed[1])
+  assert.equal(result.resource.pieceCid, calls.streamed[1])
+  assert.equal(result.resource.size, failed.checkpoint.size)
+})
+
+test('a CAR put resumed after its source changed fails with source_changed', async () => {
+  const { backend, calls } = fakeBackend({ failUploadOnce: true })
+  const ctx = await context(backend)
+  const path = await file(ctx, 'data.bin', 4096)
+  await assert.rejects(startPut(ctx, { path }))
+  const failed = onlyOperation(ctx)
+  await writeFile(path, randomBytes(4096))
+  await assert.rejects(runOperation(ctx, failed.id), {
+    code: 'source_changed',
+  })
+  assert.equal(calls.streamed.length, 1)
+})
+
+test('a source changed during the upload fails with source_changed', async () => {
+  const { backend } = fakeBackend()
+  let path = ''
+  const ctx = await context({
+    ...backend,
+    async uploadStream({ data }) {
+      await writeFile(path, randomBytes(2_100_000))
+      // fetch reports a failed body as its own error.
+      try {
+        for await (const _ of data);
+      } catch {
+        throw new TypeError('fetch failed')
+      }
+      throw new Error('the changed source was uploaded')
+    },
+  })
+  path = await file(ctx, 'data.bin', 2_100_000)
+  await assert.rejects(startPut(ctx, { path }), { code: 'source_changed' })
+})
+
+test('a stored CAR put resumes without its source', async () => {
+  const { backend, calls } = fakeBackend({ failWaitOnce: true })
+  const ctx = await context(backend)
+  const path = await file(ctx, 'data.bin', 4096)
+  await assert.rejects(startPut(ctx, { path }))
+  const failed = onlyOperation(ctx)
+  assert.equal(failed.checkpoint.stored, true)
+  await rm(path)
+  const result = await runOperation(ctx, failed.id)
+  assert.equal(result.resource.pieceCid, failed.checkpoint.pieceCid)
+  assert.equal(calls.upload, 1)
+})
+
+test('a CAR put staged by an older version restreams as a DFS CAR', async () => {
+  const { backend, calls } = fakeBackend({ failUploadOnce: true })
+  const ctx = await context(backend)
+  const path = await file(ctx, 'data.bin', 4096)
+  await assert.rejects(startPut(ctx, { path }))
+  const failed = onlyOperation(ctx)
+  // Older versions saved the staged CAR's PieceCID before uploading it.
+  updateOperation(ctx.db, failed.id, {
+    checkpoint: { pieceCid: 'bafkzcibstaged' },
+  })
+  const result = await runOperation(ctx, failed.id)
+  assert.equal(result.resource.pieceCid, calls.streamed[1])
 })
 
 test('resume refuses a source that changed since the job started', async () => {
@@ -686,7 +798,7 @@ test('an interrupted put fails with the abort reason, not operation_failed', asy
   const controller = new AbortController()
   const ctx = await context({
     ...backend,
-    upload() {
+    uploadStream() {
       controller.abort('SIGTERM')
       return Promise.reject(new Error('aborted'))
     },
