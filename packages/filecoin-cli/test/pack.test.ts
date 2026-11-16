@@ -1,14 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
 import { createReadStream } from 'node:fs'
-import {
-  mkdir,
-  open,
-  readFile,
-  stat,
-  symlink,
-  writeFile,
-} from 'node:fs/promises'
+import { mkdir, open, readFile, symlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { CarIndexer } from '@ipld/car'
@@ -16,14 +9,9 @@ import { type BufferImporter, importer } from 'ipfs-unixfs-importer'
 import { CID } from 'multiformats/cid'
 import * as raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
-import {
-  extractCar,
-  listEntries,
-  packDirectory,
-  packFile,
-  READ_WINDOW,
-} from '../src/storage/pack.ts'
-import { tempDir } from './helpers.ts'
+import { planDirectory } from '../src/storage/dfs-car.ts'
+import { extractCar, listEntries, READ_WINDOW } from '../src/storage/pack.ts'
+import { tempDir, writeCar } from './helpers.ts'
 
 /** Create a small site with nested assets, a dotfile, and an empty dir. */
 async function site(root: string): Promise<string> {
@@ -36,22 +24,16 @@ async function site(root: string): Promise<string> {
   return dir
 }
 
-test('packDirectory is deterministic and extractCar restores the tree', async () => {
+test('extractCar restores a packed tree without its dotfiles', async () => {
   const root = await tempDir()
   const dir = await site(root)
-  const a = await packDirectory(dir, join(root, 'a.car'))
-  const b = await packDirectory(dir, join(root, 'b.car'))
-  assert.equal(a.rootCid.toString(), b.rootCid.toString())
-  assert.equal(a.files, 2)
-
-  // Measuring without a path gives the written CAR's exact size and root.
-  const measured = await packDirectory(dir)
-  assert.equal(measured.size, a.size)
-  assert.equal(measured.rootCid.toString(), a.rootCid.toString())
+  const car = await planDirectory(dir)
+  assert.equal(car.files, 2)
+  await writeCar(car, join(root, 'a.car'))
 
   const out = join(root, 'out')
   const extracted = await extractCar(join(root, 'a.car'), out)
-  assert.equal(extracted.rootCid.toString(), a.rootCid.toString())
+  assert.equal(extracted.rootCid.toString(), car.rootCid.toString())
   assert.equal(extracted.files, 2)
   assert.deepEqual(
     await readFile(join(out, 'assets', 'img', 'big.bin')),
@@ -62,65 +44,6 @@ test('packDirectory is deterministic and extractCar restores the tree', async ()
     '<h1>hello</h1>'
   )
   await assert.rejects(readFile(join(out, '.env')), { code: 'ENOENT' })
-})
-
-test('packFile roots a one-chunk file at its raw block CID', async () => {
-  const root = await tempDir()
-  const bytes = randomBytes(4096)
-  const path = join(root, 'note.bin')
-  await writeFile(path, bytes)
-  const packed = await packFile(path, join(root, 'note.car'))
-  const expected = CID.create(1, raw.code, await sha256.digest(bytes))
-  assert.equal(packed.rootCid.toString(), expected.toString())
-  assert.equal(packed.files, 1)
-  assert.equal((await packFile(path)).size, packed.size)
-
-  const out = join(root, 'out.bin')
-  const extracted = await extractCar(join(root, 'note.car'), out)
-  assert.equal(extracted.files, 1)
-  assert.ok(bytes.equals(await readFile(out)))
-})
-
-test('packFile roots a multi-chunk file at a UnixFS file node', async () => {
-  const root = await tempDir()
-  const bytes = randomBytes(2_500_000)
-  const path = join(root, 'big.bin')
-  await writeFile(path, bytes)
-  const packed = await packFile(path, join(root, 'big.car'))
-  assert.equal(packed.rootCid.code, 0x70)
-  assert.equal(
-    (await packFile(path)).rootCid.toString(),
-    packed.rootCid.toString()
-  )
-
-  const out = join(root, 'out.bin')
-  await extractCar(join(root, 'big.car'), out)
-  assert.ok(bytes.equals(await readFile(out)))
-})
-
-test('packing stops past maxSize and deletes the partial CAR', async () => {
-  const root = await tempDir()
-  const path = join(root, 'big.bin')
-  await writeFile(path, randomBytes(3 * 1024 * 1024))
-  const car = join(root, 'big.car')
-  const maxSize = 1.5 * 1024 * 1024
-  await assert.rejects(packFile(path, car, { maxSize }), {
-    code: 'invalid_input',
-  })
-  await assert.rejects(stat(car), { code: 'ENOENT' })
-  await assert.rejects(stat(`${car}.tmp`), { code: 'ENOENT' })
-  await assert.rejects(packFile(path, undefined, { maxSize }), {
-    code: 'invalid_input',
-  })
-  const dir = await site(root)
-  await assert.rejects(
-    packDirectory(dir, join(root, 'site.car'), { maxSize }),
-    {
-      code: 'invalid_input',
-    }
-  )
-  const packed = await packFile(path, car, { maxSize: 4 * 1024 * 1024 })
-  assert.ok(packed.size <= 4 * 1024 * 1024)
 })
 
 test('listEntries skips dotfiles and rejects symlinks', async () => {
@@ -145,7 +68,7 @@ async function countBlocks(carPath: string): Promise<number> {
   return count
 }
 
-test('packDirectory writes no orphan directory blocks', async () => {
+test('a packed folder has no orphan directory blocks', async () => {
   const root = await tempDir()
   const dir = join(root, 'site')
   await mkdir(join(dir, 'assets', 'img'), { recursive: true })
@@ -153,17 +76,20 @@ test('packDirectory writes no orphan directory blocks', async () => {
   // 2.5 MB → three 1 MiB-max raw leaves plus one file node.
   await writeFile(join(dir, 'assets', 'img', 'big.bin'), randomBytes(2_500_000))
   const car = join(root, 'site.car')
-  await packDirectory(dir, car)
+  const planned = await planDirectory(dir)
   // 3 directories + index.html + 4 blocks for big.bin
+  assert.equal(planned.blocks, 8)
+  await writeCar(planned, car)
   assert.equal(await countBlocks(car), 8)
 })
 
-test('packDirectory keeps empty directories, including an empty root', async () => {
+test('a packed folder keeps empty directories, including an empty root', async () => {
   const root = await tempDir()
   const dir = join(root, 'blank')
   await mkdir(join(dir, 'nested', 'deeper'), { recursive: true })
-  const packed = await packDirectory(dir, join(root, 'blank.car'))
+  const packed = await planDirectory(dir)
   assert.equal(packed.files, 0)
+  await writeCar(packed, join(root, 'blank.car'))
   const out = join(root, 'out')
   await extractCar(join(root, 'blank.car'), out)
   const entries = await listEntries(out)
@@ -171,16 +97,16 @@ test('packDirectory keeps empty directories, including an empty root', async () 
 
   const empty = join(root, 'empty')
   await mkdir(empty)
-  const packedEmpty = await packDirectory(empty, join(root, 'empty.car'))
+  await writeCar(await planDirectory(empty), join(root, 'empty.car'))
   assert.equal(await countBlocks(join(root, 'empty.car')), 1)
-  assert.ok(packedEmpty.rootCid)
 })
 
 test('extractCar rejects a block that does not match its CID', async () => {
   const root = await tempDir()
   const dir = await site(root)
   const car = join(root, 'site.car')
-  const packed = await packDirectory(dir, car)
+  const packed = await planDirectory(dir)
+  await writeCar(packed, car)
   // Flip a byte inside big.bin's data, well past the header.
   const handle = await open(car, 'r+')
   try {
@@ -203,7 +129,7 @@ test('extractCar restores files larger than one read window', async () => {
   await mkdir(dir)
   const bytes = randomBytes(READ_WINDOW * 2 + 12_345)
   await writeFile(join(dir, 'blob.bin'), bytes)
-  await packDirectory(dir, join(root, 'large.car'))
+  await writeCar(await planDirectory(dir), join(root, 'large.car'))
   await extractCar(join(root, 'large.car'), join(root, 'out'))
   assert.ok(bytes.equals(await readFile(join(root, 'out', 'blob.bin'))))
 })
