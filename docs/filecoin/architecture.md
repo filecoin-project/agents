@@ -69,7 +69,7 @@ packages/filecoin-cli/
     │   ├── synapse.ts    StorageBackend built on synapse-core
     │   ├── jobs.ts       put and delete jobs, signed commits, resume, dry-run estimate
     │   ├── dfs-car.ts    file or folder → DFS-ordered UnixFS CAR stream, in two passes
-    │   ├── pack.ts       file walk, staged post-order CAR (tests only), CAR → file or folder
+    │   ├── pack.ts       file walk and importer candidates, CAR → file or folder
     │   ├── get.ts        streaming verified download, folder extraction
     │   └── urls.ts       filecoin-api /get URLs, and the Curio /piece URL for get
     └── state/
@@ -241,9 +241,7 @@ The CAR lists blocks in depth-first order from the root, each block the first ti
 1. **Build the DAG.** The importer runs with a blockstore that keeps the bytes of every dag-pb block: directories, HAMT shards, and file nodes. It keeps only the length of each raw leaf. A walk of the DAG from the root sizes the CAR exactly and skips any block the root does not reach.
 2. **Write the CAR.** The second pass writes a CARv1 header with the root, then walks the DAG again. It writes UnixFS nodes from memory. It reads each raw leaf from its source file at the offset that the parent file nodes' `blocksizes` give, up to 64 leaves or 16 MiB ahead of the output. It checks each leaf against its CID with SHA-256. A short read or a mismatch means the source changed between the passes, and the put fails with `source_changed`. The pass ends with an error if it wrote a byte count other than the planned size.
 
-The output is deterministic. The staged packer that `filecoin` 0.7.0 used wrote blocks in the order the importer finished them, which `fileImportConcurrency` reorders, so two packs of the same folder gave the same root CID and different bytes. Two DFS packs of a folder are byte-identical, so a resume streams the same PieceCID.
-
-`pack.ts` keeps that staged packer, `packDirectory` and `packFile`, for the tests that compare root CIDs, and `extractCar` for the tests that extract a CAR.
+The output is deterministic. The staged packer of `filecoin` 0.7.0 and earlier wrote blocks in the order the importer finished them, which `fileImportConcurrency` reorders, so two packs of the same folder gave the same root CID and different bytes. Two DFS packs of a folder are byte-identical, so a resume streams the same PieceCID.
 
 We measured both packers on 2026-11-16 on an Apple M1 Pro with Node.js 26, each stage in its own process. The staged path packs the CAR to disk, then hashes it. The DFS path builds the DAG, then writes the CAR into `Piece.hasher()`, as the upload does:
 
