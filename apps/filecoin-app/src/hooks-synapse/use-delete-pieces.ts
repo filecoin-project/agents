@@ -27,7 +27,7 @@ export interface UseDeletePiecesProps extends SessionKeySignerOptions {
   /** Mutation options. */
   mutation?: Omit<
     MutateOptions<
-      SP.schedulePieceDeletions.OutputType,
+      SP.waitForDeletePieces.OutputType,
       Error,
       UseDeletePiecesVariables
     >,
@@ -36,8 +36,11 @@ export interface UseDeletePiecesProps extends SessionKeySignerOptions {
 }
 
 /**
- * Schedule a batch of pieces for removal in one signed request.
+ * Schedule a batch of pieces for removal in one signed request, then wait on
+ * chain until the transaction schedules every piece. Rejects with
+ * `TransactionNotAppliedError` when it reverts or schedules none.
  *
+ * @see https://github.com/FilOzone/synapse-sdk/blob/master/packages/synapse-core/src/sp/wait-for-receipt.ts
  * @param props - {@link UseDeletePiecesProps}
  */
 export function useDeletePieces(props?: UseDeletePiecesProps) {
@@ -57,13 +60,14 @@ export function useDeletePieces(props?: UseDeletePiecesProps) {
         chainId,
         sessionKey: props?.sessionKey,
       })
-      const result = await SP.schedulePieceDeletions(client, {
+      const scheduled = await SP.schedulePieceDeletions(client, {
         serviceURL: dataSet.provider.pdp.serviceURL,
         dataSetId: dataSet.dataSetId,
         clientDataSetId: dataSet.clientDataSetId,
         pieceIds,
       })
-      props?.onHash?.(result.txHash)
+      props?.onHash?.(scheduled.txHash)
+      const result = await SP.waitForDeletePieces({ client, ...scheduled })
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: synapseKeys.dataSets }),
         queryClient.invalidateQueries({ queryKey: synapseKeys.pdpDataSet }),
