@@ -290,10 +290,20 @@ clipact aborts `ctx.signal` on the first SIGINT, SIGTERM, or SIGHUP. Handlers pa
 `get <ref|pieceCid>` always downloads the stored piece from `/piece/<pieceCid>`. That is the only form whose bytes `filecoin` can check against the PieceCID. For a managed resource, `get` uses the `serviceURL` of the saved copy and skips filecoin-api, so a download never waits for the indexer.
 
 - **Raw files.** `get.ts` streams the response through `Piece.hasher()` into `<output>.filecoin-partial`. It renames the file to its final name only if the computed PieceCID matches. synapse-core's `Piece.downloadStream` validates a stream the same way, but its `DownloadPieceError` drops the HTTP status, so `get` could no longer return `not_found` for a 404.
-- **CARs.** The CLI downloads and verifies the CAR the same way, then opens it with `CarIndexedReader`. It checks that the root in the CAR header equals the saved `rootCid`. It walks the DAG with `ipfs-unixfs-exporter` and extracts into a temporary path, which it then renames into place: a directory for a folder, or the file itself. It rejects an entry name that contains a path separator or resolves outside the output directory. `--force` replaces an existing file, but never an existing directory.
+- **CARs.** The CLI downloads and verifies the CAR the same way, then opens it with `CarIndexedReader`. It checks that the root in the CAR header equals the saved `rootCid`. It walks the DAG in order with `ipfs-unixfs-exporter`, creates each directory before its entries, and writes up to `EXTRACT_CONCURRENCY` (8) files at once. It extracts into a temporary path, which it then renames into place: a directory for a folder, or the file itself. The first failed write stops the walk, and the extraction fails once the writes in flight finish. It rejects an entry name that contains a path separator or resolves outside the output directory. `--force` replaces an existing file, but never an existing directory.
 - **Unmanaged PieceCIDs.** The CLI finds a provider with `resolvePieceUrl`, then downloads and verifies the piece the same way.
 
 Extraction reads each file in 8 MiB windows. `ipfs-unixfs-exporter` queues a file's blocks without waiting for the consumer. One `content()` call over a local CAR would hold the whole file in memory. For a 1 GB file, that used about 1 GB of RSS, against 83 MB with windows.
+
+Extraction used to write one file at a time, so a folder of many small files spent most of its time waiting on each open, write, and close. We measured the change on 2026-11-16 with the CAR on local disk:
+
+| Input | One file at a time | 8 files at once |
+| --- | --- | --- |
+| 53,000 small files in 51 folders | 7.9 s, 280 MiB RSS | 2.8 s, 285 MiB RSS |
+| 16 files of 64 MiB | 0.8–0.9 s, 91–97 MiB of buffers, 258 MiB RSS | 0.7 s, 147–192 MiB of buffers, 408 MiB RSS at most |
+| One 900 MiB file | 0.8 s, 74–87 MiB of buffers | 0.7 s, 79–91 MiB of buffers |
+
+Large files gain little and cost up to about 150 MiB more RSS, because memory grows with the number of large files in flight. It does not grow with their total size. 16 writers were no faster than 8 and peaked at 249 MiB of buffers and 515 MiB RSS on the 64 MiB files.
 
 Extraction checks the bytes of every block against its CID, as `ipfs-car unpack --verify` does. The PieceCID check already covers a CAR downloaded from `/piece`. A gateway can also rebuild a CAR, for example at Curio's `/ipfs/…?format=car`, and `filecoin` can trust that CAR only block by block.
 
