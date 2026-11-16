@@ -21,12 +21,14 @@ While the commit confirms, `filecoin put` prints an early browser link to stderr
 
 | Way | Who can use it | Gets | Checks |
 | --- | --- | --- | --- |
-| `filecoin get <ref>` | Agents with a shell, and people | A file, or the folder, extracted | The bytes against the PieceCID, and for a folder the root CID. On a mismatch it keeps nothing and fails with `verification_failed` |
-| `filecoin get <PieceCID>` | Agents with a shell, and people | The stored bytes as one file. For a folder, that is the CAR | The bytes against the PieceCID |
+| `filecoin get <ref>` or `filecoin get <root CID>` | Agents with a shell, and people | The file or folder, extracted | Each block against its CID, from the root CID down. On a mismatch it keeps nothing and fails with `verification_failed` |
+| `filecoin get <PieceCID>` | Agents with a shell, and people | The stored bytes as one file. For a file or folder stored as a CAR, that is the CAR | The bytes against the PieceCID |
 | A folder's `urls.browser` | Browser agents, and people | The folder, rendered | Each block, in the browser |
 | A file's `urls.browser`, or `urls.piece` | Anything that speaks HTTP | The bytes | Nothing |
 
 Use `filecoin get` when the content must be intact. When you hand over a link that checks nothing, say so.
+
+`filecoin get <ref>` of a file or folder stored as a CAR works once the provider has indexed it, a few minutes after the commit. Before that, it fails with a retryable `not_found`, and `filecoin get <PieceCID>` returns the CAR.
 
 ## Find stored content
 
@@ -35,7 +37,7 @@ Use `filecoin get` when the content must be intact. When you hand over a link th
 - In a browser, the dashboard's data sets page, or the WebMCP tools `list_data_sets` and `list_pieces`.
 - Over MCP, `list_pieces` with the wallet as `owner`. Over HTTP, `GET /{network}/pieces?owner=<wallet>` on filecoin-api.
 
-Each piece comes with a retrieval link. `filecoin get <PieceCID>` downloads and checks one with the same wallet's session key.
+Each piece comes with a retrieval link. `filecoin get <PieceCID>` downloads and checks one, and `filecoin get <root CID>` extracts a file or folder stored as a CAR. Neither needs a login: for content outside local state, `filecoin` finds the provider through filecoin-api.
 
 ## Store without the CLI
 

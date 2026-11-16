@@ -92,7 +92,7 @@ filecoin ls
 filecoin get res_… --output ./copy.pdf
 ```
 
-`filecoin get` downloads from the provider and checks the bytes against the PieceCID.
+`filecoin get` downloads from the provider and checks each block against its CID. A new upload can take a few minutes, until the provider indexes it.
 
 ## Next
 
