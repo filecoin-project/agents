@@ -26,6 +26,10 @@ export const ls = defineCommand({
         kind: z.enum(['file', 'folder']),
         name: z.string(),
         size: z.number().int(),
+        rootCid: z
+          .string()
+          .optional()
+          .describe('IPFS root CID; absent for a file stored with --raw'),
         status: z.enum(['active', 'removal_pending']),
         url: z.string().describe('filecoin-api link a browser renders'),
         createdAt: z.string(),
@@ -41,7 +45,7 @@ export const ls = defineCommand({
       : [
           ...data.resources.map(
             (r) =>
-              `${r.ref}  ${r.kind.padEnd(8)} ${formatBytes(r.size).padStart(10)}  ${r.name}${r.status === 'active' ? '' : ` (${r.status})`}`
+              `${r.ref}  ${r.kind.padEnd(8)} ${formatBytes(r.size).padStart(10)}  ${r.name}${r.status === 'active' ? '' : ` (${r.status})`}${r.rootCid ? `  ${r.rootCid}` : ''}`
           ),
           ...(data.nextCursor ? [`more: --cursor ${data.nextCursor}`] : []),
         ].join('\n'),

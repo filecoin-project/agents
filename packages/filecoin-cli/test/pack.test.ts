@@ -13,6 +13,7 @@ import {
   extractCar,
   listEntries,
   packDirectory,
+  packFile,
   READ_WINDOW,
 } from '../src/storage/pack.ts'
 import { tempDir } from './helpers.ts'
@@ -54,6 +55,40 @@ test('packDirectory is deterministic and extractCar restores the tree', async ()
     '<h1>hello</h1>'
   )
   await assert.rejects(readFile(join(out, '.env')), { code: 'ENOENT' })
+})
+
+test('packFile roots a one-chunk file at its raw block CID', async () => {
+  const root = await tempDir()
+  const bytes = randomBytes(4096)
+  const path = join(root, 'note.bin')
+  await writeFile(path, bytes)
+  const packed = await packFile(path, join(root, 'note.car'))
+  const expected = CID.create(1, raw.code, await sha256.digest(bytes))
+  assert.equal(packed.rootCid.toString(), expected.toString())
+  assert.equal(packed.files, 1)
+  assert.equal((await packFile(path)).size, packed.size)
+
+  const out = join(root, 'out.bin')
+  const extracted = await extractCar(join(root, 'note.car'), out)
+  assert.equal(extracted.files, 1)
+  assert.ok(bytes.equals(await readFile(out)))
+})
+
+test('packFile roots a multi-chunk file at a UnixFS file node', async () => {
+  const root = await tempDir()
+  const bytes = randomBytes(2_500_000)
+  const path = join(root, 'big.bin')
+  await writeFile(path, bytes)
+  const packed = await packFile(path, join(root, 'big.car'))
+  assert.equal(packed.rootCid.code, 0x70)
+  assert.equal(
+    (await packFile(path)).rootCid.toString(),
+    packed.rootCid.toString()
+  )
+
+  const out = join(root, 'out.bin')
+  await extractCar(join(root, 'big.car'), out)
+  assert.ok(bytes.equals(await readFile(out)))
 })
 
 test('listEntries skips dotfiles and rejects symlinks', async () => {

@@ -16,10 +16,10 @@ import {
 } from '../src/state/operations.ts'
 import { getResource } from '../src/state/resources.ts'
 import {
+  CAR_DATA_SET_METADATA,
   estimatePut,
-  FILE_DATA_SET_METADATA,
-  FOLDER_DATA_SET_METADATA,
   type JobContext,
+  RAW_DATA_SET_METADATA,
   runOperation,
   startPut,
   startRemove,
@@ -213,15 +213,17 @@ function onlyOperation(ctx: JobContext) {
   return items[0] as NonNullable<(typeof items)[0]>
 }
 
-test('put stores a file in a new data set and records the resource', async () => {
+test('put --raw stores a file in a new data set and records the resource', async () => {
   const { backend, calls } = fakeBackend()
   const ctx = await context(backend)
   const path = await file(ctx, 'report.pdf', 4096)
 
-  const result = await startPut(ctx, { path })
+  const result = await startPut(ctx, { path, raw: true })
   assert.equal(result.state, 'ready')
   assert.equal(result.resource.kind, 'file')
   assert.equal(result.resource.name, 'report.pdf')
+  assert.equal(result.resource.rootCid, undefined)
+  assert.equal(result.resource.size, 4096)
   assert.deepEqual(result.resource.copies, [
     {
       providerId: '7',
@@ -235,10 +237,10 @@ test('put stores a file in a new data set and records the resource', async () =>
     browser: `https://api.example/get/${result.resource.pieceCid}?network=calibration&browser=true`,
   })
   assert.equal(result.resource.url, result.urls.browser)
-  assert.deepEqual(calls.select, [FILE_DATA_SET_METADATA])
+  assert.deepEqual(calls.select, [RAW_DATA_SET_METADATA])
   // On-chain namespace: changing it orphans existing data sets.
-  assert.deepEqual(FILE_DATA_SET_METADATA, { source: 'filecoin-cli' })
-  assert.deepEqual(FOLDER_DATA_SET_METADATA, {
+  assert.deepEqual(RAW_DATA_SET_METADATA, { source: 'filecoin-cli' })
+  assert.deepEqual(CAR_DATA_SET_METADATA, {
     source: 'filecoin-cli',
     withIPFSIndexing: '',
   })
@@ -261,13 +263,13 @@ function recordProgress(ctx: JobContext) {
   return events
 }
 
-test('put reports a file link with the provider hint once it is parked', async () => {
+test('put --raw reports a file link with the provider hint once it is parked', async () => {
   const { backend } = fakeBackend()
   const ctx = await context(backend)
   const events = recordProgress(ctx)
   const path = await file(ctx, 'report.pdf', 4096)
 
-  const result = await startPut(ctx, { path })
+  const result = await startPut(ctx, { path, raw: true })
   const phases = events.map((event) => event.phase)
   assert.ok(phases.indexOf('link') > phases.indexOf('uploading'))
   assert.ok(phases.indexOf('link') < phases.indexOf('committing'))
@@ -280,6 +282,69 @@ test('put reports a file link with the provider hint once it is parked', async (
     },
   })
   assert.equal(link?.message, `${result.urls.browser}&provider=7`)
+})
+
+test('put stores a file as a CAR with its IPFS root CID by default', async () => {
+  const { backend, calls } = fakeBackend()
+  const ctx = await context(backend)
+  const events = recordProgress(ctx)
+  const path = await file(ctx, 'report.pdf', 4096)
+
+  const result = await startPut(ctx, { path })
+  assert.equal(result.resource.kind, 'file')
+  const { rootCid } = result.resource
+  assert.ok(rootCid?.startsWith('bafkrei'))
+  assert.ok(result.resource.size > 4096)
+  assert.deepEqual(result.urls, {
+    piece: `https://api.example/get/${result.resource.pieceCid}?network=calibration`,
+    browser: `https://api.example/get/${rootCid}?network=calibration&browser=true`,
+  })
+  assert.deepEqual(calls.select, [CAR_DATA_SET_METADATA])
+  assert.deepEqual(calls.commits[0]?.pieces[0]?.metadata, {
+    name: 'report.pdf',
+    ipfsRootCID: rootCid,
+  })
+  const op = getOperation(ctx.db, result.operationId)
+  assert.equal(op?.input.format, 'car')
+  // The browser link needs the IPFS index, so it follows the commit.
+  const phases = events.map((event) => event.phase)
+  assert.ok(phases.indexOf('link') > phases.indexOf('committing'))
+  await assert.rejects(stat(ctx.stagingDir(result.operationId)), {
+    code: 'ENOENT',
+  })
+})
+
+test('put --raw rejects a directory', async () => {
+  const { backend } = fakeBackend()
+  const ctx = await context(backend)
+  const dir = join(ctx.root, 'site')
+  await mkdir(dir)
+  await assert.rejects(startPut(ctx, { path: dir, raw: true }), {
+    code: 'invalid_input',
+  })
+  assert.equal(
+    listOperations(ctx.db, { chainId: ctx.chainId, payer: ctx.payer, limit: 1 })
+      .items.length,
+    0
+  )
+})
+
+test('a file put saved without a format by filecoin 0.7.0 resumes raw', async () => {
+  const { backend, calls } = fakeBackend({ failSubmitOnce: true })
+  const ctx = await context(backend)
+  const path = await file(ctx, 'data.bin', 2048)
+  await assert.rejects(startPut(ctx, { path, raw: true }))
+  const failed = onlyOperation(ctx)
+  const { format: _, ...legacyInput } = failed.input
+  ctx.db
+    .prepare('update operations set input = ? where id = ?')
+    .run(JSON.stringify(legacyInput), failed.id)
+
+  // As a CAR, the resume would fail: no CAR was staged for this put.
+  const result = await runOperation(ctx, failed.id)
+  assert.equal(result.resource.rootCid, undefined)
+  assert.equal(result.resource.size, 2048)
+  assert.equal(calls.upload, 1)
 })
 
 test('put reports a folder link once the commit is sent', async () => {
@@ -326,7 +391,7 @@ test('put packs a directory, adds to an existing data set, and cleans staging', 
     browser: `https://api.example/get/${result.resource.rootCid}?network=calibration&browser=true`,
   })
   assert.equal(result.resource.url, result.urls.browser)
-  assert.deepEqual(calls.select, [FOLDER_DATA_SET_METADATA])
+  assert.deepEqual(calls.select, [CAR_DATA_SET_METADATA])
   assert.equal(result.resource.copies[0]?.dataSetId, '42')
   await assert.rejects(stat(ctx.stagingDir(result.operationId)), {
     code: 'ENOENT',
@@ -464,7 +529,7 @@ test('resume sends a commit saved by filecoin 0.7.0 as a synapse-core commit', a
   const { backend, calls } = fakeBackend({ failSubmitOnce: true })
   const ctx = await context(backend)
   const path = await file(ctx, 'data.bin', 2048)
-  await assert.rejects(startPut(ctx, { path }))
+  await assert.rejects(startPut(ctx, { path, raw: true }))
   const failed = onlyOperation(ctx)
   const legacy = saveLegacyCommit(ctx, failed.id)
 
@@ -477,7 +542,7 @@ test('resume sends a commit saved by filecoin 0.7.0 as a synapse-core commit', a
     nonce: legacy.nonce,
     payee: '0x0000000000000000000000000000000000000007',
     payer: PAYER,
-    metadata: FILE_DATA_SET_METADATA,
+    metadata: RAW_DATA_SET_METADATA,
     cdn: false,
     pieces: [
       { pieceCid: result.resource.pieceCid, metadata: { name: 'data.bin' } },
@@ -567,7 +632,7 @@ test('resume refuses a source that changed since the job started', async () => {
   const { backend } = fakeBackend({ failWaitOnce: true })
   const ctx = await context(backend)
   const path = await file(ctx, 'data.bin', 1024)
-  await assert.rejects(startPut(ctx, { path }))
+  await assert.rejects(startPut(ctx, { path, raw: true }))
   const failed = onlyOperation(ctx)
   await writeFile(path, randomBytes(1024))
   await assert.rejects(runOperation(ctx, failed.id), {
@@ -670,4 +735,19 @@ test('estimatePut sizes a directory and prices it without side effects', async (
   const offline = await estimatePut({ path: dir })
   assert.equal(offline.quote, undefined)
   assert.equal(offline.rootCid, estimate.rootCid)
+})
+
+test('estimatePut packs a file by default and sizes it raw with --raw', async () => {
+  const { backend, calls } = fakeBackend()
+  const ctx = await context(backend)
+  const path = await file(ctx, 'report.pdf', 4096)
+
+  const car = await estimatePut({ path, backend })
+  assert.equal(car.kind, 'file')
+  assert.ok(car.rootCid)
+  assert.ok(car.size > 4096)
+  const raw = await estimatePut({ path, backend, raw: true })
+  assert.equal(raw.rootCid, undefined)
+  assert.equal(raw.size, 4096)
+  assert.deepEqual(calls.select, [CAR_DATA_SET_METADATA, RAW_DATA_SET_METADATA])
 })

@@ -17,8 +17,8 @@ type Authorization =
   | 'scopes_missing'
 
 /**
- * Store a file as a raw piece, or a directory as a UnixFS CAR, with one copy
- * on one provider. With `--dry-run`, report what would be stored, where, and
+ * Store a file or directory as a UnixFS CAR, or with `--raw` a file as a raw
+ * piece, with one copy on one provider. With `--dry-run`, report what would be stored, where, and
  * at what cost, without signing, uploading, or creating anything.
  */
 export default defineHandler(put, async (ctx) => {
@@ -28,6 +28,7 @@ export default defineHandler(put, async (ctx) => {
     path: input.path,
     name: input.name,
     providerId: input.provider == null ? undefined : BigInt(input.provider),
+    raw: input.raw,
   }
 
   if (ctx.dryRun) {

@@ -19,7 +19,7 @@ import { sha256 } from 'multiformats/hashes/sha2'
 import { ErrorCodes, invalidInput } from '../errors.ts'
 
 /**
- * The single UnixFS profile used for every folder: IPIP-499
+ * The single UnixFS profile used for every CAR: IPIP-499
  * `unixfs-v1-2025` (CIDv1, raw leaves, 1 MiB chunks), matching Filecoin Pin.
  *
  * @see https://github.com/ipfs/specs/pull/499
@@ -78,11 +78,9 @@ function placeholderCid(): CID {
 }
 
 /**
- * Pack a directory into a UnixFS CAR at `carPath`. Blocks stream to a
- * temporary file under a placeholder root; the header is patched with the
- * real root, then the file is renamed into place. Without `carPath` the CAR
- * is only measured: the placeholder root has the real root's length, so the
- * size is exact without writing anything.
+ * Pack a directory into a UnixFS CAR at `carPath`. The root CID is the
+ * directory's. Without `carPath` the CAR is only measured, as in
+ * {@link writeCar}.
  *
  * @see https://github.com/filecoin-project/filecoin-pin/blob/master/documentation/behind-the-scenes-of-adding-a-file.md
  */
@@ -93,6 +91,65 @@ export async function packDirectory(
   const root = resolve(dir)
   const name = basename(root)
   const { files, directories } = await listEntries(root)
+
+  // Parent directories are created from file paths. Passing them explicitly
+  // makes the importer also emit an orphan empty-directory block, so only
+  // empty directories (and an empty root) are passed as candidates.
+  const parents = new Set(
+    [...files.map((f) => f.path), ...directories].map((path) =>
+      path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : ''
+    )
+  )
+  function* candidates(): Generator<FileCandidate | DirectoryCandidate> {
+    if (!parents.has('')) yield { path: name }
+    for (const directory of directories) {
+      if (!parents.has(directory)) yield { path: `${name}/${directory}` }
+    }
+    for (const file of files) {
+      yield {
+        path: `${name}/${file.path}`,
+        content: createReadStream(join(root, file.path)),
+      }
+    }
+  }
+
+  const car = await writeCar(dir, name, candidates(), carPath)
+  return { ...car, files: files.length }
+}
+
+/**
+ * Pack one file into a UnixFS CAR at `carPath`, with no directory around
+ * it. The root CID is the file's own: a raw block for a file of one chunk,
+ * otherwise a UnixFS file node. Without `carPath` the CAR is only measured,
+ * as in {@link writeCar}.
+ *
+ * @see https://github.com/ipfs/specs/pull/499
+ */
+export async function packFile(
+  file: string,
+  carPath?: string
+): Promise<PackResult> {
+  const path = resolve(file)
+  const name = basename(path)
+  const candidates = [{ path: name, content: createReadStream(path) }]
+  const car = await writeCar(file, name, candidates, carPath)
+  return { ...car, files: 1 }
+}
+
+/**
+ * Import `candidates` and write their blocks to a CAR at `carPath`, rooted
+ * at the entry whose path is `name`. Blocks stream to a temporary file under
+ * a placeholder root; the header is patched with the real root, then the
+ * file is renamed into place. Without `carPath` the CAR is only measured:
+ * the placeholder root has the real root's length, so the size is exact
+ * without writing anything.
+ */
+async function writeCar(
+  source: string,
+  name: string,
+  candidates: Iterable<FileCandidate | DirectoryCandidate>,
+  carPath: string | undefined
+): Promise<{ rootCid: CID; size: number }> {
   const tmpPath = carPath && `${carPath}.tmp`
   if (carPath) await mkdir(dirname(carPath), { recursive: true })
   let measured = 0
@@ -119,31 +176,10 @@ export async function packDirectory(
     },
   }
 
-  // Parent directories are created from file paths. Passing them explicitly
-  // makes the importer also emit an orphan empty-directory block, so only
-  // empty directories (and an empty root) are passed as candidates.
-  const parents = new Set(
-    [...files.map((f) => f.path), ...directories].map((path) =>
-      path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : ''
-    )
-  )
-  function* candidates(): Generator<FileCandidate | DirectoryCandidate> {
-    if (!parents.has('')) yield { path: name }
-    for (const directory of directories) {
-      if (!parents.has(directory)) yield { path: `${name}/${directory}` }
-    }
-    for (const file of files) {
-      yield {
-        path: `${name}/${file.path}`,
-        content: createReadStream(join(root, file.path)),
-      }
-    }
-  }
-
   let rootCid: CID | undefined
   try {
     for await (const entry of importer(
-      candidates(),
+      candidates,
       blockstore,
       IMPORTER_OPTIONS
     )) {
@@ -157,10 +193,8 @@ export async function packDirectory(
     if (tmpPath) await rm(tmpPath, { force: true })
     throw error
   }
-  if (!rootCid) throw new Error(`Packing ${dir} produced no root.`)
-  if (!(carPath && tmpPath)) {
-    return { rootCid, size: measured, files: files.length }
-  }
+  if (!rootCid) throw new Error(`Packing ${source} produced no root.`)
+  if (!(carPath && tmpPath)) return { rootCid, size: measured }
 
   const handle = await open(tmpPath, 'r+')
   try {
@@ -170,7 +204,7 @@ export async function packDirectory(
   }
   const { size } = await lstat(tmpPath)
   await rename(tmpPath, carPath)
-  return { rootCid, size, files: files.length }
+  return { rootCid, size }
 }
 
 /** Bytes read from a UnixFS file per exporter call during extraction. */
