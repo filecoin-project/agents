@@ -52,7 +52,7 @@ filecoin delete res_… --yes        # schedules removal
 
 `put` returns `urls.browser`, the link to share, and `urls.piece`, the exact stored bytes. [Retrieve and verify](/docs/retrieve) explains what each link and `filecoin get` check.
 
-Packing skips dotfiles and rejects symlinks. The file, or the packed folder, must be between 127 bytes and 1,065,353,216 bytes (1016 MiB).
+Packing skips dotfiles and rejects symlinks. The packed file or folder, or a file stored with `--raw`, must be between 127 bytes and 68,182,605,824 bytes (63.5 GiB).
 
 `delete` schedules removal, and the provider then deletes the stored copy. The content's state becomes `removal_pending`. Without `--yes`, `delete` asks a person at a terminal to confirm. Everyone else, including agents, gets `confirmation_required` with a step for the user.
 
