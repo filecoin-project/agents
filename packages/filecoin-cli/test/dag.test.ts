@@ -16,7 +16,7 @@ import { packDirectory, packFile } from '../src/storage/pack.ts'
 import { type Block, carFetch, carStream, dfsBlocks } from './dfs-car.ts'
 import { tempDir } from './helpers.ts'
 
-const URL = 'https://sp.example/ipfs/root'
+const SP_URL = 'https://sp.example/ipfs/root'
 
 /** Create a small site with nested assets, a multi-chunk file and an empty dir. */
 async function site(root: string): Promise<string> {
@@ -66,14 +66,14 @@ test('downloadDag extracts a folder from a depth-first CAR stream', async () => 
   const { car, rootCid, fetch } = await served(root, dir)
   const output = join(root, 'out')
   const result = await downloadDag({
-    url: URL,
+    url: SP_URL,
     rootCid: rootCid.toString(),
     output,
     fetch,
   })
   assert.equal(result.kind, 'folder')
   assert.equal(result.files, 3)
-  assert.equal(result.url, URL)
+  assert.equal(result.url, SP_URL)
   assert.ok(result.size > (await stat(car)).size, 'dups make it larger')
   assert.deepEqual(fetch.accepts, [DFS_CAR_ACCEPT])
   for (const path of ['index.html', 'assets/img/big.bin', 'zeros.bin']) {
@@ -99,7 +99,7 @@ test('downloadDag extracts a single file, raw or chunked', async () => {
     const { rootCid } = await packFile(source, car)
     const output = join(root, `out-${name}`)
     const result = await downloadDag({
-      url: URL,
+      url: SP_URL,
       rootCid: rootCid.toString(),
       output,
       fetch: carFetch(() => carStream(rootCid, dfsBlocks(car))),
@@ -130,7 +130,7 @@ test('downloadDag extracts a HAMT-sharded directory', async () => {
 
   const output = join(root, 'out')
   const result = await downloadDag({
-    url: URL,
+    url: SP_URL,
     rootCid: rootCid.toString(),
     output,
     fetch: carFetch(() => carStream(rootCid, dfsBlocks(car))),
@@ -151,7 +151,7 @@ test('downloadDag rejects a CAR in another order, such as /piece', async () => {
   const output = join(root, 'out')
   await rejectsWith(
     downloadDag({
-      url: URL,
+      url: SP_URL,
       rootCid: rootCid.toString(),
       output,
       fetch: carFetch(() => carStream(rootCid, blocks)),
@@ -180,7 +180,7 @@ test('downloadDag rejects a block whose bytes do not match its CID', async () =>
   }
   await rejectsWith(
     downloadDag({
-      url: URL,
+      url: SP_URL,
       rootCid: rootCid.toString(),
       output: join(root, 'out'),
       fetch: carFetch(() => carStream(rootCid, tampered())),
@@ -202,7 +202,7 @@ test('downloadDag rejects a truncated stream and another root', async () => {
   }
   await rejectsWith(
     downloadDag({
-      url: URL,
+      url: SP_URL,
       rootCid: rootCid.toString(),
       output: join(root, 'out'),
       fetch: carFetch(() => carStream(rootCid, truncated())),
@@ -216,7 +216,7 @@ test('downloadDag rejects a truncated stream and another root', async () => {
   )
   await rejectsWith(
     downloadDag({
-      url: URL,
+      url: SP_URL,
       rootCid: other.toString(),
       output: join(root, 'out'),
       fetch: carFetch(() => carStream(rootCid, dfsBlocks(car))),
@@ -242,7 +242,7 @@ test('downloadDag refuses entry names that leave the output', async () => {
   ]
   await rejectsWith(
     downloadDag({
-      url: URL,
+      url: SP_URL,
       rootCid: dirCid.toString(),
       output: join(root, 'out'),
       fetch: carFetch(() => carStream(dirCid, blocks)),
@@ -256,7 +256,7 @@ test('downloadDag maps a 404 and checks the response type', async () => {
   const notIndexed = new CliError({ code: 'not_found', message: 'later' })
   await assert.rejects(
     downloadDag({
-      url: URL,
+      url: SP_URL,
       rootCid: 'bafkreigh2akiscaildcqabsyg3dfr6chu3fgpregiymsck7e7aqa4s52zy',
       output: join(root, 'out'),
       notFound: () => notIndexed,
@@ -279,7 +279,7 @@ test('downloadDag maps a 404 and checks the response type', async () => {
   const { car, rootCid } = await served(root, dir)
   await rejectsWith(
     downloadDag({
-      url: URL,
+      url: SP_URL,
       rootCid: rootCid.toString(),
       output: join(root, 'out'),
       fetch: carFetch(() => carStream(rootCid, dfsBlocks(car)), {
@@ -299,7 +299,7 @@ test('downloadDag never replaces a directory, and a file only with overwrite', a
   await mkdir(existingDir)
   await rejectsWith(
     downloadDag({
-      url: URL,
+      url: SP_URL,
       rootCid: rootCid.toString(),
       output: existingDir,
       fetch,
@@ -311,7 +311,7 @@ test('downloadDag never replaces a directory, and a file only with overwrite', a
   await writeFile(existingFile, 'old')
   await rejectsWith(
     downloadDag({
-      url: URL,
+      url: SP_URL,
       rootCid: rootCid.toString(),
       output: existingFile,
       fetch,
@@ -321,7 +321,7 @@ test('downloadDag never replaces a directory, and a file only with overwrite', a
   // A folder root never replaces a file, even with overwrite.
   await rejectsWith(
     downloadDag({
-      url: URL,
+      url: SP_URL,
       rootCid: rootCid.toString(),
       output: existingFile,
       fetch,
@@ -336,11 +336,26 @@ test('downloadDag never replaces a directory, and a file only with overwrite', a
   const fileCar = join(root, 'note.car')
   const packed = await packFile(source, fileCar)
   await downloadDag({
-    url: URL,
+    url: SP_URL,
     rootCid: packed.rootCid.toString(),
     output: existingFile,
     overwrite: true,
     fetch: carFetch(() => carStream(packed.rootCid, dfsBlocks(fileCar))),
   })
   assert.equal(await readFile(existingFile, 'utf8'), 'new')
+})
+
+test('downloadDag accepts a CIDv1 answer to a CIDv0 root', async () => {
+  const root = await tempDir()
+  const dir = await site(root)
+  const { car, rootCid, fetch } = await served(root, dir)
+  const result = await downloadDag({
+    url: SP_URL,
+    rootCid: rootCid.toV0().toString(),
+    output: join(root, 'out'),
+    fetch,
+  })
+  assert.equal(result.kind, 'folder')
+  assert.equal(result.files, 3)
+  assert.ok(car)
 })

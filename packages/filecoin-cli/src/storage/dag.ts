@@ -11,6 +11,7 @@ import { CarBlockIterator } from '@ipld/car'
 import * as DagPb from '@ipld/dag-pb'
 import { CliError } from 'clipact'
 import { UnixFS } from 'ipfs-unixfs'
+import { equals } from 'multiformats/bytes'
 import { CID } from 'multiformats/cid'
 import * as Raw from 'multiformats/codecs/raw'
 import { ErrorCodes } from '../errors.ts'
@@ -74,6 +75,17 @@ type Role =
 
 /** One step of the walk: a block to expect next, or a file to close. */
 type Frame = { cid: CID; role: Role } | { close: Sink }
+
+/**
+ * Whether two CIDs name the same block: the same codec and multihash, in
+ * either CID version. Gateways may answer a CIDv0 request with CIDv1, as
+ * filecoin-api's `/get` normalizes the CID before it redirects.
+ *
+ * @see https://github.com/multiformats/cid#cidv0
+ */
+function sameBlock(a: CID, b: CID): boolean {
+  return a.code === b.code && equals(a.multihash.bytes, b.multihash.bytes)
+}
 
 /** A `verification_failed` error. */
 function invalid(message: string): CliError {
@@ -150,7 +162,7 @@ export async function downloadDag(
   try {
     const blocks = await CarBlockIterator.fromIterable(counted())
     const [headerRoot] = await blocks.getRoots()
-    if (headerRoot && !root.equals(headerRoot)) {
+    if (headerRoot && !sameBlock(root, CID.decode(headerRoot.bytes))) {
       throw invalid(`CAR root is ${headerRoot}, expected ${root}.`)
     }
     for await (const block of blocks) {
@@ -199,7 +211,7 @@ class DagWalk {
     await this.#settle()
     // #settle leaves a block frame on top, or an empty stack.
     const frame = this.#stack.at(-1) as { cid: CID; role: Role } | undefined
-    if (!frame?.cid.equals(cid)) {
+    if (!(frame && sameBlock(frame.cid, cid))) {
       // A gateway may send an identity block that the walk read inline.
       if (cid.multihash.code === IDENTITY_CODE) return
       throw invalid(
