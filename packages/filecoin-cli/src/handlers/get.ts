@@ -93,7 +93,8 @@ export default defineHandler(get, async (ctx) => {
     }
     let rootCid: string
     try {
-      rootCid = CID.parse(target).toString()
+      // filecoin-api and Curio name roots in CIDv1.
+      rootCid = CID.parse(target).toV1().toString()
     } catch {
       throw notFound(`No managed resource, PieceCID, or CID ${target}.`, {
         by: 'agent',
