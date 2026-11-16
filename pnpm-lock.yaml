@@ -16,9 +16,6 @@ catalogs:
       specifier: 7.0.2
       version: 7.0.2
 
-patchedDependencies:
-  protons-runtime@8.0.1: a968848c0c28551a1154da0398488ace0f8297737df23cb673157b8b317ae680
-
 importers:
 
   .:
@@ -3337,8 +3334,8 @@ packages:
     resolution: {integrity: sha512-NxNv/kLguCA7p3jE8oL2aEBsrJWgAakBpgmgK6lpPWV+WuOmY6r2/zbAVnP+T8bQlA0nzHXSJSJW0Hq7ylaD2Q==}
     engines: {node: '>= 6'}
 
-  protons-runtime@8.0.1:
-    resolution: {integrity: sha512-du8V7RuI8QLmRVXJWmZKc2xRngbbeedtP5Hf6+m1YKRKLMyld+ITIkqXyocyBpkzUUkeh/l6mN3zcP2z5RsT9Q==}
+  protons-runtime@8.0.2:
+    resolution: {integrity: sha512-RzXCCgmKls60jsoRbeb2RtbnDTxOqIbL+yupOcpI00IannJRw3H1iFdD5rsX6nGpHtP5Sqc9yKgOg9CJRK93eg==}
 
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
@@ -6229,7 +6226,7 @@ snapshots:
 
   ipfs-unixfs@13.1.2:
     dependencies:
-      protons-runtime: 8.0.1(patch_hash=a968848c0c28551a1154da0398488ace0f8297737df23cb673157b8b317ae680)
+      protons-runtime: 8.0.2
       uint8arraylist: 3.0.2
       uint8arrays: 6.1.1
 
@@ -6777,7 +6774,7 @@ snapshots:
       kleur: 3.0.3
       sisteransi: 1.0.5
 
-  protons-runtime@8.0.1(patch_hash=a968848c0c28551a1154da0398488ace0f8297737df23cb673157b8b317ae680):
+  protons-runtime@8.0.2:
     dependencies:
       uint8-varint: 3.0.0
       uint8arraylist: 3.0.2
