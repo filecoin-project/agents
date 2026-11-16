@@ -176,6 +176,37 @@ test('nested, empty, and repeated entries pack in DFS order', async () => {
   await assert.rejects(stat(join(out, '.env')), { code: 'ENOENT' })
 })
 
+test('repeated files and chunks are written once and extract exactly', async () => {
+  const root = await tempDir()
+  const dir = join(root, 'repeats')
+  await mkdir(join(dir, 'copy'), { recursive: true })
+  const twin = randomBytes(2_500_000)
+  const chunk = randomBytes(1024 * 1024)
+  const repeated = Buffer.concat([chunk, chunk, chunk, randomBytes(10)])
+  await writeFile(join(dir, 'twin.bin'), twin)
+  await writeFile(join(dir, 'copy', 'twin.bin'), twin)
+  await writeFile(join(dir, 'repeat.bin'), repeated)
+
+  const { out } = await roundTrip(root, dir, 'folder')
+  assert.ok(twin.equals(await readFile(join(out, 'twin.bin'))))
+  assert.ok(twin.equals(await readFile(join(out, 'copy', 'twin.bin'))))
+  assert.ok(repeated.equals(await readFile(join(out, 'repeat.bin'))))
+
+  // Count every block in the CAR, then check the repeated ones by CID.
+  const counts = new Map<string, number>()
+  const blocks = await CarBlockIterator.fromIterable(
+    createReadStream(join(root, 'dfs.car'))
+  )
+  for await (const { cid } of blocks) {
+    counts.set(cid.toString(), (counts.get(cid.toString()) ?? 0) + 1)
+  }
+  const chunkCid = CID.create(1, raw.code, await sha256.digest(chunk))
+  const twinCid = (await planFile(join(dir, 'twin.bin'))).rootCid
+  assert.equal(counts.get(chunkCid.toString()), 1)
+  assert.equal(counts.get(twinCid.toString()), 1)
+  for (const [cid, count] of counts) assert.equal(count, 1, cid)
+})
+
 test('an empty folder is a single directory block', async () => {
   const root = await tempDir()
   const dir = join(root, 'blank')
