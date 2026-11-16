@@ -1,12 +1,14 @@
 import { createReadStream } from 'node:fs'
 import {
   NoEndorsedProviderError,
+  PDPProviderUnavailableError,
   TransactionNotAppliedError,
 } from '@filoz/synapse-core/errors'
 import * as Piece from '@filoz/synapse-core/piece'
 import * as SP from '@filoz/synapse-core/sp'
 import * as WarmStorage from '@filoz/synapse-core/warm-storage'
 import { CliError } from 'clipact'
+import { readContract } from 'viem/actions'
 import type { App } from '../app.ts'
 import { buildFundingUrl, targetBalance } from '../auth/login.ts'
 import type { SessionKey } from '../auth/session.ts'
@@ -52,15 +54,24 @@ export function createSynapseBackend(
           })
         }
       } else {
-        // A named provider is used as is: no ping, and endorsed or not.
-        const input = await WarmStorage.fetchProviderSelectionInput(client, {
-          address: payer,
-        })
-        ;[location] = WarmStorage.selectProviders({
-          ...input,
-          metadata,
-          providerId,
-        })
+        // A named provider is used as is: no ping, and endorsed or not. Only
+        // that provider is read, so its Warm Storage approval is read apart.
+        const [approved, locations] = await Promise.all([
+          readContract(client, {
+            ...app.chain.contracts.fwssView,
+            functionName: 'isProviderApproved',
+            args: [providerId],
+          }),
+          WarmStorage.resolveProviderLocations(client, {
+            address: payer,
+            providerIds: [providerId],
+            metadata,
+          }).catch((error: unknown) => {
+            if (PDPProviderUnavailableError.is(error)) return []
+            throw error
+          }),
+        ])
+        location = approved ? locations[0] : undefined
         if (!location) {
           throw notFound(
             `Provider ${providerId} is not an approved Warm Storage provider.`
