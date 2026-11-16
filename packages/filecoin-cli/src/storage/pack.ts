@@ -267,6 +267,47 @@ async function* readWindows(
   }
 }
 
+/**
+ * Files `extractCar` writes at once. Each file reads one `READ_WINDOW` at a
+ * time, so memory grows with the large files in flight, not with their
+ * total size. 16 writers were no faster than 8 and used more memory.
+ */
+export const EXTRACT_CONCURRENCY = 8
+
+/**
+ * Run tasks with at most `limit` in flight. `run` waits for a free slot, so
+ * a caller that awaits it cannot queue unbounded work. After a task fails,
+ * `run` rejects with that error, and `drain` waits for the tasks in flight
+ * and then rejects with it.
+ */
+function taskPool(limit: number): {
+  run: (task: () => Promise<void>) => Promise<void>
+  drain: () => Promise<void>
+} {
+  const running = new Set<Promise<void>>()
+  let failure: { error: unknown } | undefined
+  return {
+    async run(task) {
+      while (running.size >= limit && !failure) await Promise.race(running)
+      if (failure) throw failure.error
+      const done: Promise<void> = task().then(
+        () => {
+          running.delete(done)
+        },
+        (error: unknown) => {
+          running.delete(done)
+          failure ??= { error }
+        }
+      )
+      running.add(done)
+    },
+    async drain() {
+      await Promise.all(running)
+      if (failure) throw failure.error
+    },
+  }
+}
+
 /** Multihash code for identity CIDs, whose digest is the block itself. */
 const IDENTITY_CODE = 0x00
 
@@ -302,7 +343,11 @@ async function assertBlock(cid: CID, bytes: Uint8Array): Promise<void> {
 /**
  * Extract a UnixFS CAR into `outDir`, verifying every block against its CID
  * unless `verifyBlocks` is false, and rejecting entries that would escape
- * `outDir`. Returns the root CID read from the CAR header.
+ * `outDir`. The DAG is walked in order, and each directory is created before
+ * its entries. Up to {@link EXTRACT_CONCURRENCY} files are written at once,
+ * because one file at a time leaves the process waiting on each open, write,
+ * and close. The first failed write stops the walk and rejects once the
+ * writes in flight settle. Returns the root CID read from the CAR header.
  */
 export async function extractCar(
   carPath: string,
@@ -325,6 +370,7 @@ export async function extractCar(
       },
     }
     const target = resolve(outDir)
+    const pool = taskPool(EXTRACT_CONCURRENCY)
     let files = 0
     async function write(cid: CID, dest: string): Promise<void> {
       if (dest !== target && !dest.startsWith(target + sep)) {
@@ -345,23 +391,33 @@ export async function extractCar(
           }
           await write(entry.cid, resolve(dest, entry.name))
         }
-      } else if (node.type === 'file') {
-        await mkdir(dirname(dest), { recursive: true })
-        await pipeline(
-          Readable.from(readWindows(node, Number(node.unixfs.fileSize()))),
-          createWriteStream(dest)
-        )
-        files++
-      } else if (node.type === 'raw' || node.type === 'identity') {
-        await mkdir(dirname(dest), { recursive: true })
-        await pipeline(
-          Readable.from(node.content() as AsyncIterable<Uint8Array>),
-          createWriteStream(dest)
-        )
-        files++
+        return
       }
+      let content: () => AsyncIterable<Uint8Array>
+      if (node.type === 'file') {
+        content = () => readWindows(node, Number(node.unixfs.fileSize()))
+      } else if (node.type === 'raw' || node.type === 'identity') {
+        content = () => node.content() as AsyncIterable<Uint8Array>
+      } else {
+        return
+      }
+      // A file inside a directory has its parent already; only a root that
+      // is a file needs one.
+      if (dest === target) await mkdir(dirname(dest), { recursive: true })
+      await pool.run(async () => {
+        await pipeline(Readable.from(content()), createWriteStream(dest))
+        files++
+      })
     }
-    await write(rootCid, target)
+    try {
+      await write(rootCid, target)
+    } catch (error) {
+      // Settle the writes in flight so none outlives the reader, and report
+      // the walk's error, which is the first failure.
+      await pool.drain().catch(() => undefined)
+      throw error
+    }
+    await pool.drain()
     return { rootCid, files }
   } finally {
     await reader.close()

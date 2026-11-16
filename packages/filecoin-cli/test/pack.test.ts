@@ -176,6 +176,57 @@ test('packDirectory keeps empty directories, including an empty root', async () 
   assert.ok(packedEmpty.rootCid)
 })
 
+/** Create a folder of `count` files in nested directories, a few over one chunk. */
+async function manyFiles(root: string, count: number): Promise<string> {
+  const dir = join(root, 'many')
+  for (let i = 0; i < count; i++) {
+    const sub = join(dir, `d${i % 7}`, `e${i % 3}`)
+    await mkdir(sub, { recursive: true })
+    const size = i % 50 === 0 ? 1_500_000 : (i * 37) % 4096
+    await writeFile(join(sub, `f${i}.bin`), randomBytes(size))
+  }
+  return dir
+}
+
+test('extractCar writes many files at once and restores them exactly', async () => {
+  const root = await tempDir()
+  const dir = await manyFiles(root, 300)
+  await packDirectory(dir, join(root, 'many.car'))
+  const out = join(root, 'out')
+  const extracted = await extractCar(join(root, 'many.car'), out)
+  assert.equal(extracted.files, 300)
+  for (let i = 0; i < 300; i++) {
+    const path = join(`d${i % 7}`, `e${i % 3}`, `f${i}.bin`)
+    assert.ok(
+      (await readFile(join(dir, path))).equals(await readFile(join(out, path))),
+      path
+    )
+  }
+})
+
+test('extractCar rejects when one file write fails', async () => {
+  const root = await tempDir()
+  const dir = await manyFiles(root, 100)
+  await packDirectory(dir, join(root, 'many.car'))
+  // A directory where a file belongs makes that file's write fail.
+  const out = join(root, 'out')
+  await mkdir(join(out, 'd3', 'e0', 'f45.bin'), { recursive: true })
+  await assert.rejects(extractCar(join(root, 'many.car'), out), {
+    code: 'EISDIR',
+  })
+})
+
+test('extractCar creates the parent of a root file', async () => {
+  const root = await tempDir()
+  const path = join(root, 'note.bin')
+  const bytes = randomBytes(2048)
+  await writeFile(path, bytes)
+  await packFile(path, join(root, 'note.car'))
+  const out = join(root, 'a', 'b', 'note.bin')
+  await extractCar(join(root, 'note.car'), out)
+  assert.ok(bytes.equals(await readFile(out)))
+})
+
 test('extractCar rejects a block that does not match its CID', async () => {
   const root = await tempDir()
   const dir = await site(root)
