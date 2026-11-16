@@ -6,7 +6,7 @@ This document describes how the `filecoin` prototype in [`packages/filecoin-cli`
 
 `filecoin` stores one file or folder on Filecoin and returns filecoin-api retrieval URLs. They redirect to the provider or to a browser gateway.
 
-- **One command for files and folders.** `filecoin put <path>` stores a file as a raw piece. It packs a folder into a UnixFS CAR.
+- **One command for files and folders.** `filecoin put <path>` packs a file or a folder into a UnixFS CAR in an IPFS-indexed data set. `--raw` stores a file as its exact bytes instead.
 - **One copy.** Each upload has one copy on one provider.
 - **synapse-core for the chain and providers.** The CLI calls [synapse-core](https://github.com/FilOzone/synapse-sdk/tree/master/packages/synapse-core) directly and does not use synapse-sdk. Only `datasets` reads filecoin-api instead, through `@filecoin-project/api-client`.
 - **Delegated signing.** A session key signs uploads and removals. The wallet owner approves the key in the [Filecoin Pay console](https://pay.filecoin.cloud/console), and the owner's wallet pays for storage.
@@ -68,7 +68,7 @@ packages/filecoin-cli/
     │   ├── types.ts      StorageBackend interface, which tests replace with a fake
     │   ├── synapse.ts    StorageBackend built on synapse-core
     │   ├── jobs.ts       put and delete jobs, signed commits, resume, dry-run estimate
-    │   ├── pack.ts       folder → UnixFS CAR, CAR → folder
+    │   ├── pack.ts       file or folder → UnixFS CAR, CAR → file or folder
     │   ├── get.ts        streaming verified download, folder extraction
     │   └── urls.ts       filecoin-api /get URLs, and the Curio /piece URL for get
     └── state/
@@ -164,27 +164,32 @@ Before each mutation, `requireSession` rebuilds the key with `fromSecp256k1` and
 
 ## The put flow
 
-`put` stores a file and a folder differently:
+`put` packs files and folders into UnixFS CARs. `put --raw` stores a file as its exact bytes:
 
 | Input | Stored bytes | Data set metadata | Piece metadata | Browser URL |
 | --- | --- | --- | --- | --- |
-| File | exact file bytes | `source=filecoin-cli` | `name` | `<api>/get/<pieceCid>?network=<net>&browser=true` |
+| File | UnixFS CAR | `source=filecoin-cli`, `withIPFSIndexing` | `name`, `ipfsRootCID` | `<api>/get/<rootCid>?network=<net>&browser=true` |
 | Folder | UnixFS CAR | `source=filecoin-cli`, `withIPFSIndexing` | `name`, `ipfsRootCID` | `<api>/get/<rootCid>?network=<net>&browser=true` |
+| File with `--raw` | exact file bytes | `source=filecoin-cli` | `name` | `<api>/get/<pieceCid>?network=<net>&browser=true` |
 
 `filecoin-cli` comes from `APPLICATION_SOURCE` in `source.ts`, which is also the default session-key name. filecoin-pin uses its own name for both in the same way.
 
-A file becomes a resource of kind `file`, and a folder becomes a resource of kind `folder`. Files and folders go into separate data sets, because data sets match on their exact metadata keys and only CARs belong in an IPFS-indexed data set.
+A file becomes a resource of kind `file`, and a folder becomes a resource of kind `folder`. A CAR's resource has a `rootCid`, and a raw file's resource has none. `put` and `ls` print the root CID. CARs and raw files go into separate data sets, because data sets match on their exact metadata keys and only CARs belong in an IPFS-indexed data set. Files stored raw by `filecoin` 0.7.0 and earlier stay in their data sets, and new CARs of files go into the IPFS-indexed one.
+
+A file's CAR holds the file with no directory around it, so its root CID is the file's own CID. A file of one 1 MiB chunk or less has a raw block root (`bafkrei…`). A larger file has a UnixFS file node root (`bafybei…`). The operation saves `format` (`car` or `raw`) in its input. Operations saved by `filecoin` 0.7.0 and earlier have no `format`, so a resume treats their files as raw and their folders as CARs.
+
+The CAR adds a few bytes per chunk. On 2026-11-16, a 4,096-byte file packed into a 4,193-byte CAR, and a 10 MiB file into a CAR 996 bytes larger than the file. The real cost is the `/piece` URL. For a raw file it serves the exact bytes, which a browser renders with a detected content type. For a CAR it serves the CAR, so the browser link goes through inbrowser.link. Use `--raw` when a download must be the exact file.
 
 `put` returns two [filecoin-api retrieval URLs](retrieval.md), and `resource.url` holds the browser URL:
 
-- **`urls.piece`** is `<api>/get/<pieceCid>?network=<net>`. filecoin-api redirects it to `/piece/<pieceCid>` on a provider that stores the piece, which serves the exact stored bytes.
-- **`urls.browser`** is the URL in the table. filecoin-api redirects a file to the same `/piece` URL, and a browser renders it. It redirects a folder's root CID to inbrowser.link, which fetches and verifies the blocks in the browser.
+- **`urls.piece`** is `<api>/get/<pieceCid>?network=<net>`. filecoin-api redirects it to `/piece/<pieceCid>` on a provider that stores the piece, which serves the exact stored bytes: the CAR, or the raw file.
+- **`urls.browser`** is the URL in the table. filecoin-api redirects a root CID to inbrowser.link, which fetches and verifies the blocks in the browser. It redirects a raw file to the same `/piece` URL, and a browser renders it.
 
-filecoin-api finds an FWSS piece only in its indexer, because FWSS providers don't advertise PieceCIDs to IPNI yet ([what Curio announces](retrieval.md#what-curio-announces-for-fwss)). `urls.piece` and a file's `urls.browser` therefore return 404 until the indexer has the piece. A folder's browser URL goes to inbrowser.link without a lookup.
+filecoin-api finds an FWSS piece only in its indexer, because FWSS providers don't advertise PieceCIDs to IPNI yet ([what Curio announces](retrieval.md#what-curio-announces-for-fwss)). `urls.piece` and a raw file's `urls.browser` therefore return 404 until the indexer has the piece. A root CID's browser URL goes to inbrowser.link without a lookup.
 
-Before the commit confirms, `put` reports early links as `link` progress, with `pieceCid` and `urls` in `data`. The early `/piece` links add `provider=<id>`, and filecoin-api redirects to that provider until its indexer has the piece. Curio serves `/piece/<pieceCid>` for a parked piece, so a file's early link works as soon as the upload finishes. The result's links carry no hint, so once the indexer has the piece, its ranking of the copies applies.
+Before the commit confirms, `put` reports early links as `link` progress, with `pieceCid` and `urls` in `data`. The early `/piece` links add `provider=<id>`, and filecoin-api redirects to that provider until its indexer has the piece. Curio serves `/piece/<pieceCid>` for a parked piece, so a raw file's early link works as soon as the upload finishes. The result's links carry no hint, so once the indexer has the piece, its ranking of the copies applies.
 
-A folder's browser URL carries no hint, because filecoin-api never looks it up. inbrowser.link finds the blocks through IPNI, and Curio advertises them shortly after it receives the commit, before the transaction confirms ([what Curio announces](retrieval.md#what-curio-announces-for-fwss)). `put` therefore reports a folder's early link once the commit is sent.
+A root CID's browser URL carries no hint, because filecoin-api never looks it up. inbrowser.link finds the blocks through IPNI, and Curio advertises them shortly after it receives the commit, before the transaction confirms ([what Curio announces](retrieval.md#what-curio-announces-for-fwss)). `put` therefore reports a CAR's early link once the commit is sent.
 
 `<api>` is `https://api.filecoin.io` unless `FILECOIN_API_URL` sets another origin. `ls` and `inspect` rebuild the URLs from the resource, so they follow `FILECOIN_API_URL`.
 
@@ -193,9 +198,9 @@ A folder's browser URL carries no hint, because filecoin-api never looks it up. 
 ```mermaid
 stateDiagram-v2
   [*] --> queued: operation saved
-  queued --> packing: folder only
+  queued --> packing: CAR
   packing --> storing: CAR staged, rootCid saved
-  queued --> storing: file
+  queued --> storing: raw file
   storing --> storing: pieceCid, placement, stored
   storing --> committing: sign commit, save it, send it
   committing --> done: confirmed, resource saved
@@ -205,14 +210,14 @@ The phase is separate from the operation's execution status, which is `pending`,
 
 `storage/jobs.ts` saves each result to the operation checkpoint before the next step depends on it:
 
-1. **Pack (folders only).** Write `staging/<op>/folder.car`, then save `rootCid`.
+1. **Pack (CARs only).** Write `staging/<op>/file.car` or `staging/<op>/folder.car`, then save `rootCid`.
 2. **Identify.** Stream the bytes through `Piece.calculate` and save `pieceCid` and `size`. Reject content outside the PDP limits of 127 to 1,065,353,216 bytes.
 3. **Place.** Save `providerId`, `serviceURL`, and `payee`. If an existing data set matches, also save its `dataSetId` and `clientDataSetId`.
    - `--provider` calls `fetchProviderSelectionInput` and then `selectProviders({ providerId })`, which prefers that provider's data set with matching metadata. The provider must be approved for Warm Storage, but it need not be endorsed. The CLI does not ping it.
    - Without `--provider`, the CLI calls `selectReachableProviders({ requireEndorsedPrimary: true })`. It ranks the endorsed providers, preferring one with an existing data set with matching metadata, pings them all at once, and takes the highest-ranked one that answers. If none answers, the result is `service_unavailable`.
    - Both return the matching data set's `clientDataSetId`, so the CLI does not read the data set.
    - `getUploadCosts` then checks the funding, with the matched `dataSetId` or as a new data set. It also returns the account's available funds and debt, which set the funding link's target `balance`. If the account is short, the result is `insufficient_funds` with the console funding link as a `by: "user"` step.
-4. **Upload.** Call `SP.hasPiece` first. It returns `false` only when the provider answers 404. Any other failure stops the put, which a resume retries. If the provider does not have the piece yet, pass a file stream to `SP.uploadPieceStreaming` with `waitForParked: true`. It streams the file without holding the piece in memory, then polls `findPiece` until the provider has parked the piece. Save `stored`. For a file, report the early links as `link` progress.
+4. **Upload.** Call `SP.hasPiece` first. It returns `false` only when the provider answers 404. Any other failure stops the put, which a resume retries. If the provider does not have the piece yet, pass a file stream to `SP.uploadPieceStreaming` with `waitForParked: true`. It streams the file without holding the piece in memory, then polls `findPiece` until the provider has parked the piece. Save `stored`. For a raw file, report the early links as `link` progress.
 5. **Sign.** Call `SP.prepareAddPieces`, or `SP.prepareCreateDataSetAndAddPieces` for a new data set, with `payee = provider.payee` and `payer = rootAddress`. synapse-core chooses a random add-pieces `nonce`, and a `clientDataSetId` for a new data set. It returns the signed commit as JSON-safe data: the IDs, the pieces, and the signed `extraData`. Save the commit before sending it.
 6. **Send.** Pass the saved commit to `SP.submitCommit`. Curio submits the transaction and pays gas. Save `transactionHash`. For a folder, report the early links as `link` progress. Then report the transaction hash as `committing` progress while waiting for confirmation, so the user can look it up. clipact repeats that line with the elapsed time. A delete reports its removal transaction hash the same way.
 7. **Confirm.** Call `SP.waitForCreateDataSetAddPieces` or `SP.waitForAddPieces` with the transaction hash and the commit's `extraData` and piece count. Both wait for the receipt on chain and read `dataSetId` and the piece IDs from its FWSS events. If the receipt wait times out, they read the same IDs from `clientNonces` instead. In one SQLite transaction, save the resource and mark the operation completed. Then try to delete the staging directory. A failure to delete it does not fail the put.
@@ -224,7 +229,7 @@ The phase is separate from the operation's execution status, which is `pending`,
 
 ### Folder packing
 
-`pack.ts` packs folders with `ipfs-unixfs-importer` and the IPIP-499 `unixfs-v1-2025` profile: CIDv1, raw leaves, and 1 MiB chunks. Filecoin Pin uses the same profile. Packing walks entries in sorted order, skips dotfiles, and rejects symlinks, so packing the same folder twice gives the same root CID.
+`pack.ts` packs files and folders with `ipfs-unixfs-importer` and the IPIP-499 `unixfs-v1-2025` profile: CIDv1, raw leaves, and 1 MiB chunks. Filecoin Pin uses the same profile. Packing walks entries in sorted order, skips dotfiles, and rejects symlinks, so packing the same folder twice gives the same root CID.
 
 protons-runtime 5.0.4 through 8.0.1 encodes a uint64 between 2^31 and 2^32 as one varint byte followed by four bytes of stale Buffer pool memory ([ipfs/protons#212](https://github.com/ipfs/protons/pull/212)). `ipfs-unixfs` uses protons-runtime for the `filesize` and `blocksizes` fields. So a file of 2–4 GiB got a corrupt file-root node: its root CID changed between runs, and extraction failed with `invalid wire type`. A file over 1 TiB hit the same bug when its last 1 TiB subtree was 2–4 GiB. No fixed protons-runtime is on npm yet, so `patches/` applies the upstream one-line fix, `>>> 0` instead of `| 0` in `LongBits`, to protons-runtime 8.0.1. The CLI uses `ipfs-unixfs-importer` 17, so the importer and the exporter share `ipfs-unixfs` 13 and that one protons-runtime. Importer 17.1.1 gives the same root CIDs as 16.1.5 for ordinary folders. With the patch, the file-root node is byte-identical to the one `@ipld/unixfs` writes. The CLI bundles its dependencies, so only `filecoin` releases after 0.5.0 carry the fix. Folders stored with 0.5.0 or earlier that hold such a file must be stored again.
 
@@ -256,7 +261,7 @@ A failure marks the operation `failed` and becomes an error with a `filecoin ope
 - **The commit did not apply.** When the transaction reverted or added no piece, synapse-core throws `TransactionNotAppliedError`, and `filecoin` returns `commit_rejected` and clears the saved `transactionHash`. The next resume checks the nonce and sends the same signature again.
 - **The commit was saved by `filecoin` 0.7.0 or earlier.** Those versions saved only the signed `extraData`, the nonce, and the client data set ID, and they saved the provider's `statusUrl` after sending. The resume rebuilds the synapse-core commit from that record, the saved placement, and the piece, and saves it in the new form. It no longer reads `statusUrl`: a saved `transactionHash` marks a sent commit.
 - **The piece is already uploaded.** When `stored` is set, or the provider already has the piece, the resume skips the upload and goes to the commit.
-- **The source changed.** The resume recomputes the PieceCID from the source file, or from the staged CAR for a folder. A mismatch fails with `source_changed`, so `filecoin` never stores different bytes.
+- **The source changed.** The resume recomputes the PieceCID from the staged CAR, or from the source file for a raw file. A mismatch fails with `source_changed`, so `filecoin` never stores different bytes. A CAR is a copy taken when the put packed it, so a later change to the source does not reach the stored content.
 - **The staged CAR is missing.** If the CAR is gone after the operation saved its PieceCID, the resume fails with `staging_missing`.
 
 The lock is a compare-and-swap `UPDATE` on `(execution_status, pid)`. If an operation is `running` but its process is gone, because `process.kill(pid, 0)` fails, another process can take it over. If a live process holds the lock, the result is `operation_running`. The process also tracks its own locks in memory, so `filecoin` refuses a second call for the same operation in the same process. `filecoin` also takes over a `running` row whose PID the system has since reused ([#3](https://github.com/filecoin-project/agents/issues/3)).
@@ -265,7 +270,7 @@ The lock is a compare-and-swap `UPDATE` on `(execution_status, pid)`. If an oper
 
 ### Dry run
 
-`put --dry-run` stores nothing and signs nothing. It lists the input files and packs a folder into a temporary directory to measure the CAR. When a session key is available, it also selects the provider and prices the upload with `getUploadCosts`. The result reports these fields:
+`put --dry-run` stores nothing and signs nothing. It lists the input files and packs the file or folder to measure the CAR and compute its `rootCid`, without writing it to disk. When a session key is available, it also selects the provider and prices the upload with `getUploadCosts`. The result reports these fields:
 
 - `authorization`: `ready`, `login_required`, `login_pending`, or `scopes_missing`.
 - The provider and any existing data set.
@@ -284,8 +289,8 @@ clipact aborts `ctx.signal` on the first SIGINT, SIGTERM, or SIGHUP. Handlers pa
 
 `get <ref|pieceCid>` always downloads the stored piece from `/piece/<pieceCid>`. That is the only form whose bytes `filecoin` can check against the PieceCID. For a managed resource, `get` uses the `serviceURL` of the saved copy and skips filecoin-api, so a download never waits for the indexer.
 
-- **Files.** `get.ts` streams the response through `Piece.hasher()` into `<output>.filecoin-partial`. It renames the file to its final name only if the computed PieceCID matches. synapse-core's `Piece.downloadStream` validates a stream the same way, but its `DownloadPieceError` drops the HTTP status, so `get` could no longer return `not_found` for a 404.
-- **Folders.** The CLI downloads and verifies the CAR the same way, then opens it with `CarIndexedReader`. It checks that the root in the CAR header equals the saved `rootCid`. It walks the DAG with `ipfs-unixfs-exporter` and extracts into a temporary directory, which it then renames into place. It rejects an entry name that contains a path separator or resolves outside the output directory.
+- **Raw files.** `get.ts` streams the response through `Piece.hasher()` into `<output>.filecoin-partial`. It renames the file to its final name only if the computed PieceCID matches. synapse-core's `Piece.downloadStream` validates a stream the same way, but its `DownloadPieceError` drops the HTTP status, so `get` could no longer return `not_found` for a 404.
+- **CARs.** The CLI downloads and verifies the CAR the same way, then opens it with `CarIndexedReader`. It checks that the root in the CAR header equals the saved `rootCid`. It walks the DAG with `ipfs-unixfs-exporter` and extracts into a temporary path, which it then renames into place: a directory for a folder, or the file itself. It rejects an entry name that contains a path separator or resolves outside the output directory. `--force` replaces an existing file, but never an existing directory.
 - **Unmanaged PieceCIDs.** The CLI finds a provider with `resolvePieceUrl`, then downloads and verifies the piece the same way.
 
 Extraction reads each file in 8 MiB windows. `ipfs-unixfs-exporter` queues a file's blocks without waiting for the consumer. One `content()` call over a local CAR would hold the whole file in memory. For a 1 GB file, that used about 1 GB of RSS, against 83 MB with windows.
@@ -325,7 +330,7 @@ filecoin-api reads the chain through its indexer, so a data set or piece added i
 ├── config.json        clipact store: network and sessions (mode 0600)
 ├── clipact.json       clipact's telemetry state
 ├── state.db           SQLite (node:sqlite), WAL, migrations via PRAGMA user_version
-└── staging/<op_id>/   folder.car for unfinished folder puts
+└── staging/<op_id>/   file.car or folder.car for unfinished CAR puts
 ```
 
 | Table | Key | Contents |
