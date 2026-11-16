@@ -40,10 +40,11 @@ The session key cannot fund the account. `filecoin status` reports when each per
 ## Store and retrieve
 
 ```sh
-filecoin put ./report.pdf          # a file, stored as its exact bytes
+filecoin put ./report.pdf          # a file, packed into a UnixFS CAR with an IPFS root CID
+filecoin put ./report.pdf --raw    # a file, stored as its exact bytes
 filecoin put ./site                # a folder, packed into a UnixFS CAR
 filecoin put ./site --dry-run      # size, provider, cost, and authorization; stores nothing
-filecoin get res_… --output ./copy # verifies the PieceCID and extracts folders
+filecoin get res_… --output ./copy # verifies the PieceCID and extracts CARs
 filecoin ls                        # add --all to include content pending removal
 filecoin inspect res_… --check     # checks that the piece link answers
 filecoin delete res_… --yes        # schedules removal
