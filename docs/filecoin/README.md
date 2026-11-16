@@ -159,7 +159,6 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **CLI reads.** Move most CLI reads to filecoin-api through `@filecoin-project/api-client`. Keep synapse-core chain reads as the fallback. `filecoin datasets ls` and `filecoin datasets inspect` are the first commands to read filecoin-api. `status` is next.
 - **CLI keys.** Store the session key in the OS keychain.
 - **CLI cancellation.** Pass the abort signal to viem once its actions and `fallback` transport accept one. Then stop using synapse-core's `withSignal()` and `abortable()` ([#12](https://github.com/filecoin-project/agents/issues/12)).
-- **CLI dependencies.** Drop the protons-runtime patch in `patches/` once a release with [ipfs/protons#212](https://github.com/ipfs/protons/pull/212) is on npm ([folder packing](architecture.md#folder-packing)).
 - **CLI state.** Track a removal until the provider deletes the piece. Check every file of a folder in `inspect --check`.
 - **Old hosts.** Delete the `fil-api` and `fil-app` Workers and their `hugomrdias.dev` domains from the personal Cloudflare account. Since `filecoin` 0.5.0 and the plugin 0.2.0, released CLIs and plugins point at `filecoin.cloud` or `filecoin.io` hosts. Only earlier releases still call the old hosts.
 - **MCP servers.** Review the [foc-observer](https://github.com/FilOzone/foc-observer) MCP server. Merge its tools into the filecoin-api MCP server.
