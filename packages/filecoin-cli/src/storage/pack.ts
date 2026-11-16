@@ -1,7 +1,7 @@
 import { createReadStream, createWriteStream } from 'node:fs'
 import { lstat, mkdir, open, readdir, rename, rm } from 'node:fs/promises'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
-import { Readable, Writable } from 'node:stream'
+import { Readable, Transform, Writable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { CarIndexedReader, CarWriter } from '@ipld/car'
 import { CliError } from 'clipact'
@@ -69,6 +69,15 @@ export type PackResult = {
   files: number
 }
 
+/** Options for {@link packDirectory} and {@link packFile}. */
+export type PackOptions = {
+  /**
+   * Largest CAR to write, in bytes. Packing stops with `invalid_input` as
+   * soon as the CAR passes it, and deletes what it wrote.
+   */
+  maxSize?: number | undefined
+}
+
 /**
  * A CID with the same encoded length as a UnixFS root, written into the CAR
  * header until the real root is known.
@@ -86,7 +95,8 @@ function placeholderCid(): CID {
  */
 export async function packDirectory(
   dir: string,
-  carPath?: string
+  carPath?: string,
+  options: PackOptions = {}
 ): Promise<PackResult> {
   const root = resolve(dir)
   const name = basename(root)
@@ -113,7 +123,7 @@ export async function packDirectory(
     }
   }
 
-  const car = await writeCar(dir, name, candidates(), carPath)
+  const car = await writeCar(dir, name, candidates(), carPath, options)
   return { ...car, files: files.length }
 }
 
@@ -127,12 +137,13 @@ export async function packDirectory(
  */
 export async function packFile(
   file: string,
-  carPath?: string
+  carPath?: string,
+  options: PackOptions = {}
 ): Promise<PackResult> {
   const path = resolve(file)
   const name = basename(path)
   const candidates = [{ path: name, content: createReadStream(path) }]
-  const car = await writeCar(file, name, candidates, carPath)
+  const car = await writeCar(file, name, candidates, carPath, options)
   return { ...car, files: 1 }
 }
 
@@ -142,35 +153,59 @@ export async function packFile(
  * a placeholder root; the header is patched with the real root, then the
  * file is renamed into place. Without `carPath` the CAR is only measured:
  * the placeholder root has the real root's length, so the size is exact
- * without writing anything.
+ * without writing anything. Past `options.maxSize` bytes, packing stops and
+ * the temporary file is deleted.
  */
 async function writeCar(
   source: string,
   name: string,
   candidates: Iterable<FileCandidate | DirectoryCandidate>,
-  carPath: string | undefined
+  carPath: string | undefined,
+  options: PackOptions
 ): Promise<{ rootCid: CID; size: number }> {
+  const { maxSize } = options
   const tmpPath = carPath && `${carPath}.tmp`
   if (carPath) await mkdir(dirname(carPath), { recursive: true })
-  let measured = 0
+  let size = 0
+  const limit = new Transform({
+    transform(chunk: Uint8Array, _encoding, callback) {
+      size += chunk.length
+      if (maxSize != null && size > maxSize) {
+        callback(
+          invalidInput(
+            `The CAR of ${source} is larger than ${maxSize} bytes, the largest piece allowed.`,
+            'path'
+          )
+        )
+        return
+      }
+      callback(null, chunk)
+    },
+  })
   const sink = tmpPath
     ? createWriteStream(tmpPath)
     : new Writable({
-        write(chunk: Uint8Array, _encoding, callback) {
-          measured += chunk.length
+        write(_chunk: Uint8Array, _encoding, callback) {
           callback()
         },
       })
 
   const { writer, out } = CarWriter.create([placeholderCid()])
-  const written = pipeline(Readable.from(out), sink)
+  const written = pipeline(Readable.from(out), limit, sink)
+  // A CarWriter put or close waits until its bytes are read. Once the
+  // pipeline fails, such as past `maxSize` or with a full disk, nothing reads
+  // them, so each wait races the pipeline's failure instead of hanging.
+  const failed = new Promise<never>((_resolve, reject) => {
+    written.catch(reject)
+  })
+  failed.catch(() => undefined)
   const seen = new Set<string>()
   const blockstore = {
     async put(cid: CID, bytes: Uint8Array) {
       const key = cid.toString()
       if (!seen.has(key)) {
         seen.add(key)
-        await writer.put({ cid, bytes })
+        await Promise.race([writer.put({ cid, bytes }), failed])
       }
       return cid
     },
@@ -185,16 +220,16 @@ async function writeCar(
     )) {
       if (entry.path === name) rootCid = entry.cid
     }
-    await writer.close()
+    await Promise.race([writer.close(), failed])
     await written
   } catch (error) {
-    await writer.close().catch(() => undefined)
+    await Promise.race([writer.close(), failed]).catch(() => undefined)
     await written.catch(() => undefined)
     if (tmpPath) await rm(tmpPath, { force: true })
     throw error
   }
   if (!rootCid) throw new Error(`Packing ${source} produced no root.`)
-  if (!(carPath && tmpPath)) return { rootCid, size: measured }
+  if (!(carPath && tmpPath)) return { rootCid, size }
 
   const handle = await open(tmpPath, 'r+')
   try {
@@ -202,7 +237,6 @@ async function writeCar(
   } finally {
     await handle.close()
   }
-  const { size } = await lstat(tmpPath)
   await rename(tmpPath, carPath)
   return { rootCid, size }
 }

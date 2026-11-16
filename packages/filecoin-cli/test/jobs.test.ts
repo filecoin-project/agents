@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
-import { mkdir, stat, writeFile } from 'node:fs/promises'
+import { mkdir, stat, truncate, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import type { Commit } from '@filoz/synapse-core/sp'
+import { SIZE_CONSTANTS } from '@filoz/synapse-core/utils'
 import { CliError } from 'clipact'
 import type { Hex } from 'viem'
 import { invalidInput, operationError } from '../src/errors.ts'
@@ -646,6 +647,38 @@ test('put rejects content below the minimum piece size', async () => {
   const path = join(ctx.root, 'tiny.txt')
   await writeFile(path, 'hi')
   await assert.rejects(startPut(ctx, { path }), { code: 'invalid_input' })
+})
+
+test('put rejects content over the piece limit before packing', async () => {
+  const { backend, calls } = fakeBackend()
+  const ctx = await context(backend)
+  // A sparse file: its size is past the limit, but it takes no disk space.
+  const path = join(ctx.root, 'huge.bin')
+  await writeFile(path, '')
+  await truncate(path, SIZE_CONSTANTS.MAX_UPLOAD_SIZE + 1)
+  const dir = join(ctx.root, 'site')
+  await mkdir(dir)
+  await writeFile(join(dir, 'huge.bin'), '')
+  await truncate(join(dir, 'huge.bin'), SIZE_CONSTANTS.MAX_UPLOAD_SIZE + 1)
+
+  for (const target of [path, dir]) {
+    await assert.rejects(startPut(ctx, { path: target }), {
+      code: 'invalid_input',
+    })
+    await assert.rejects(estimatePut({ path: target }), {
+      code: 'invalid_input',
+    })
+  }
+  const { items } = listOperations(ctx.db, {
+    chainId: ctx.chainId,
+    payer: ctx.payer,
+    limit: 1,
+  })
+  assert.equal(items.length, 0)
+  await assert.rejects(stat(join(ctx.root, 'state', 'staging')), {
+    code: 'ENOENT',
+  })
+  assert.equal(calls.select.length, 0)
 })
 
 test('an interrupted put fails with the abort reason, not operation_failed', async () => {

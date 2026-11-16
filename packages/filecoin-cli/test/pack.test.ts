@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
 import { createReadStream } from 'node:fs'
-import { mkdir, open, readFile, symlink, writeFile } from 'node:fs/promises'
+import {
+  mkdir,
+  open,
+  readFile,
+  stat,
+  symlink,
+  writeFile,
+} from 'node:fs/promises'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { CarIndexer } from '@ipld/car'
@@ -89,6 +96,31 @@ test('packFile roots a multi-chunk file at a UnixFS file node', async () => {
   const out = join(root, 'out.bin')
   await extractCar(join(root, 'big.car'), out)
   assert.ok(bytes.equals(await readFile(out)))
+})
+
+test('packing stops past maxSize and deletes the partial CAR', async () => {
+  const root = await tempDir()
+  const path = join(root, 'big.bin')
+  await writeFile(path, randomBytes(3 * 1024 * 1024))
+  const car = join(root, 'big.car')
+  const maxSize = 1.5 * 1024 * 1024
+  await assert.rejects(packFile(path, car, { maxSize }), {
+    code: 'invalid_input',
+  })
+  await assert.rejects(stat(car), { code: 'ENOENT' })
+  await assert.rejects(stat(`${car}.tmp`), { code: 'ENOENT' })
+  await assert.rejects(packFile(path, undefined, { maxSize }), {
+    code: 'invalid_input',
+  })
+  const dir = await site(root)
+  await assert.rejects(
+    packDirectory(dir, join(root, 'site.car'), { maxSize }),
+    {
+      code: 'invalid_input',
+    }
+  )
+  const packed = await packFile(path, car, { maxSize: 4 * 1024 * 1024 })
+  assert.ok(packed.size <= 4 * 1024 * 1024)
 })
 
 test('listEntries skips dotfiles and rejects symlinks', async () => {
