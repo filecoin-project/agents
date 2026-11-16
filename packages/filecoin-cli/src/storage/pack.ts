@@ -268,7 +268,7 @@ async function* readWindows(
 }
 
 /** Multihash code for identity CIDs, whose digest is the block itself. */
-const IDENTITY_CODE = 0x00
+export const IDENTITY_CODE = 0x00
 
 /**
  * Check that a block's bytes hash to its CID, like ipfs-car's `--verify`.
@@ -278,7 +278,7 @@ const IDENTITY_CODE = 0x00
  *
  * @see https://github.com/storacha/ipfs-car
  */
-async function assertBlock(cid: CID, bytes: Uint8Array): Promise<void> {
+export async function assertBlock(cid: CID, bytes: Uint8Array): Promise<void> {
   const { code, digest } = cid.multihash
   let actual: Uint8Array
   if (code === sha256.code) {

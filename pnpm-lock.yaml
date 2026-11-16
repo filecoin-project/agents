@@ -230,6 +230,9 @@ importers:
       '@ipld/car':
         specifier: ^5.4.7
         version: 5.4.7
+      '@ipld/dag-pb':
+        specifier: ^4.2.0
+        version: 4.2.0
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.6
@@ -239,6 +242,9 @@ importers:
       esbuild:
         specifier: 0.28.2
         version: 0.28.2
+      ipfs-unixfs:
+        specifier: ^13.1.2
+        version: 13.1.2
       ipfs-unixfs-exporter:
         specifier: ^16.2.3
         version: 16.2.3

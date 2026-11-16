@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Resource } from '../src/state/resources.ts'
 import {
+  getUrl,
+  providerIpfsUrl,
   providerPieceUrl,
   resourceUrls,
   retrievalUrls,
@@ -85,5 +87,23 @@ test('providerPieceUrl points at the first copy for filecoin get', () => {
   assert.equal(
     providerPieceUrl(folder),
     `https://sp.example/base/piece/${PIECE_CID}`
+  )
+})
+
+test("providerIpfsUrl points at the first copy's /ipfs for a root", () => {
+  assert.equal(
+    providerIpfsUrl(folder),
+    `https://sp.example/base/ipfs/${ROOT_CID}`
+  )
+  assert.throws(
+    () => providerIpfsUrl({ ...folder, rootCid: undefined }),
+    /no IPFS root/
+  )
+})
+
+test('getUrl names the network for filecoin get outside local state', () => {
+  assert.equal(
+    getUrl('https://api.example/v1', 'calibration', ROOT_CID),
+    `https://api.example/v1/get/${ROOT_CID}?network=calibration`
   )
 })

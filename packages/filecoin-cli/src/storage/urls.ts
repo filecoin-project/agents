@@ -28,12 +28,12 @@ function networkOf(chainId: string): Network {
 }
 
 /** filecoin-api `/get/{cid}` URL on `network`. */
-function getUrl(
+export function getUrl(
   apiUrl: string,
   network: Network,
   cid: string,
-  browser: boolean,
-  providerId: string | undefined
+  browser = false,
+  providerId?: string | undefined
 ): string {
   const url = new URL(
     `get/${encodeURIComponent(cid)}`,
@@ -95,6 +95,13 @@ export function resourceUrls(
   })
 }
 
+/** `serviceURL` of a resource's first copy, which `filecoin get` reads from. */
+function firstServiceUrl(resource: Resource): string {
+  const [copy] = resource.copies
+  if (!copy) throw new Error(`Resource ${resource.ref} has no stored copies.`)
+  return copy.serviceURL
+}
+
 /**
  * Curio `/piece/<pieceCid>` URL of a resource's first copy. `filecoin get`
  * downloads from it directly, so a download never waits for filecoin-api's
@@ -103,11 +110,28 @@ export function resourceUrls(
  * @see https://github.com/filecoin-project/curio/blob/main/documentation/en/curio-market/retrievals.md
  */
 export function providerPieceUrl(resource: Resource): string {
-  const [copy] = resource.copies
-  if (!copy) throw new Error(`Resource ${resource.ref} has no stored copies.`)
   // synapse-core keeps a path in `serviceURL`, with or without a trailing slash.
   return createPieceUrlPDP({
     cid: resource.pieceCid,
-    serviceURL: copy.serviceURL,
+    serviceURL: firstServiceUrl(resource),
   })
+}
+
+/**
+ * Curio `/ipfs/<rootCid>` URL of a resource's first copy, a trustless
+ * gateway that returns the DAG as a depth-first CAR. Curio serves it once it
+ * has indexed the CAR, shortly after the commit.
+ *
+ * @see https://github.com/filecoin-project/curio/blob/main/documentation/en/curio-market/retrievals.md
+ * @see https://specs.ipfs.tech/http-gateways/trustless-gateway/
+ */
+export function providerIpfsUrl(resource: Resource): string {
+  if (!resource.rootCid) {
+    throw new Error(`Resource ${resource.ref} has no IPFS root.`)
+  }
+  const base = firstServiceUrl(resource)
+  return new URL(
+    `ipfs/${resource.rootCid}`,
+    base.endsWith('/') ? base : `${base}/`
+  ).toString()
 }
