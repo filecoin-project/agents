@@ -1,4 +1,6 @@
+import { constants } from 'node:fs'
 import {
+  copyFile,
   type FileHandle,
   mkdir,
   open,
@@ -21,7 +23,9 @@ import { assertBlock, IDENTITY_CODE } from './pack.ts'
 /**
  * `Accept` header for a trustless-gateway CAR whose blocks come depth-first,
  * parent before children, with every repeated block sent again. Curio serves
- * `/ipfs/{cid}` this way through frisbii.
+ * `/ipfs/{cid}` this way through frisbii. {@link downloadDag} also reads a
+ * depth-first CAR that sends each block once, as Kubo's `dag export` and
+ * boxo's gateway do by default.
  *
  * @see https://specs.ipfs.tech/http-gateways/trustless-gateway/#car-responses
  * @see https://github.com/ipld/frisbii
@@ -65,7 +69,12 @@ type Sink = {
   path: string
   written: number
   expected: number
+  /** Key of the file's root block, for a whole file that repeats later. */
+  key?: string
 }
+
+/** Where the bytes of a raw block were written. */
+type Span = { path: string; offset: number; length: number }
 
 /** What a block is to the walk: a named entry, a file's chunk, or a HAMT shard. */
 type Role =
@@ -87,6 +96,34 @@ function sameBlock(a: CID, b: CID): boolean {
   return a.code === b.code && equals(a.multihash.bytes, b.multihash.bytes)
 }
 
+/** Map key of a block, the same for its CIDv0 and CIDv1. */
+function keyOf(cid: CID): string {
+  return CID.createV1(cid.code, cid.multihash).toString()
+}
+
+/** Read `span.length` bytes at `span.offset` from a file already written. */
+async function readSpan(span: Span): Promise<Uint8Array> {
+  const handle = await open(span.path, 'r')
+  try {
+    const bytes = new Uint8Array(span.length)
+    let read = 0
+    while (read < span.length) {
+      const { bytesRead } = await handle.read(
+        bytes,
+        read,
+        span.length - read,
+        span.offset + read
+      )
+      if (bytesRead === 0)
+        throw new Error(`${span.path} is shorter than written.`)
+      read += bytesRead
+    }
+    return bytes
+  } finally {
+    await handle.close()
+  }
+}
+
 /** A `verification_failed` error. */
 function invalid(message: string): CliError {
   return new CliError({ code: ErrorCodes.verificationFailed, message })
@@ -104,6 +141,12 @@ function unsafe(message: string): CliError {
  * to its CID. The walk starts at `rootCid` and follows only links of blocks
  * already checked, so the extracted tree is exactly the root's. The tree is
  * written into `<output>.filecoin-partial`, then renamed into place.
+ *
+ * A CAR may send a repeated block again (`dups=y`) or only once. Unless the
+ * response declares `dups=y`, the walk rebuilds a block it already wrote
+ * when the stream moves past it: a whole file is copied, a raw block is
+ * read back from where it was written, and a dag-pb node is walked again
+ * from a copy kept in memory. The CAR order must be `dfs`.
  *
  * Supports UnixFS files, directories and HAMT-sharded directories, with
  * dag-pb and raw blocks. Symlinks and entry names that leave the output
@@ -138,12 +181,12 @@ export async function downloadDag(
     await response.body.cancel()
     throw invalid(`${url} returned ${type || 'no content type'}, not a CAR.`)
   }
-  if (/order=(?!dfs)/.test(type) || /dups=n/.test(type)) {
+  if (/order=(?!dfs)/.test(type)) {
     await response.body.cancel()
-    throw invalid(
-      `${url} returned ${type}, not a depth-first CAR with duplicates.`
-    )
+    throw invalid(`${url} returned ${type}, not a depth-first CAR.`)
   }
+  // With `dups=y` every repeat arrives again, so there is nothing to keep.
+  const reuse = !/dups=y/.test(type)
 
   let size = 0
   async function* counted(): AsyncGenerator<Uint8Array> {
@@ -156,7 +199,7 @@ export async function downloadDag(
   const tmp = `${output}.filecoin-partial`
   await rm(tmp, { recursive: true, force: true })
   await mkdir(dirname(output), { recursive: true })
-  const walk = new DagWalk(root, tmp, (kind) => {
+  const walk = new DagWalk(root, tmp, reuse, (kind) => {
     if (kind === 'folder' && existing) throw outputExists(options.output)
   })
   try {
@@ -182,7 +225,10 @@ export async function downloadDag(
 
 /**
  * The verifying walk of {@link downloadDag}: a stack of the blocks still
- * expected, in the depth-first order of the CAR.
+ * expected, in the depth-first order of the CAR. When `reuse` is set, it
+ * remembers where each block went, so a repeat the CAR leaves out can be
+ * rebuilt from the output: about 100 bytes per raw block, plus the bytes of
+ * each dag-pb node.
  */
 class DagWalk {
   /** Kind of the root, known once its block arrives. */
@@ -192,14 +238,23 @@ class DagWalk {
   readonly #stack: Frame[]
   readonly #open = new Set<Sink>()
   readonly #onRoot: (kind: 'file' | 'folder') => void
+  readonly #reuse: boolean
+  /** Raw blocks by key: where their bytes were written. */
+  readonly #spans = new Map<string, Span>()
+  /** Dag-pb nodes by key: their checked bytes. */
+  readonly #nodes = new Map<string, Uint8Array>()
+  /** Finished whole files by the key of their root block. */
+  readonly #files = new Map<string, string>()
 
   /** Start a walk that extracts `root` to `target`. */
   constructor(
     root: CID,
     target: string,
+    reuse: boolean,
     onRoot: (kind: 'file' | 'folder') => void
   ) {
     this.#target = target
+    this.#reuse = reuse
     this.#onRoot = onRoot
     this.#stack = [
       { cid: root, role: { kind: 'entry', path: target, root: true } },
@@ -208,10 +263,14 @@ class DagWalk {
 
   /** Check and extract the next block of the stream. */
   async next(cid: CID, bytes: Uint8Array): Promise<void> {
-    await this.#settle()
-    // #settle leaves a block frame on top, or an empty stack.
-    const frame = this.#stack.at(-1) as { cid: CID; role: Role } | undefined
-    if (!(frame && sameBlock(frame.cid, cid))) {
+    let frame: { cid: CID; role: Role } | undefined
+    for (;;) {
+      await this.#settle()
+      // #settle leaves a block frame on top, or an empty stack.
+      frame = this.#stack.at(-1) as { cid: CID; role: Role } | undefined
+      if (frame && sameBlock(frame.cid, cid)) break
+      // A repeat the CAR left out: rebuild it, then match the next frame.
+      if (frame && (await this.#rebuild(frame))) continue
       // A gateway may send an identity block that the walk read inline.
       if (cid.multihash.code === IDENTITY_CODE) return
       throw invalid(
@@ -227,11 +286,40 @@ class DagWalk {
 
   /** Finish the walk; fails if the stream ended before the DAG did. */
   async end(): Promise<void> {
-    await this.#settle()
-    const frame = this.#stack.at(-1)
-    if (frame && !('close' in frame)) {
+    for (;;) {
+      await this.#settle()
+      const frame = this.#stack.at(-1) as { cid: CID; role: Role } | undefined
+      if (!frame) return
+      if (await this.#rebuild(frame)) continue
       throw invalid(`The CAR ended before block ${frame.cid}.`)
     }
+  }
+
+  /**
+   * Rebuild the block on top of the stack from the output, if the walk
+   * already wrote it. Returns whether it did.
+   */
+  async #rebuild(frame: { cid: CID; role: Role }): Promise<boolean> {
+    if (!this.#reuse) return false
+    const key = keyOf(frame.cid)
+    const { role } = frame
+    const file = this.#files.get(key)
+    if (role.kind === 'entry' && file) {
+      this.#stack.pop()
+      await copyFile(
+        file,
+        role.path,
+        constants.COPYFILE_EXCL | constants.COPYFILE_FICLONE
+      )
+      this.files++
+      return true
+    }
+    const span = this.#spans.get(key)
+    const node = span ? await readSpan(span) : this.#nodes.get(key)
+    if (!node) return false
+    this.#stack.pop()
+    await this.#visit(role, frame.cid, node)
+    return true
   }
 
   /** Close any file left open by a failed walk. */
@@ -260,13 +348,26 @@ class DagWalk {
 
   /** Extract one checked block according to its role. */
   async #visit(role: Role, cid: CID, bytes: Uint8Array): Promise<void> {
+    const key = this.#reuse ? keyOf(cid) : ''
     if (cid.code === Raw.code) {
-      if (role.kind === 'chunk') return this.#write(role.sink, bytes)
       if (role.kind === 'shard') throw invalid(`Shard ${cid} is a raw block.`)
-      this.#found(role, 'file')
-      const sink = await this.#create(role.path, bytes.length)
+      let sink: Sink
+      if (role.kind === 'chunk') {
+        sink = role.sink
+      } else {
+        this.#found(role, 'file')
+        sink = await this.#create(role.path, bytes.length, key)
+      }
+      if (this.#reuse && !this.#spans.has(key)) {
+        this.#spans.set(key, {
+          path: sink.path,
+          offset: sink.written,
+          length: bytes.length,
+        })
+      }
       await this.#write(sink, bytes)
-      return this.#close(sink)
+      if (role.kind !== 'chunk') await this.#close(sink)
+      return
     }
     if (cid.code !== DagPb.code) {
       throw invalid(
@@ -275,6 +376,7 @@ class DagWalk {
     }
     const node = DagPb.decode(bytes)
     if (!node.Data) throw invalid(`Block ${cid} has no UnixFS data.`)
+    if (this.#reuse && !this.#nodes.has(key)) this.#nodes.set(key, bytes)
     const unixfs = UnixFS.unmarshal(node.Data)
     const links = node.Links.map((link) => ({
       cid: CID.decode(link.Hash.bytes),
@@ -288,7 +390,7 @@ class DagWalk {
         sink = role.sink
       } else {
         this.#found(role, 'file')
-        sink = await this.#create(role.path, Number(unixfs.fileSize()))
+        sink = await this.#create(role.path, Number(unixfs.fileSize()), key)
         this.#stack.push({ close: sink })
       }
       if (unixfs.data?.length) await this.#write(sink, unixfs.data)
@@ -371,10 +473,10 @@ class DagWalk {
     return path
   }
 
-  /** Open a new file of the tree for writing. */
-  async #create(path: string, expected: number): Promise<Sink> {
+  /** Open a new file of the tree for writing; `key` names its root block. */
+  async #create(path: string, expected: number, key: string): Promise<Sink> {
     const handle = await open(path, 'wx')
-    const sink = { handle, path, written: 0, expected }
+    const sink = { handle, path, written: 0, expected, key }
     this.#open.add(sink)
     this.files++
     return sink
@@ -401,6 +503,9 @@ class DagWalk {
       throw invalid(
         `${sink.path} has ${sink.written} bytes, but its UnixFS size is ${sink.expected}.`
       )
+    }
+    if (this.#reuse && sink.key && !this.#files.has(sink.key)) {
+      this.#files.set(sink.key, sink.path)
     }
   }
 }
