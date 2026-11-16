@@ -117,6 +117,21 @@ Curio withdraws a PDP advertisement only when it garbage-collects the piece ([`t
 
 The FWSS service provider registry has `ipniPiece`, `ipniIpfs`, and `ipniPeerId` capabilities in each PDP offering. synapse-core reads them as `PDP_OFFERING_KEYS`. The indexer does not store them, so the API's provider records have no peer ID.
 
+### What Curio's `/ipfs` endpoint returns
+
+Curio serves `/ipfs/{cid}` with [frisbii](https://github.com/ipld/frisbii) v0.10.0, which reads blocks through Curio's block index ([`retrieval.go`](https://github.com/filecoin-project/curio/blob/0073d178dcf430db37def3bb55fc279da348121c/market/retrieval/retrieval.go), Curio `main` of 2026-11-12). That index is why the endpoint answers only after indexing. A CAR response is always depth-first: each block comes before the blocks it links to, and a repeated block appears again. frisbii sets this order in code ([`httpipfs.go`](https://github.com/ipld/frisbii/blob/v0.10.0/httpipfs.go)), so the response says `Content-Type: application/vnd.ipld.car;version=1;order=dfs;dups=y` even when the request asks for `order=unk`. It reads the [trustless gateway](https://specs.ipfs.tech/http-gateways/trustless-gateway/) parameters with go-trustless-utils v0.8.0: `order` and `dups` from `Accept` or the `car-order` and `car-dups` query parameters, `dag-scope`, and `entity-bytes`.
+
+That order is the reverse of the stored piece. `filecoin put` packs with `ipfs-unixfs-importer`, which writes each block before its parent, so the root comes last. On 2026-11-16 we fetched the `docs` folder from the [calibration run](architecture.md#calibration-run-on-2026-09-29) from provider 9 (`calib.ezpdpz.net`), with root `bafybeifpcriegmv2dsl36wvstwng3xcqwxsgfrq6wvszqeid5blb6coifi`:
+
+| Request | First block | Links in order | Blocks |
+| --- | --- | --- | --- |
+| `/ipfs/{root}`, with no parameters, with `order=dfs&dups=y`, and with `order=unk` | the root | 2 of 2 parent first | 3 |
+| `/piece/bafkzcibezhjacc4c5tqq7zdnvvgghf4i6epou7ajl5ubu5utixzhsucjki47cazleu` | a child | 2 of 2 child first | 4 |
+
+Every block matched its CID. The piece has one more block, an empty-directory block that nothing links to. The prototype CLI used in that run still wrote it, and packing has skipped it since the CLI's first commit in this repository on 2026-10-03 ([folder packing](architecture.md#folder-packing)). The depth-first walk never reaches it.
+
+`filecoin get` therefore extracts a file or folder stored as a CAR from `/ipfs/{root}` in one pass. `downloadDag` checks each block against its CID as it walks the links, so it never stores the CAR ([the get flow](architecture.md#the-get-flow)). A raw file and a PieceCID come from `/piece`, checked against the PieceCID, which covers every byte. `/piece` also works before Curio indexes the CAR, so `get <pieceCid>` returns a new CAR while `/ipfs` still answers 404. A CAR from `/piece` lists the root last, so `get` doesn't extract it.
+
 ### What fetch.cid.contact does
 
 `https://fetch.cid.contact/retrieve/{cid}` is a redirect service like `/get`, backed by cid.contact instead of a database:
