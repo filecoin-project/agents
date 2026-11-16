@@ -28,7 +28,7 @@ import {
   updateOperation,
 } from '../state/operations.ts'
 import { getResource, type Resource, saveResource } from '../state/resources.ts'
-import { packDirectory, packFile } from './pack.ts'
+import { listEntries, packDirectory, packFile } from './pack.ts'
 import type {
   CommittedPiece,
   Placement,
@@ -126,9 +126,14 @@ async function inspectSource(options: StartPutOptions): Promise<PutSource> {
     if (options.raw) {
       throw invalidInput('--raw stores only files, not directories.', 'raw')
     }
+    const { files } = await listEntries(sourcePath)
+    assertContentFits(files.reduce((total, file) => total + file.size, 0))
     return { sourcePath, kind: 'folder', format: 'car', name }
   }
-  if (!options.raw) return { sourcePath, kind: 'file', format: 'car', name }
+  if (!options.raw) {
+    assertContentFits(stats.size)
+    return { sourcePath, kind: 'file', format: 'car', name }
+  }
   assertPieceSize(stats.size)
   return { sourcePath, kind: 'file', format: 'raw', name, size: stats.size }
 }
@@ -207,7 +212,7 @@ export async function estimatePut(
     }
   } else {
     const pack = source.kind === 'folder' ? packDirectory : packFile
-    const packed = await pack(source.sourcePath)
+    const packed = await pack(source.sourcePath, undefined, PACK_OPTIONS)
     assertPieceSize(packed.size)
     estimate = {
       kind: source.kind,
@@ -311,6 +316,23 @@ function complete(
   })
 }
 
+/** Pack options that stop a CAR at the largest piece size. */
+const PACK_OPTIONS = { maxSize: SIZE_CONSTANTS.MAX_UPLOAD_SIZE }
+
+/**
+ * Reject content whose CAR cannot fit in a piece before packing it. A CAR
+ * holds every byte of its files, so content over the limit makes a CAR over
+ * it. The packing cap in {@link PACK_OPTIONS} catches the rest.
+ */
+function assertContentFits(bytes: number): void {
+  if (bytes > SIZE_CONSTANTS.MAX_UPLOAD_SIZE) {
+    throw invalidInput(
+      `Content must be at most ${SIZE_CONSTANTS.MAX_UPLOAD_SIZE} bytes; got ${bytes}.`,
+      'path'
+    )
+  }
+}
+
 /** Reject sizes outside the PDP piece limits. */
 function assertPieceSize(size: number): void {
   if (
@@ -389,7 +411,16 @@ async function runPut(ctx: JobContext, op: Operation): Promise<JobResult> {
         message: `Packing ${input.sourcePath}`,
       })
       const pack = kind === 'folder' ? packDirectory : packFile
-      const packed = await pack(input.sourcePath, uploadPath)
+      // Nothing staged is usable after a failed pack: the CAR is renamed into
+      // place only once complete. Remove the folder so it does not pile up.
+      const packed = await pack(
+        input.sourcePath,
+        uploadPath,
+        PACK_OPTIONS
+      ).catch(async (error: unknown) => {
+        await rm(ctx.stagingDir(op.id), { recursive: true, force: true })
+        throw error
+      })
       op = save(ctx, op, {
         rootCid: packed.rootCid.toString(),
         size: packed.size,
