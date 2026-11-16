@@ -285,15 +285,31 @@ clipact aborts `ctx.signal` on the first SIGINT, SIGTERM, or SIGHUP. Handlers pa
 
 ## The get flow
 
-`get <ref|pieceCid>` always downloads the stored piece from `/piece/<pieceCid>`. That is the only form whose bytes `filecoin` can check against the PieceCID. For a managed resource, `get` uses the `serviceURL` of the saved copy and skips filecoin-api, so a download never waits for the indexer.
+What the target names decides what `get` returns and how it checks it:
 
-- **Raw files.** `get.ts` streams the response through `Piece.hasher()` into `<output>.filecoin-partial`. It renames the file to its final name only if the computed PieceCID matches. synapse-core's `Piece.downloadStream` validates a stream the same way, but its `DownloadPieceError` drops the HTTP status, so `get` could no longer return `not_found` for a 404.
-- **CARs.** The CLI downloads and verifies the CAR the same way, then opens it with `CarIndexedReader`. It checks that the root in the CAR header equals the saved `rootCid`. It walks the DAG with `ipfs-unixfs-exporter` and extracts into a temporary path, which it then renames into place: a directory for a folder, or the file itself. It rejects an entry name that contains a path separator or resolves outside the output directory. `--force` replaces an existing file, but never an existing directory.
-- **Unmanaged PieceCIDs.** The CLI finds a provider with `resolvePieceUrl`, then downloads and verifies the piece the same way.
+| Target | Returns | Checked against | Source |
+| --- | --- | --- | --- |
+| A ref of a file or folder stored as a CAR, or its root CID | The extracted file or folder | Each block's CID, walked from the root CID | Curio `/ipfs/<rootCid>` |
+| A ref of a file stored with `--raw` | The file | The PieceCID | Curio `/piece/<pieceCid>` |
+| A PieceCID | The stored bytes as one file. For a CAR, that is the CAR, named `<name>.car` by default | The PieceCID | Curio `/piece/<pieceCid>` |
 
-Extraction reads each file in 8 MiB windows. `ipfs-unixfs-exporter` queues a file's blocks without waiting for the consumer. One `content()` call over a local CAR would hold the whole file in memory. For a 1 GB file, that used about 1 GB of RSS, against 83 MB with windows.
+For a ref, or a CID found in `state.db`, `get` uses the `serviceURL` of the first saved copy and skips filecoin-api. A CID lookup in `state.db` needs credentials, because local state is per account. Without them, or when the CID is not in local state, `get` requests filecoin-api `/get/<cid>?network=<network>`. That route redirects a PieceCID to a provider's `/piece` and any other CID to a provider's `/ipfs`, through the indexer and then cid.contact ([retrieval](retrieval.md)). `fetch` follows the redirect and keeps the `Accept` header, and the result's `url` is the URL the bytes came from. `get` no longer calls synapse-core's `resolvePieceUrl`, which tried FilBeam first.
 
-Extraction checks the bytes of every block against its CID, as `ipfs-car unpack --verify` does. The PieceCID check already covers a CAR downloaded from `/piece`. A gateway can also rebuild a CAR, for example at Curio's `/ipfs/…?format=car`, and `filecoin` can trust that CAR only block by block.
+- **Pieces.** `get.ts` streams the response through `Piece.hasher()` into `<output>.filecoin-partial`. It renames the file to its final name only if the computed PieceCID matches. synapse-core's `Piece.downloadStream` validates a stream the same way, but its `DownloadPieceError` drops the HTTP status, so `get` could no longer return `not_found` for a 404.
+- **Roots.** `dag.ts` requests the root with `Accept: application/vnd.ipld.car;version=1;order=dfs;dups=y`, the order Curio's frisbii always sends: depth-first, parent before children, links in order, and a repeated block sent again each time. `downloadDag` keeps a stack of the blocks it expects next, starting with the root. Each block must be the one on top of the stack, and its bytes must hash to its CID. It then decodes the block and pushes its links, so the walk follows only links of blocks it already checked. It writes file bytes as they arrive into `<output>.filecoin-partial` and renames that into place, so no CAR touches the disk. A stream in another order, such as the stored CAR from `/piece`, fails with `verification_failed` at its first block.
+
+`downloadDag` reads UnixFS files, directories, and HAMT-sharded directories, made of dag-pb and raw blocks. It checks each file's length against its UnixFS size. It rejects a symlink, an empty entry name, `.`, `..`, a name with a path separator, and a path outside the output, with `unsafe_path`. `--force` replaces an existing file with a file, but never replaces a directory, and a folder never replaces a file. When the walk fails, it aborts the request and deletes the partial output.
+
+Curio answers `/ipfs/<rootCid>` only after it indexes the CAR, a few minutes after the commit. Until then, `get <ref>` fails with a retryable `not_found` and `retryAfterSeconds: 60`. Its next steps are to retry, or to run `get <pieceCid>` for the CAR itself. `get` doesn't fall back to `/piece`, because `put` writes the CAR with children before parents and the root last. Extracting that CAR needs random access, so it needs the whole CAR on disk first.
+
+We measured `get` on 2026-11-16 against a local server that sends a CAR depth-first, on an Apple silicon Mac. Node alone used 139 MiB of RSS with the modules loaded.
+
+| Content | Streaming from `/ipfs` | The previous path: `/piece` to disk, then `CarIndexedReader` |
+| --- | --- | --- |
+| One 900 MiB file | 1.6 s, 277 MiB peak RSS, 900 MiB on disk | 6.9 s, 399 MiB peak RSS, 1.8 GiB on disk |
+| 10,000 files of 10 KB in 50 directories, and 6,000 files of 1 KB in one sharded directory | 2.7 s, 227 MiB peak RSS | 3.7 s, 412 MiB peak RSS |
+
+The previous path computed the PieceCID, at about 6 seconds per GiB. The streaming path computes one SHA-256 per block instead.
 
 ## The delete flow
 
