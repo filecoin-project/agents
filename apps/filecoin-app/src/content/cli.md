@@ -44,7 +44,7 @@ filecoin put ./report.pdf          # a file, packed into a UnixFS CAR with an IP
 filecoin put ./report.pdf --raw    # a file, stored as its exact bytes
 filecoin put ./site                # a folder, packed into a UnixFS CAR
 filecoin put ./site --dry-run      # size, provider, cost, and authorization; stores nothing
-filecoin get res_… --output ./copy # verifies the PieceCID and extracts CARs
+filecoin get res_… --output ./copy # extracts a CAR, checking each block
 filecoin ls                        # add --all to include content pending removal
 filecoin inspect res_… --check     # checks that the piece link answers
 filecoin delete res_… --yes        # schedules removal
