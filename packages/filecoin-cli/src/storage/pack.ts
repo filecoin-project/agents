@@ -24,7 +24,7 @@ import { ErrorCodes, invalidInput } from '../errors.ts'
  *
  * @see https://github.com/ipfs/specs/pull/499
  */
-const IMPORTER_OPTIONS: ImporterOptions = { profile: 'unixfs-v1-2025' }
+export const IMPORTER_OPTIONS: ImporterOptions = { profile: 'unixfs-v1-2025' }
 
 /** A file included in a folder, relative to the packed directory. */
 export type PackEntry = { path: string; size: number }
@@ -87,6 +87,37 @@ function placeholderCid(): CID {
 }
 
 /**
+ * Importer candidates for the directory at `root`, named `name`, from its
+ * {@link listEntries} result. Each file candidate reads its source lazily.
+ *
+ * Parent directories are created from file paths. Passing them explicitly
+ * makes the importer also emit an orphan empty-directory block, so only
+ * empty directories (and an empty root) are passed as candidates.
+ */
+export function* directoryCandidates(
+  root: string,
+  name: string,
+  files: PackEntry[],
+  directories: string[]
+): Generator<FileCandidate | DirectoryCandidate> {
+  const parents = new Set(
+    [...files.map((f) => f.path), ...directories].map((path) =>
+      path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : ''
+    )
+  )
+  if (!parents.has('')) yield { path: name }
+  for (const directory of directories) {
+    if (!parents.has(directory)) yield { path: `${name}/${directory}` }
+  }
+  for (const file of files) {
+    yield {
+      path: `${name}/${file.path}`,
+      content: createReadStream(join(root, file.path)),
+    }
+  }
+}
+
+/**
  * Pack a directory into a UnixFS CAR at `carPath`. The root CID is the
  * directory's. Without `carPath` the CAR is only measured, as in
  * {@link writeCar}.
@@ -101,29 +132,8 @@ export async function packDirectory(
   const root = resolve(dir)
   const name = basename(root)
   const { files, directories } = await listEntries(root)
-
-  // Parent directories are created from file paths. Passing them explicitly
-  // makes the importer also emit an orphan empty-directory block, so only
-  // empty directories (and an empty root) are passed as candidates.
-  const parents = new Set(
-    [...files.map((f) => f.path), ...directories].map((path) =>
-      path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : ''
-    )
-  )
-  function* candidates(): Generator<FileCandidate | DirectoryCandidate> {
-    if (!parents.has('')) yield { path: name }
-    for (const directory of directories) {
-      if (!parents.has(directory)) yield { path: `${name}/${directory}` }
-    }
-    for (const file of files) {
-      yield {
-        path: `${name}/${file.path}`,
-        content: createReadStream(join(root, file.path)),
-      }
-    }
-  }
-
-  const car = await writeCar(dir, name, candidates(), carPath, options)
+  const candidates = directoryCandidates(root, name, files, directories)
+  const car = await writeCar(dir, name, candidates, carPath, options)
   return { ...car, files: files.length }
 }
 

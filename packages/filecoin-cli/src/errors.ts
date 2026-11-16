@@ -118,7 +118,7 @@ export const errors = {
     details: z.strictObject(operation),
   },
   [ErrorCodes.sourceChanged]: {
-    description: 'A resumed put found its source file changed.',
+    description: 'A put found its source changed since it first read it.',
     details: z.strictObject(operation),
   },
   [ErrorCodes.stagingMissing]: {
@@ -239,5 +239,23 @@ export function notFound(message: string, next?: Next): CliError {
     code: ErrorCodes.notFound,
     message,
     ...(next ? { next: [next] } : {}),
+  })
+}
+
+/**
+ * A `source_changed` error: the file or folder at `sourcePath` no longer
+ * holds the bytes a put read from it, with a step that starts a new put.
+ */
+export function sourceChanged(message: string, sourcePath: string): CliError {
+  return new CliError({
+    code: ErrorCodes.sourceChanged,
+    message,
+    next: [
+      {
+        by: 'agent',
+        command: `filecoin put ${sourcePath}`,
+        description: 'Start a new put with the current content',
+      },
+    ],
   })
 }

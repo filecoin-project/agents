@@ -156,7 +156,7 @@ Ctrl+C, SIGTERM, or SIGHUP stops the work at the next step. `filecoin` returns a
 | --- | --- |
 | `FILECOIN_NETWORK` | `mainnet` or `calibration`. `--network` takes precedence, then `FILECOIN_NETWORK`, then the config file, then `calibration` |
 | `FILECOIN_SESSION_KEY`, `FILECOIN_ROOT_ADDRESS` | Session key and wallet address, used instead of `filecoin login` |
-| `FILECOIN_CONFIG_DIR` | Absolute path of the folder that holds `config.json`, `state.db`, and staged folders. Default: `~/Library/Application Support/filecoin` on macOS, `%LOCALAPPDATA%\filecoin` on Windows, and `$XDG_DATA_HOME/filecoin` (`~/.local/share/filecoin`) elsewhere |
+| `FILECOIN_CONFIG_DIR` | Absolute path of the folder that holds `config.json` and `state.db`. Default: `~/Library/Application Support/filecoin` on macOS, `%LOCALAPPDATA%\filecoin` on Windows, and `$XDG_DATA_HOME/filecoin` (`~/.local/share/filecoin`) elsewhere |
 | `FILECOIN_RPC_URL` | RPC endpoint. Default: synapse-core's fallback transport for the chain |
 | `FILECOIN_CONSOLE_URL` | Filecoin Pay console origin for approval, funding, and revoke links, such as `https://filecoin-pay-explorer-staging.vercel.app` for staging. Default: `https://pay.filecoin.cloud` |
 | `FILECOIN_API_URL` | filecoin-api origin for retrieval links and `datasets` reads, such as `http://localhost:8787` for a local API. Default: `https://api.filecoin.io` |
