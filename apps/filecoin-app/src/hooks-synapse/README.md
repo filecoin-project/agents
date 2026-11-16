@@ -24,13 +24,13 @@ React hooks for Filecoin that [`@filoz/synapse-react`](https://github.com/FilOzo
 | `useStorageSize` | `warmStorage.getAccountTotalStorageSize` | |
 | `useUploadCosts` | `warmStorage.getUploadCosts` | |
 | `useTerminateDataSet` | `sp.terminateService`, `sp.waitForTerminateService` | |
-| `useDeletePieces` | `sp.schedulePieceDeletions` | Batch delete |
+| `useDeletePieces` | `sp.schedulePieceDeletions`, `sp.waitForDeletePieces` | Batch delete, confirmed on chain |
 
 `invalidateStorageQueries` (`utils.ts`) refreshes data sets, storage size and the payment state a storage write changes. synapse-react's storage hooks only refresh their own data sets query, so callers pass it to their `mutation.onSuccess`.
 
 ## synapse-react gaps that remain
 
-Checked against synapse-react 0.6.0 on 2026-11-16. 0.6.0 ports the 0.5.1 hooks to synapse-core 0.11.0 and adds no hooks, so each gap below remains. Its `useDeletePiece` now waits on chain with `SP.waitForDeletePieces`. This app's `useDeletePieces` returns once the provider accepts the removal.
+Checked against synapse-react 0.6.0 on 2026-11-16. 0.6.0 ports the 0.5.1 hooks to synapse-core 0.11.0 and adds no hooks, so each gap below remains. Its `useDeletePiece` now waits on chain with `SP.waitForDeletePieces`, and this app's `useDeletePieces` does the same.
 
 - No hooks for account summaries, rails, settlement, storage size, upload costs, session keys, a single data set or terminating a data set.
 - No permit-only deposit: `useDeposit` needs a prior ERC20 approve, and `useDepositAndApprove` also approves an operator.
