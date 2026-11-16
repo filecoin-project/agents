@@ -211,7 +211,7 @@ The phase is separate from the operation's execution status, which is `pending`,
 `storage/jobs.ts` saves each result to the operation checkpoint before the next step depends on it:
 
 1. **Pack (CARs only).** Write `staging/<op>/file.car` or `staging/<op>/folder.car`, then save `rootCid`.
-2. **Identify.** Stream the bytes through `Piece.calculate` and save `pieceCid` and `size`. Reject content outside the PDP limits of 127 to 1,065,353,216 bytes.
+2. **Identify.** Stream the bytes through `Piece.calculate` and save `pieceCid` and `size`. Reject content outside synapse-core's `SIZE_CONSTANTS` limits of 127 to 68,182,605,824 bytes (63.5 GiB).
 3. **Place.** Save `providerId`, `serviceURL`, and `payee`. If an existing data set matches, also save its `dataSetId` and `clientDataSetId`.
    - `--provider` calls `fetchProviderSelectionInput` and then `selectProviders({ providerId })`, which prefers that provider's data set with matching metadata. The provider must be approved for Warm Storage, but it need not be endorsed. The CLI does not ping it.
    - Without `--provider`, the CLI calls `selectReachableProviders({ requireEndorsedPrimary: true })`. It ranks the endorsed providers, preferring one with an existing data set with matching metadata, pings them all at once, and takes the highest-ranked one that answers. If none answers, the result is `service_unavailable`.
@@ -386,10 +386,11 @@ The tests use the Node test runner and need no network. msw replaces `fetch` for
 
 ## Known limits
 
-- `filecoin` rejects content smaller than 127 bytes or larger than 1,065,353,216 bytes.
+- `filecoin` rejects content smaller than 127 bytes or larger than 68,182,605,824 bytes (63.5 GiB).
+- `put` checks the size of a CAR only after it writes the whole CAR to `staging/<op>/`, and a failed put keeps its staged CAR. A put of content over the limit can fill the disk before it fails, and nothing removes the staging folder of a put that is never resumed.
 - A put that fails before any external change, such as with `insufficient_funds`, stays listed as an incomplete operation.
 - `inspect --check` sends a HEAD request to `urls.piece` and follows filecoin-api's redirect. It does not check each file of a folder or the inbrowser.link page.
-- `urls.piece` and a file's `urls.browser` return 404 until filecoin-api's indexer has the piece.
+- `urls.piece` and a raw file's `urls.browser` return 404 until filecoin-api's indexer has the piece.
 - `datasets ls` and `datasets inspect` show only what filecoin-api's indexer has. A new data set or piece can be missing for a few minutes.
 - `logout` deletes the local key but does not revoke it on chain. It returns the console's revoke link, which the owner signs.
 - A pending login that resumes much later scans every block since `fromBlock`. `--fresh` starts over with a new key.
