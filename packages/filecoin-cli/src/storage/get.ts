@@ -80,28 +80,33 @@ export async function downloadPiece(
   }
 }
 
-/** Options for {@link downloadFolder}. */
-export type DownloadFolderOptions = {
+/** Options for {@link downloadCar}. */
+export type DownloadCarOptions = {
   url: string
   pieceCid: string
   rootCid: string
-  /** Directory to extract into; must be empty or absent. */
+  /** File or directory to extract the root into; must be absent. */
   output: string
+  /** Replace an existing file at `output`; a directory is never replaced. */
+  overwrite?: boolean
   fetch?: typeof globalThis.fetch
   signal?: AbortSignal
 }
 
 /**
- * Download a folder's CAR through its exact piece, verify it against the
- * PieceCID and root CID, and extract the file tree into `output`. The
- * PieceCID check covers every byte, so blocks are not hashed again.
+ * Download a CAR through its exact piece, verify it against the PieceCID and
+ * root CID, and extract the root into `output`: a file tree for a folder, or
+ * the file itself. The PieceCID check covers every byte, so blocks are not
+ * hashed again.
  */
-export async function downloadFolder(
-  options: DownloadFolderOptions
+export async function downloadCar(
+  options: DownloadCarOptions
 ): Promise<{ size: number; files: number }> {
   const output = resolve(options.output)
   const existing = await stat(output).catch(() => undefined)
-  if (existing) throw outputExists(options.output)
+  if (existing && !(options.overwrite && existing.isFile())) {
+    throw outputExists(options.output)
+  }
   const carPath = join(dirname(output), `.${options.pieceCid}.car`)
   try {
     const { size } = await downloadPiece({ ...options, output: carPath })

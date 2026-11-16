@@ -10,9 +10,12 @@ const estimate = z.object({
   size: z
     .number()
     .int()
-    .describe('Bytes to store: the file, or the packed CAR'),
+    .describe('Bytes to store: the packed CAR, or the raw file'),
   files: z.number().int(),
-  rootCid: z.string().optional(),
+  rootCid: z
+    .string()
+    .optional()
+    .describe('IPFS root CID of the CAR; absent with --raw'),
   network: z.string(),
   authorization: z
     .enum(['ready', 'login_required', 'login_pending', 'scopes_missing'])
@@ -40,15 +43,17 @@ const estimate = z.object({
 })
 
 /**
- * `filecoin put <path>`: store a file as exact bytes, or a
- * directory as a UnixFS CAR served at `/ipfs/<rootCid>/`, with one copy.
+ * `filecoin put <path>`: store a file or directory as a UnixFS CAR served
+ * at `/ipfs/<rootCid>`, or with `--raw` a file as its exact bytes, with one
+ * copy.
  */
 export const put = defineCommand({
   name: 'put',
   description:
-    'Store a file (raw piece) or directory (UnixFS CAR) with one copy',
+    'Store a file or directory as an IPFS-indexed UnixFS CAR with one copy',
   examples: [
     'filecoin put ./report.pdf',
+    'filecoin put ./report.pdf --raw',
     'filecoin put ./site --name docs',
     'filecoin put ./site --dry-run',
   ],
@@ -64,6 +69,12 @@ export const put = defineCommand({
       .regex(/^\d+$/, 'Expected a decimal provider ID')
       .optional()
       .describe('Storage provider ID (default: automatic)'),
+    raw: z
+      .boolean()
+      .default(false)
+      .describe(
+        'Store a file as its exact bytes, without a UnixFS CAR or IPFS indexing'
+      ),
     ...account,
   }),
   positionals: ['path'],
@@ -84,6 +95,7 @@ export const put = defineCommand({
       const e = data.estimate
       const lines = [
         `Would store ${e.kind} ${e.name}: ${formatBytes(e.size)}, ${e.files} file(s) on ${e.network}`,
+        ...(e.rootCid ? [`rootCid: ${e.rootCid}`] : []),
         `authorization: ${e.authorization}`,
       ]
       if (e.provider)
@@ -95,7 +107,11 @@ export const put = defineCommand({
       }
       return lines.join('\n')
     }
-    return `Stored ${data.resource?.name} (${data.resource?.ref})\n${data.urls?.browser}`
+    return [
+      `Stored ${data.resource?.name} (${data.resource?.ref})`,
+      ...(data.resource?.rootCid ? [`rootCid: ${data.resource.rootCid}`] : []),
+      data.urls?.browser,
+    ].join('\n')
   },
   handler: () => import('../handlers/put.ts'),
 })

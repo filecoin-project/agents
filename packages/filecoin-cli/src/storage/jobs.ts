@@ -24,10 +24,11 @@ import {
   type LegacyCommit,
   type Operation,
   releaseOperation,
+  type StorageFormat,
   updateOperation,
 } from '../state/operations.ts'
 import { getResource, type Resource, saveResource } from '../state/resources.ts'
-import { packDirectory } from './pack.ts'
+import { packDirectory, packFile } from './pack.ts'
 import type {
   CommittedPiece,
   Placement,
@@ -36,14 +37,14 @@ import type {
 } from './types.ts'
 import { type RetrievalUrls, resourceUrls, retrievalUrls } from './urls.ts'
 
-/** Data-set metadata namespacing CLI uploads of raw files. */
-export const FILE_DATA_SET_METADATA = { source: APPLICATION_SOURCE }
+/** Data-set metadata namespacing CLI uploads of raw files (`put --raw`). */
+export const RAW_DATA_SET_METADATA = { source: APPLICATION_SOURCE }
 
 /**
- * Data-set metadata for folders. `withIPFSIndexing` asks Curio to index
- * the CAR so `/ipfs/<rootCid>` retrieval works.
+ * Data-set metadata for CARs of files and folders. `withIPFSIndexing` asks
+ * Curio to index the CAR so `/ipfs/<rootCid>` retrieval works.
  */
-export const FOLDER_DATA_SET_METADATA = {
+export const CAR_DATA_SET_METADATA = {
   source: APPLICATION_SOURCE,
   withIPFSIndexing: '',
 }
@@ -99,14 +100,17 @@ export type StartPutOptions = {
   path: string
   name?: string | undefined
   providerId?: bigint | undefined
+  /** Store a file's exact bytes instead of a UnixFS CAR. */
+  raw?: boolean | undefined
 }
 
 /** A file or directory checked for a put. */
 type PutSource = {
   sourcePath: string
   kind: 'file' | 'folder'
+  format: StorageFormat
   name: string
-  /** Bytes of a file; directories are sized after packing. */
+  /** Bytes of a raw file; CARs are sized after packing. */
   size?: number
 }
 
@@ -118,9 +122,23 @@ async function inspectSource(options: StartPutOptions): Promise<PutSource> {
     throw invalidInput(`No file or directory at ${options.path}.`, 'path')
   }
   const name = options.name ?? basename(sourcePath)
-  if (stats.isDirectory()) return { sourcePath, kind: 'folder', name }
+  if (stats.isDirectory()) {
+    if (options.raw) {
+      throw invalidInput('--raw stores only files, not directories.', 'raw')
+    }
+    return { sourcePath, kind: 'folder', format: 'car', name }
+  }
+  if (!options.raw) return { sourcePath, kind: 'file', format: 'car', name }
   assertPieceSize(stats.size)
-  return { sourcePath, kind: 'file', name, size: stats.size }
+  return { sourcePath, kind: 'file', format: 'raw', name, size: stats.size }
+}
+
+/**
+ * Storage format of a saved put. Operations saved before `format` existed
+ * stored folders as CARs and files raw.
+ */
+function formatOf(input: Operation['input']): StorageFormat {
+  return input.format ?? (input.kind === 'folder' ? 'car' : 'raw')
 }
 
 /**
@@ -141,6 +159,7 @@ export async function startPut(
       sourcePath: source.sourcePath,
       name: source.name,
       kind: source.kind,
+      format: source.format,
       providerId: options.providerId?.toString(),
     },
   })
@@ -151,11 +170,11 @@ export async function startPut(
 export type PutEstimate = {
   kind: 'file' | 'folder'
   name: string
-  /** Bytes to store: the file, or the packed CAR. */
+  /** Bytes to store: the raw file, or the packed CAR. */
   size: number
   /** Files in a directory; 1 for a file. */
   files: number
-  /** IPFS root CID of a directory. */
+  /** IPFS root CID of a CAR; absent for a raw file. */
   rootCid?: string
   /** Chosen provider and quote, when a session key is available. */
   placement?: Placement
@@ -171,26 +190,27 @@ export type EstimatePutOptions = StartPutOptions & {
 /**
  * Describe a put without side effects on providers or the chain: content
  * inventory, stored size, and, with a backend, the provider it would use and
- * what it would cost. Directories are packed only to measure the CAR;
- * nothing is written to disk.
+ * what it would cost. CARs are packed only to measure them; nothing is
+ * written to disk.
  */
 export async function estimatePut(
   options: EstimatePutOptions
 ): Promise<PutEstimate> {
   const source = await inspectSource(options)
   let estimate: PutEstimate
-  if (source.kind === 'file') {
+  if (source.format === 'raw') {
     estimate = {
-      kind: 'file',
+      kind: source.kind,
       name: source.name,
       size: source.size ?? 0,
       files: 1,
     }
   } else {
-    const packed = await packDirectory(source.sourcePath)
+    const pack = source.kind === 'folder' ? packDirectory : packFile
+    const packed = await pack(source.sourcePath)
     assertPieceSize(packed.size)
     estimate = {
-      kind: 'folder',
+      kind: source.kind,
       name: source.name,
       size: packed.size,
       files: packed.files,
@@ -199,7 +219,7 @@ export async function estimatePut(
   }
   if (!options.backend) return estimate
   const placement = await options.backend.selectPlacement({
-    metadata: metadataFor(estimate.kind),
+    metadata: metadataFor(source.format),
     providerId: options.providerId,
   })
   const quote = await options.backend.quote({ size: estimate.size, placement })
@@ -304,9 +324,9 @@ function assertPieceSize(size: number): void {
   }
 }
 
-/** Data-set metadata for a resource kind. */
-function metadataFor(kind: 'file' | 'folder') {
-  return kind === 'folder' ? FOLDER_DATA_SET_METADATA : FILE_DATA_SET_METADATA
+/** Data-set metadata for a storage format. */
+function metadataFor(format: StorageFormat) {
+  return format === 'car' ? CAR_DATA_SET_METADATA : RAW_DATA_SET_METADATA
 }
 
 /**
@@ -332,21 +352,22 @@ function save(
 }
 
 /**
- * Put steps: pack (folders), identify, place, upload, commit, record. Each
+ * Put steps: pack (CARs), identify, place, upload, commit, record. Each
  * step saves its result first, so a resumed job skips completed work and
  * never sends a second commit for the same content.
  */
 async function runPut(ctx: JobContext, op: Operation): Promise<JobResult> {
   const { input } = op
   const kind = input.kind ?? 'file'
+  const format = formatOf(input)
   const name = input.name ?? 'upload'
   const signal = ctx.signal
   if (!input.sourcePath) throw new Error(`Operation ${op.id} has no source.`)
 
   // Prepare the bytes to store.
   let uploadPath = input.sourcePath
-  if (kind === 'folder') {
-    uploadPath = join(ctx.stagingDir(op.id), 'folder.car')
+  if (format === 'car') {
+    uploadPath = join(ctx.stagingDir(op.id), `${kind}.car`)
     const staged = await stat(uploadPath).catch(() => undefined)
     if (!staged) {
       if (op.checkpoint.pieceCid) {
@@ -357,7 +378,7 @@ async function runPut(ctx: JobContext, op: Operation): Promise<JobResult> {
             {
               by: 'agent',
               command: `filecoin put ${input.sourcePath}`,
-              description: 'Start a new put of the same directory',
+              description: `Start a new put of the same ${kind}`,
             },
           ],
         })
@@ -367,7 +388,8 @@ async function runPut(ctx: JobContext, op: Operation): Promise<JobResult> {
         phase: 'packing',
         message: `Packing ${input.sourcePath}`,
       })
-      const packed = await packDirectory(input.sourcePath, uploadPath)
+      const pack = kind === 'folder' ? packDirectory : packFile
+      const packed = await pack(input.sourcePath, uploadPath)
       op = save(ctx, op, {
         rootCid: packed.rootCid.toString(),
         size: packed.size,
@@ -403,7 +425,7 @@ async function runPut(ctx: JobContext, op: Operation): Promise<JobResult> {
       message: 'Selecting a storage provider',
     })
     placement = await ctx.backend.selectPlacement({
-      metadata: metadataFor(kind),
+      metadata: metadataFor(format),
       providerId: input.providerId ? BigInt(input.providerId) : undefined,
     })
     const quote = await ctx.backend.quote({ size, placement })
@@ -444,7 +466,7 @@ async function runPut(ctx: JobContext, op: Operation): Promise<JobResult> {
 
   // Links that work before the commit confirms. The provider hint makes
   // filecoin-api redirect to the provider, which serves a parked piece at once.
-  // A folder's browser link needs Curio's IPFS index, which Curio starts
+  // A CAR's browser link needs Curio's IPFS index, which Curio starts
   // building when it receives the commit, so it is reported after sending.
   const early = retrievalUrls({
     apiUrl: ctx.apiUrl,
@@ -459,14 +481,14 @@ async function runPut(ctx: JobContext, op: Operation): Promise<JobResult> {
       message: early.browser,
       data: { pieceCid, urls: early },
     })
-  if (kind === 'file') reportLink()
+  if (format === 'raw') reportLink()
 
   const committed = await commit(
     ctx,
     op,
     placement,
     { pieceCid, name },
-    kind === 'folder' ? reportLink : undefined
+    format === 'car' ? reportLink : undefined
   )
 
   // Once committed, the indexer ranks the copies; the links need no hint.
@@ -502,7 +524,7 @@ async function runPut(ctx: JobContext, op: Operation): Promise<JobResult> {
     dataSetId: committed.dataSetId.toString(),
     pieceId: committed.pieceId.toString(),
   })
-  if (kind === 'folder') {
+  if (format === 'car') {
     await rm(ctx.stagingDir(op.id), { recursive: true, force: true }).catch(
       () => undefined
     )
@@ -526,7 +548,7 @@ async function commit(
   piece: { pieceCid: string; name: string },
   onSent?: () => void
 ): Promise<CommittedPiece> {
-  const metadata = metadataFor(op.input.kind ?? 'file')
+  const metadata = metadataFor(formatOf(op.input))
   const pieceMetadata: Record<string, string> = {
     name: piece.name.slice(0, MAX_METADATA_VALUE),
     ...(op.checkpoint.rootCid ? { ipfsRootCID: op.checkpoint.rootCid } : {}),

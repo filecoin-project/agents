@@ -20,6 +20,7 @@ export default defineHandler(ls, async (ctx) => {
       kind: resource.kind,
       name: resource.name,
       size: resource.size,
+      ...(resource.rootCid ? { rootCid: resource.rootCid } : {}),
       status: resource.status,
       url: resourceUrls(resource, app.apiUrl).browser,
       createdAt: resource.createdAt,

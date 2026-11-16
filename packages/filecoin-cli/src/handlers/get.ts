@@ -5,7 +5,7 @@ import { defineHandler } from 'clipact'
 import { get } from '../commands/get.ts'
 import { notFound } from '../errors.ts'
 import { findResourcesByCid, type Resource } from '../state/resources.ts'
-import { downloadFolder, downloadPiece, outputExists } from '../storage/get.ts'
+import { downloadCar, downloadPiece, outputExists } from '../storage/get.ts'
 import { providerPieceUrl } from '../storage/urls.ts'
 import { accountScope, appFor, findResource } from './context.ts'
 
@@ -17,8 +17,8 @@ async function assertWritable(path: string, force: boolean): Promise<void> {
 
 /**
  * Retrieve a managed resource by ref (or a PieceCID or root CID) from Curio
- * and verify it. Files are written as-is; folders are extracted to a
- * directory. An unmanaged PieceCID is located through the payer's data sets.
+ * and verify it. A raw file is written as-is; a CAR is extracted to the file
+ * or directory it holds. An unmanaged PieceCID is located through the payer's data sets.
  */
 export default defineHandler(get, async (ctx) => {
   const { input } = ctx
@@ -62,12 +62,13 @@ export default defineHandler(get, async (ctx) => {
 
   const url = providerPieceUrl(resource)
   const output = resolve(input.output ?? resource.name)
-  if (resource.kind === 'folder' && resource.rootCid) {
-    const { size, files } = await downloadFolder({
+  if (resource.rootCid) {
+    const { size, files } = await downloadCar({
       url,
       pieceCid: resource.pieceCid,
       rootCid: resource.rootCid,
       output,
+      overwrite: resource.kind === 'file' && input.force,
       signal: ctx.signal,
     })
     return ctx.ok({
@@ -76,7 +77,7 @@ export default defineHandler(get, async (ctx) => {
       pieceCid: resource.pieceCid,
       output,
       size,
-      files,
+      ...(resource.kind === 'folder' ? { files } : {}),
       url,
     })
   }

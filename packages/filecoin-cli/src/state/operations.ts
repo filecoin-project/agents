@@ -26,8 +26,18 @@ export type OperationInput = {
   sourcePath?: string
   name?: string
   kind?: 'file' | 'folder'
+  /**
+   * How the content is stored: `car` packs it into a UnixFS CAR in an
+   * IPFS-indexed data set, `raw` stores a file's exact bytes. Operations
+   * saved by `filecoin` 0.7.0 and earlier have none: their folders are CARs
+   * and their files are raw.
+   */
+  format?: StorageFormat
   providerId?: string
 }
+
+/** How a put stores its content; see {@link OperationInput.format}. */
+export type StorageFormat = 'car' | 'raw'
 
 /**
  * A commit saved by `filecoin` 0.7.0 and earlier, before synapse-core
