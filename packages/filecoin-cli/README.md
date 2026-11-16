@@ -57,7 +57,7 @@ filecoin put ./report.pdf          # UnixFS CAR  → <api>/get/<rootCid>?browser
 filecoin put ./report.pdf --raw    # raw piece   → <api>/get/<pieceCid>?browser=true
 filecoin put ./site                # UnixFS CAR  → <api>/get/<rootCid>?browser=true
 filecoin put ./site --dry-run      # size, provider, cost, and authorization; stores nothing
-filecoin get res_… --output ./copy # verifies the PieceCID and extracts CARs
+filecoin get res_… --output ./copy # extracts a CAR from /ipfs, checking each block
 filecoin ls                        # add --all to include resources pending removal
 filecoin inspect res_… --check     # sends a HEAD request to the piece URL
 filecoin delete res_… --yes        # schedules removal
@@ -78,6 +78,14 @@ filecoin delete res_… --yes        # schedules removal
 - **A folder's link** comes once the commit is sent. It goes to inbrowser.link, which finds the blocks through IPNI. Curio indexes the CAR and announces it to IPNI when it receives the commit, so the link starts working shortly after.
 
 The links in the result carry no hint. filecoin-api finds providers through its indexer, so they return 404 until the indexer has the piece. `filecoin get` downloads from the provider directly.
+
+`filecoin get <target>` checks what it downloads, and the target decides what it returns:
+
+- A ref of a file or folder stored as a CAR, or its root CID, returns the extracted file or folder. `get` streams the root from the provider's `/ipfs/<rootCid>` as a depth-first CAR and checks each block against its CID while it writes, so no CAR goes to disk. Curio serves `/ipfs` a few minutes after the commit. Before that, `get` fails with a retryable `not_found`.
+- A PieceCID returns the exact stored bytes from `/piece/<pieceCid>`, checked against the PieceCID. For a file or folder stored as a CAR, that is the CAR, saved as `<name>.car` by default.
+- A ref of a file stored with `--raw` returns the file from `/piece`, checked against the PieceCID.
+
+A ref, or a CID in local state, downloads from the provider of the first saved copy. Any other CID resolves through filecoin-api's `/get/{cid}` and needs no login.
 
 Packing skips dotfiles and rejects symlinks. The packed CAR, or a file stored with `--raw`, must be between 127 and 68,182,605,824 bytes (63.5 GiB).
 
