@@ -68,7 +68,8 @@ packages/filecoin-cli/
     │   ├── types.ts      StorageBackend interface, which tests replace with a fake
     │   ├── synapse.ts    StorageBackend built on synapse-core
     │   ├── jobs.ts       put and delete jobs, signed commits, resume, dry-run estimate
-    │   ├── pack.ts       file or folder → UnixFS CAR, CAR → file or folder
+    │   ├── dfs-car.ts    file or folder → DFS-ordered UnixFS CAR stream, in two passes
+    │   ├── pack.ts       file walk, staged post-order CAR (tests only), CAR → file or folder
     │   ├── get.ts        streaming verified download, folder extraction
     │   └── urls.ts       filecoin-api /get URLs, and the Curio /piece URL for get
     └── state/
@@ -199,9 +200,9 @@ A root CID's browser URL carries no hint, because filecoin-api never looks it up
 stateDiagram-v2
   [*] --> queued: operation saved
   queued --> packing: CAR
-  packing --> storing: CAR staged, rootCid saved
-  queued --> storing: raw file
-  storing --> storing: pieceCid, placement, stored
+  packing --> storing: DAG built, rootCid and size saved
+  queued --> storing: raw file, pieceCid saved
+  storing --> storing: placement, then pieceCid and stored
   storing --> committing: sign commit, save it, send it
   committing --> done: confirmed, resource saved
 ```
@@ -210,28 +211,48 @@ The phase is separate from the operation's execution status, which is `pending`,
 
 `storage/jobs.ts` saves each result to the operation checkpoint before the next step depends on it:
 
-1. **Pack (CARs only).** Write `staging/<op>/file.car` or `staging/<op>/folder.car`, then save `rootCid`. Before it saves the operation, `put` adds up the bytes of the file or of the folder's files. A CAR holds every byte of its files, so content over 68,182,605,824 bytes fails with `invalid_input` before anything is written. Packing also stops with `invalid_input` once the CAR passes the limit, which covers content just under it. A failed pack deletes the staging folder, because the CAR is renamed into place only once complete.
-2. **Identify.** Stream the bytes through `Piece.calculate` and save `pieceCid` and `size`. Reject content outside synapse-core's `SIZE_CONSTANTS` limits of 127 to 68,182,605,824 bytes (63.5 GiB).
+1. **Pack (CARs only).** Build the DAG in memory with `dfs-car.ts`, then save `rootCid` and the exact CAR `size`. Before it saves the operation, `put` adds up the bytes of the file or of the folder's files. A CAR holds every byte of its files, so content over 68,182,605,824 bytes fails with `invalid_input` before anything is read. Packing also stops with `invalid_input` once the blocks pass the limit, which covers content just under it. Packing writes nothing to disk. [CAR packing](#car-packing) describes the two passes.
+2. **Identify (raw files only).** Stream the file through `Piece.calculate` and save `pieceCid` and `size`. A CAR gets its PieceCID from the upload in step 4. `put` rejects a file, or a planned CAR, outside synapse-core's `SIZE_CONSTANTS` limits of 127 to 68,182,605,824 bytes (63.5 GiB).
 3. **Place.** Save `providerId`, `serviceURL`, and `payee`. If an existing data set matches, also save its `dataSetId` and `clientDataSetId`.
    - `--provider` calls `resolveProviderLocations({ providerIds: [id] })`, which reads only that provider from the registry and prefers its data set with matching metadata. At the same time, the CLI reads `isProviderApproved` from the FWSS view contract, because `resolveProviderLocations` does not check approval. The provider must be approved for Warm Storage, but it need not be endorsed. If it is not approved or has no active PDP product, the result is `not_found`. The CLI does not ping it.
    - Without `--provider`, the CLI calls `selectReachableProviders({ requireEndorsedPrimary: true })`. It ranks the endorsed providers, preferring one with an existing data set with matching metadata, pings them all at once, and takes the highest-ranked one that answers. If none answers, the result is `service_unavailable`.
    - Both return the matching data set's `clientDataSetId`, so the CLI does not read the data set.
    - `getUploadCosts` then checks the funding, with the matched `dataSetId` or as a new data set. It also returns the account's available funds and debt, which set the funding link's target `balance`. If the account is short, the result is `insufficient_funds` with the console funding link as a `by: "user"` step.
-4. **Upload.** Call `SP.hasPiece` first. It returns `false` only when the provider answers 404. Any other failure stops the put, which a resume retries. If the provider does not have the piece yet, pass a file stream to `SP.uploadPieceStreaming` with `waitForParked: true`. It streams the file without holding the piece in memory, then polls `findPiece` until the provider has parked the piece. Save `stored`. For a raw file, report the early links as `link` progress.
+4. **Upload.**
+   - For a raw file, call `SP.hasPiece` first. It returns `false` only when the provider answers 404. Any other failure stops the put, which a resume retries. If the provider does not have the piece yet, pass a file stream to `SP.uploadPieceStreaming` with `waitForParked: true`. It streams the file without holding the piece in memory, then polls `findPiece` until the provider has parked the piece. Save `stored`, and report the early links as `link` progress.
+   - For a CAR, write the CAR in the second pass and pass the stream to `SP.uploadPieceStreaming` without a `pieceCid`. synapse-core hashes the body with `Piece.transformStream` as it sends it, then finalizes the upload with the PieceCID it computed. Save `pieceCid` and `stored` together. The PieceCID is unknown before the upload, so `put` cannot ask `SP.hasPiece` first, and a CAR the provider already holds is uploaded again.
 5. **Sign.** Call `SP.prepareAddPieces`, or `SP.prepareCreateDataSetAndAddPieces` for a new data set, with `payee = provider.payee` and `payer = rootAddress`. synapse-core chooses a random add-pieces `nonce`, and a `clientDataSetId` for a new data set. It returns the signed commit as JSON-safe data: the IDs, the pieces, and the signed `extraData`. Save the commit before sending it.
 6. **Send.** Pass the saved commit to `SP.submitCommit`. Curio submits the transaction and pays gas. Save `transactionHash`. For a folder, report the early links as `link` progress. Then report the transaction hash as `committing` progress while waiting for confirmation, so the user can look it up. clipact repeats that line with the elapsed time. A delete reports its removal transaction hash the same way.
-7. **Confirm.** Call `SP.waitForCreateDataSetAddPieces` or `SP.waitForAddPieces` with the transaction hash and the commit's `extraData` and piece count. Both wait for the receipt on chain and read `dataSetId` and the piece IDs from its FWSS events. If the receipt wait times out, they read the same IDs from `clientNonces` instead. In one SQLite transaction, save the resource and mark the operation completed. Then try to delete the staging directory. A failure to delete it does not fail the put.
+7. **Confirm.** Call `SP.waitForCreateDataSetAddPieces` or `SP.waitForAddPieces` with the transaction hash and the commit's `extraData` and piece count. Both wait for the receipt on chain and read `dataSetId` and the piece IDs from its FWSS events. If the receipt wait times out, they read the same IDs from `clientNonces` instead. In one SQLite transaction, save the resource and mark the operation completed. Then try to delete the operation's staging directory, which only `filecoin` 0.7.0 and earlier wrote. A failure to delete it does not fail the put.
 
 `filecoin` sets two synapse-core arguments explicitly:
 
 - **`payer`** must be the root address. Without it, the signed payload uses the session key's address as the payer.
 - **`payee`** must be `provider.payee`, because FWSS checks the signature against the payee in the registry. synapse-sdk passes `serviceProvider`, which works only when the two addresses are the same.
 
-### Folder packing
+### CAR packing
 
-`pack.ts` packs files and folders with `ipfs-unixfs-importer` and the IPIP-499 `unixfs-v1-2025` profile: CIDv1, raw leaves, and 1 MiB chunks. Filecoin Pin uses the same profile. Packing walks entries in sorted order, skips dotfiles, and rejects symlinks, so packing the same folder twice gives the same root CID.
+`dfs-car.ts` packs files and folders with `ipfs-unixfs-importer` and the IPIP-499 `unixfs-v1-2025` profile: CIDv1, raw leaves, and 1 MiB chunks. Filecoin Pin uses the same profile. Packing walks entries in sorted order, skips dotfiles, and rejects symlinks, so packing the same folder twice gives the same root CID.
 
-The importer derives parent directories from file paths. `pack.ts` passes only empty directories to the importer explicitly, because an explicit parent makes the importer emit an empty-directory block that nothing references. Blocks stream to disk under a placeholder root, and `pack.ts` then writes the real root into the CAR header. `CarWriter.put` waits until its block is read. If the write fails, past `maxSize` or on a full disk, nothing reads the block, so `writeCar` races each put against the pipeline's failure. Without the race, packing never settled.
+The importer derives parent directories from file paths. `pack.ts` passes only empty directories to the importer explicitly, because an explicit parent makes the importer emit an empty-directory block that nothing references.
+
+The CAR lists blocks in depth-first order from the root, each block the first time the walk reaches it. The CARv1 spec calls this order "filecoin-deterministic", and it matches a trustless gateway's `order=dfs;dups=n`. A reader can check each block against a CID it has already seen, so a CAR from `/piece` can be extracted as it streams. The root CID depends on every byte of the content, so the CAR takes two passes over the source:
+
+1. **Build the DAG.** The importer runs with a blockstore that keeps the bytes of every dag-pb block: directories, HAMT shards, and file nodes. It keeps only the length of each raw leaf. A walk of the DAG from the root sizes the CAR exactly and skips any block the root does not reach.
+2. **Write the CAR.** The second pass writes a CARv1 header with the root, then walks the DAG again. It writes UnixFS nodes from memory. It reads each raw leaf from its source file at the offset that the parent file nodes' `blocksizes` give, up to 64 leaves or 16 MiB ahead of the output. It checks each leaf against its CID with SHA-256. A short read or a mismatch means the source changed between the passes, and the put fails with `source_changed`. The pass ends with an error if it wrote a byte count other than the planned size.
+
+The output is deterministic. The staged packer that `filecoin` 0.7.0 used wrote blocks in the order the importer finished them, which `fileImportConcurrency` reorders, so two packs of the same folder gave the same root CID and different bytes. Two DFS packs of a folder are byte-identical, so a resume streams the same PieceCID.
+
+`pack.ts` keeps that staged packer, `packDirectory` and `packFile`, for the tests that compare root CIDs, and `extractCar` for the tests that extract a CAR.
+
+We measured both packers on 2026-11-16 on an Apple M1 Pro with Node.js 26, each stage in its own process. The staged path packs the CAR to disk, then hashes it. The DFS path builds the DAG, then writes the CAR into `Piece.hasher()`, as the upload does:
+
+| Input | Staged pack + CommP | DFS pass 1 + pass 2 with CommP | Peak heap, staged and DFS |
+| --- | --- | --- | --- |
+| 900 MiB random file | 1.2 s + 5.2 s, and a 900 MiB staged CAR | 1.0 s + 5.6 s, nothing on disk | 32 MiB and 32 MiB |
+| 53,000 files of 1 to 200 bytes | 3.9 s + 0.1 s | 4.0 s + 1.0 to 1.5 s | 143 to 162 MiB and 205 to 286 MiB |
+
+CommP dominates the large file, at about 175 MiB/s. In a real put, the upload sends the bytes while it hashes them. For small files, the second pass spends its time opening each file, and the read-ahead cut it from 3.6 s to about 0.8 s. The DFS path holds 1 to 2 KiB more heap per file, for the CID keys and source paths it keeps between the passes.
 
 [ipfs-car](https://github.com/storacha/ipfs-car) 3.1.0 uses `@ipld/unixfs` with raw leaves, 1 MiB chunks, and a width of 1024. It switches to a sharded directory above 1,000 entries. We compared the two packers on 2026-09-29:
 
@@ -258,9 +279,10 @@ A failure marks the operation `failed` and becomes an error with a `filecoin ope
 - **The commit was signed.** When the checkpoint has a saved `commit`, the resume first calls `WarmStorage.getAddPiecesResult` or `getCreateDataSetAndAddPiecesResult`. Both decode the nonce from the signed `extraData` and read `clientNonces(payer, nonce)` from the FWSS view contract. FWSS stores `((firstAdded + count) << 128) | dataSetId` for every used add-pieces nonce, including the add half of create-and-add. A non-zero value means the commit landed and gives both IDs, so the operation completes without sending anything. A zero value means the commit did not land. The resume then sends the same commit again, or waits on its `transactionHash` if one was saved. FWSS rejects a second use of a nonce, so at most one commit takes effect, even if the first one lands late ([#1](https://github.com/filecoin-project/agents/issues/1)).
 - **The commit did not apply.** When the transaction reverted or added no piece, synapse-core throws `TransactionNotAppliedError`, and `filecoin` returns `commit_rejected` and clears the saved `transactionHash`. The next resume checks the nonce and sends the same signature again.
 - **The commit was saved by `filecoin` 0.7.0 or earlier.** Those versions saved only the signed `extraData`, the nonce, and the client data set ID, and they saved the provider's `statusUrl` after sending. The resume rebuilds the synapse-core commit from that record, the saved placement, and the piece, and saves it in the new form. It no longer reads `statusUrl`: a saved `transactionHash` marks a sent commit.
-- **The piece is already uploaded.** When `stored` is set, or the provider already has the piece, the resume skips the upload and goes to the commit.
-- **The source changed.** The resume recomputes the PieceCID from the staged CAR, or from the source file for a raw file. A mismatch fails with `source_changed`, so `filecoin` never stores different bytes. A CAR is a copy taken when the put packed it, so a later change to the source does not reach the stored content.
-- **The staged CAR is missing.** If the CAR is gone after the operation saved its PieceCID, the resume fails with `staging_missing`.
+- **The piece is already uploaded.** When `stored` is set, the resume skips the upload and goes to the commit. It does not read the source, so a CAR put whose upload finished resumes even after the source is gone. A raw file resume also skips the upload when the provider already has the piece.
+- **The upload of a CAR did not finish.** The resume builds the DAG again and checks that the root CID equals the saved `rootCid`. A mismatch fails with `source_changed`. The resume then writes and uploads the CAR again. The DFS bytes are deterministic, so the PieceCID matches the earlier attempt's. A `pieceCid` saved without `stored` comes from a staged CAR of `filecoin` 0.7.0 or earlier, whose bytes differ, so the resume replaces it with the PieceCID of the new upload.
+- **The source changed.** A raw file resume recomputes the PieceCID from the file. A mismatch fails with `source_changed`, so `filecoin` never stores different bytes. A CAR put checks its source twice: the root CID on resume, and each raw leaf against its CID as the second pass reads it. Bytes appended to a file after the first pass are not in the CAR, which still matches the saved root CID.
+- **`staging_missing`.** `put` no longer returns it, because it stages no CAR. The code stays in the error registry for agents that branch on it.
 
 The lock is a compare-and-swap `UPDATE` on `(execution_status, pid)`. If an operation is `running` but its process is gone, because `process.kill(pid, 0)` fails, another process can take it over. If a live process holds the lock, the result is `operation_running`. The process also tracks its own locks in memory, so `filecoin` refuses a second call for the same operation in the same process. `filecoin` also takes over a `running` row whose PID the system has since reused ([#3](https://github.com/filecoin-project/agents/issues/3)).
 
@@ -268,7 +290,7 @@ The lock is a compare-and-swap `UPDATE` on `(execution_status, pid)`. If an oper
 
 ### Dry run
 
-`put --dry-run` stores nothing and signs nothing. It lists the input files and packs the file or folder to measure the CAR and compute its `rootCid`, without writing it to disk. When a session key is available, it also selects the provider and prices the upload with `getUploadCosts`. The result reports these fields:
+`put --dry-run` stores nothing and signs nothing. It lists the input files and runs the first pass of [CAR packing](#car-packing) to measure the CAR and compute its `rootCid`. It writes nothing to disk and reads no file twice. When a session key is available, it also selects the provider and prices the upload with `getUploadCosts`. The result reports these fields:
 
 - `authorization`: `ready`, `login_required`, `login_pending`, or `scopes_missing`.
 - The provider and any existing data set.
@@ -345,7 +367,7 @@ filecoin-api reads the chain through its indexer, so a data set or piece added i
 ├── config.json        clipact store: network and sessions (mode 0600)
 ├── clipact.json       clipact's telemetry state
 ├── state.db           SQLite (node:sqlite), WAL, migrations via PRAGMA user_version
-└── staging/<op_id>/   file.car or folder.car for unfinished CAR puts
+└── staging/<op_id>/   staged CARs of unfinished puts from filecoin 0.7.0 and earlier
 ```
 
 | Table | Key | Contents |
@@ -402,7 +424,10 @@ The tests use the Node test runner and need no network. msw replaces `fetch` for
 ## Known limits
 
 - `filecoin` rejects content smaller than 127 bytes or larger than 68,182,605,824 bytes (63.5 GiB).
-- A put that fails after packing keeps its staged CAR, of up to 63.5 GiB, so it can resume. Nothing removes the staging folder of a put that is never resumed.
+- A CAR put reads its source twice, and a resume reads it twice more. `put` cannot ask the provider whether it already holds a CAR's piece before it uploads it, because the PieceCID is known only after the upload.
+- A CAR put keeps every UnixFS node of its DAG in memory between the passes: 1 to 2 KiB of heap per file in a folder of small files, and about 200 bytes per MiB of a large file.
+- A CAR holds each repeated block once (`dups=n`). Curio's `/ipfs` CARs repeat blocks (`dups=y`), so a streaming reader written for them must also remember the CIDs it has already written.
+- Nothing removes the staging folder that `filecoin` 0.7.0 and earlier left for a put that is never resumed.
 - A put that fails before any external change, such as with `insufficient_funds`, stays listed as an incomplete operation.
 - `inspect --check` sends a HEAD request to `urls.piece` and follows filecoin-api's redirect. It does not check each file of a folder or the inbrowser.link page.
 - `urls.piece` and a raw file's `urls.browser` return 404 until filecoin-api's indexer has the piece.
