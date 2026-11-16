@@ -79,7 +79,7 @@ filecoin delete res_… --yes        # schedules removal
 
 The links in the result carry no hint. filecoin-api finds providers through its indexer, so they return 404 until the indexer has the piece. `filecoin get` downloads from the provider directly.
 
-Packing skips dotfiles and rejects symlinks. The file or the packed CAR must be between 127 and 1,065,353,216 bytes (1016 MiB).
+Packing skips dotfiles and rejects symlinks. The packed CAR, or a file stored with `--raw`, must be between 127 and 68,182,605,824 bytes (63.5 GiB).
 
 `delete` schedules removal, and the provider then deletes the stored copy. The resource state becomes `removal_pending`. Without `--yes`, `delete` asks a human at a terminal to confirm. In every other case, including for agents, it returns `confirmation_required` with a step for the user (`by: "user"`).
 
