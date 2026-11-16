@@ -283,7 +283,7 @@ test('downloadDag maps a 404 and checks the response type', async () => {
       rootCid: rootCid.toString(),
       output: join(root, 'out'),
       fetch: carFetch(() => carStream(rootCid, dfsBlocks(car)), {
-        contentType: 'application/vnd.ipld.car;version=1;order=unk;dups=n',
+        contentType: 'application/vnd.ipld.car;version=1;order=unk;dups=y',
       }),
     }),
     'verification_failed'
@@ -358,4 +358,122 @@ test('downloadDag accepts a CIDv1 answer to a CIDv0 root', async () => {
   assert.equal(result.kind, 'folder')
   assert.equal(result.files, 3)
   assert.ok(car)
+})
+
+/**
+ * A folder full of repeats: two identical multi-chunk files, a file whose
+ * 1 MiB chunks repeat, a small file identical to another, and a
+ * subdirectory duplicated under another name.
+ */
+async function repeats(root: string): Promise<string> {
+  const dir = join(root, 'repeats')
+  const big = randomBytes(2_500_000)
+  await mkdir(join(dir, 'sub', 'deep'), { recursive: true })
+  await writeFile(join(dir, 'a.bin'), big)
+  await writeFile(join(dir, 'b.bin'), big)
+  await writeFile(join(dir, 'zeros.bin'), Buffer.alloc(4 * 1024 * 1024 + 5))
+  await writeFile(join(dir, 'note.txt'), 'same')
+  await writeFile(join(dir, 'sub', 'note.txt'), 'same')
+  await writeFile(join(dir, 'sub', 'deep', 'c.bin'), randomBytes(1_200_000))
+  await writeFile(join(dir, 'sub', 'deep', 'd.bin'), big)
+  await mkdir(join(dir, 'copy', 'deep'), { recursive: true })
+  for (const path of ['note.txt', 'deep/c.bin', 'deep/d.bin']) {
+    await writeFile(
+      join(dir, 'copy', path),
+      await readFile(join(dir, 'sub', path))
+    )
+  }
+  return dir
+}
+
+/** Relative paths of every file under `dir`, sorted. */
+async function files(dir: string): Promise<string[]> {
+  const entries = await readdir(dir, { recursive: true, withFileTypes: true })
+  return entries
+    .filter((entry) => entry.isFile())
+    .map((entry) => join(entry.parentPath, entry.name).slice(dir.length + 1))
+    .sort()
+}
+
+test('downloadDag rebuilds repeats a dups=n CAR sends once', async () => {
+  const root = await tempDir()
+  const dir = await repeats(root)
+  const car = join(root, 'repeats.car')
+  const { rootCid } = await packDirectory(dir, car)
+  let once = 0
+  for await (const _ of dfsBlocks(car, { dups: false })) once++
+  let all = 0
+  for await (const _ of dfsBlocks(car)) all++
+  assert.ok(once < all, `dups=n sends ${once} of ${all} blocks`)
+
+  for (const contentType of [
+    'application/vnd.ipld.car;version=1;order=dfs;dups=n',
+    'application/vnd.ipld.car',
+  ]) {
+    const output = join(root, `out-${once}-${contentType.length}`)
+    const result = await downloadDag({
+      url: SP_URL,
+      rootCid: rootCid.toString(),
+      output,
+      fetch: carFetch(
+        () => carStream(rootCid, dfsBlocks(car, { dups: false })),
+        {
+          contentType,
+        }
+      ),
+    })
+    const expected = await files(dir)
+    assert.equal(result.files, expected.length)
+    assert.deepEqual(await files(output), expected)
+    for (const path of expected) {
+      assert.deepEqual(
+        await readFile(join(output, path)),
+        await readFile(join(dir, path)),
+        path
+      )
+    }
+    assert.deepEqual(await readdir(join(output, 'copy', 'deep')), [
+      'c.bin',
+      'd.bin',
+    ])
+  }
+})
+
+test('downloadDag reads a dups=y CAR of repeats without rebuilding', async () => {
+  const root = await tempDir()
+  const dir = await repeats(root)
+  const car = join(root, 'repeats.car')
+  const { rootCid } = await packDirectory(dir, car)
+  const output = join(root, 'out')
+  const result = await downloadDag({
+    url: SP_URL,
+    rootCid: rootCid.toString(),
+    output,
+    fetch: carFetch(() => carStream(rootCid, dfsBlocks(car))),
+  })
+  assert.equal(result.files, (await files(dir)).length)
+  assert.deepEqual(
+    await readFile(join(output, 'zeros.bin')),
+    await readFile(join(dir, 'zeros.bin'))
+  )
+})
+
+test('downloadDag rejects a CAR that declares dups=y but leaves repeats out', async () => {
+  const root = await tempDir()
+  const dir = await repeats(root)
+  const car = join(root, 'repeats.car')
+  const { rootCid } = await packDirectory(dir, car)
+  const output = join(root, 'out')
+  await rejectsWith(
+    downloadDag({
+      url: SP_URL,
+      rootCid: rootCid.toString(),
+      output,
+      fetch: carFetch(() =>
+        carStream(rootCid, dfsBlocks(car, { dups: false }))
+      ),
+    }),
+    'verification_failed'
+  )
+  await assert.rejects(stat(`${output}.filecoin-partial`))
 })

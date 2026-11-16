@@ -6,19 +6,28 @@ import { CID } from 'multiformats/cid'
 export type Block = { cid: CID; bytes: Uint8Array }
 
 /**
- * Read the blocks of a CAR at `carPath` in the order Curio's `/ipfs`
- * endpoint (frisbii) sends them: depth-first from the root, parent before
- * children, links in order, and every repeated block sent again.
+ * Read the blocks of a CAR at `carPath` depth-first from the root, parent
+ * before children, links in order. By default every repeated block is sent
+ * again, as Curio's `/ipfs` endpoint (frisbii) does. With `dups: false`,
+ * each block comes once, where the walk first meets it, as Kubo's
+ * `dag export` writes it.
  *
  * @see https://github.com/ipld/frisbii
  */
-export async function* dfsBlocks(carPath: string): AsyncGenerator<Block> {
+export async function* dfsBlocks(
+  carPath: string,
+  { dups = true }: { dups?: boolean } = {}
+): AsyncGenerator<Block> {
   const reader = await CarIndexedReader.fromFile(carPath)
   try {
     const [root] = await reader.getRoots()
     if (!root) throw new Error('CAR has no root.')
     const stack = [CID.decode(root.bytes)]
+    const seen = new Set<string>()
     for (let cid = stack.pop(); cid; cid = stack.pop()) {
+      // A repeat's children are repeats too, so the whole subtree is skipped.
+      if (!dups && seen.has(cid.toString())) continue
+      seen.add(cid.toString())
       const block = await reader.get(cid)
       if (!block) throw new Error(`Block ${cid} missing from CAR.`)
       yield { cid, bytes: block.bytes }
