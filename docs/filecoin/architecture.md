@@ -210,7 +210,7 @@ The phase is separate from the operation's execution status, which is `pending`,
 
 `storage/jobs.ts` saves each result to the operation checkpoint before the next step depends on it:
 
-1. **Pack (CARs only).** Write `staging/<op>/file.car` or `staging/<op>/folder.car`, then save `rootCid`.
+1. **Pack (CARs only).** Write `staging/<op>/file.car` or `staging/<op>/folder.car`, then save `rootCid`. Before it saves the operation, `put` adds up the bytes of the file or of the folder's files. A CAR holds every byte of its files, so content over 68,182,605,824 bytes fails with `invalid_input` before anything is written. Packing also stops with `invalid_input` once the CAR passes the limit, which covers content just under it. A failed pack deletes the staging folder, because the CAR is renamed into place only once complete.
 2. **Identify.** Stream the bytes through `Piece.calculate` and save `pieceCid` and `size`. Reject content outside synapse-core's `SIZE_CONSTANTS` limits of 127 to 68,182,605,824 bytes (63.5 GiB).
 3. **Place.** Save `providerId`, `serviceURL`, and `payee`. If an existing data set matches, also save its `dataSetId` and `clientDataSetId`.
    - `--provider` calls `fetchProviderSelectionInput` and then `selectProviders({ providerId })`, which prefers that provider's data set with matching metadata. The provider must be approved for Warm Storage, but it need not be endorsed. The CLI does not ping it.
@@ -233,7 +233,7 @@ The phase is separate from the operation's execution status, which is `pending`,
 
 protons-runtime 5.0.4 through 8.0.1 encodes a uint64 between 2^31 and 2^32 as one varint byte followed by four bytes of stale Buffer pool memory ([ipfs/protons#212](https://github.com/ipfs/protons/pull/212)). `ipfs-unixfs` uses protons-runtime for the `filesize` and `blocksizes` fields. So a file of 2–4 GiB got a corrupt file-root node: its root CID changed between runs, and extraction failed with `invalid wire type`. A file over 1 TiB hit the same bug when its last 1 TiB subtree was 2–4 GiB. No fixed protons-runtime is on npm yet, so `patches/` applies the upstream one-line fix, `>>> 0` instead of `| 0` in `LongBits`, to protons-runtime 8.0.1. The CLI uses `ipfs-unixfs-importer` 17, so the importer and the exporter share `ipfs-unixfs` 13 and that one protons-runtime. Importer 17.1.1 gives the same root CIDs as 16.1.5 for ordinary folders. With the patch, the file-root node is byte-identical to the one `@ipld/unixfs` writes. The CLI bundles its dependencies, so only `filecoin` releases after 0.5.0 carry the fix. Folders stored with 0.5.0 or earlier that hold such a file must be stored again.
 
-The importer derives parent directories from file paths. `pack.ts` passes only empty directories to the importer explicitly, because an explicit parent makes the importer emit an empty-directory block that nothing references. Blocks stream to disk under a placeholder root, and `pack.ts` then writes the real root into the CAR header.
+The importer derives parent directories from file paths. `pack.ts` passes only empty directories to the importer explicitly, because an explicit parent makes the importer emit an empty-directory block that nothing references. Blocks stream to disk under a placeholder root, and `pack.ts` then writes the real root into the CAR header. `CarWriter.put` waits until its block is read. If the write fails, past `maxSize` or on a full disk, nothing reads the block, so `writeCar` races each put against the pipeline's failure. Without the race, packing never settled.
 
 [ipfs-car](https://github.com/storacha/ipfs-car) 3.1.0 uses `@ipld/unixfs` with raw leaves, 1 MiB chunks, and a width of 1024. It switches to a sharded directory above 1,000 entries. We compared the two packers on 2026-09-29:
 
@@ -387,7 +387,7 @@ The tests use the Node test runner and need no network. msw replaces `fetch` for
 ## Known limits
 
 - `filecoin` rejects content smaller than 127 bytes or larger than 68,182,605,824 bytes (63.5 GiB).
-- `put` checks the size of a CAR only after it writes the whole CAR to `staging/<op>/`, and a failed put keeps its staged CAR. A put of content over the limit can fill the disk before it fails, and nothing removes the staging folder of a put that is never resumed.
+- A put that fails after packing keeps its staged CAR, of up to 63.5 GiB, so it can resume. Nothing removes the staging folder of a put that is never resumed.
 - A put that fails before any external change, such as with `insufficient_funds`, stays listed as an incomplete operation.
 - `inspect --check` sends a HEAD request to `urls.piece` and follows filecoin-api's redirect. It does not check each file of a folder or the inbrowser.link page.
 - `urls.piece` and a raw file's `urls.browser` return 404 until filecoin-api's indexer has the piece.
