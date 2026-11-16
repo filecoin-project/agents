@@ -5,7 +5,7 @@ description: Store files and folders on Filecoin with the filecoin CLI, return l
 
 # Filecoin for Agents
 
-`filecoin` stores a file (its exact bytes) or a folder (a UnixFS CAR served over IPFS) on Filecoin and returns links to share it. A person owns the wallet and approves what you may do. You never hold the wallet key.
+`filecoin` stores a file or a folder on Filecoin as a UnixFS CAR served over IPFS, and returns links to share it and its IPFS root CID. `put --raw` stores a file as its exact bytes instead. A person owns the wallet and approves what you may do. You never hold the wallet key.
 
 ## Run it
 
