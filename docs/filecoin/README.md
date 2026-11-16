@@ -83,7 +83,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **Claude and ChatGPT first.** The [agent plugin](../../plugins/filecoin/README.md) is the main way to add `filecoin` to Claude Code and Codex. It uses the portable Agent Plugins format, so other clients that support it can load it too. Other agents get a manual fallback. The user runs `filecoin skills install` to copy the skill into `.agents/skills` and `.claude/skills`, or installs it with the [`skills` CLI](https://github.com/vercel-labs/skills) from the repository or the site. The user can also add the MCP server URL to the agent's settings.
 - **A session key is enough for storage.** A key with the `createDataSet`, `addPieces`, and `schedulePieceRemovals` scopes can store and delete data. Only the owner can deposit, approve operators, or terminate service.
 - **synapse-core is enough.** The CLI and the app call synapse-core directly. Neither uses synapse-sdk.
-- **Content fits in one piece.** The CAR of a file or folder, or a file stored with `--raw`, must be between 127 and 1,065,353,216 bytes.
+- **Content fits in one piece.** The CAR of a file or folder, or a file stored with `--raw`, must be between 127 and 68,182,605,824 bytes (63.5 GiB), synapse-core's `SIZE_CONSTANTS`. Larger content would need to be split across pieces.
 - **Browsers render CARs through a gateway and raw files from Curio.** Curio's `/ipfs` endpoint returns only blocks and CARs, so browser links to files and folders stored as CARs go to [inbrowser.link](https://inbrowser.link), a public gateway that runs in a service worker. Curio's `/piece` endpoint serves a file stored with `--raw` inline with a detected content type, so a browser renders it.
 - **filecoin-api serves most reads.** The CLI will read most data from filecoin-api. It will fall back to chain reads through synapse-core only where filecoin-api cannot serve a read. Today only `filecoin datasets` reads filecoin-api. Every other command reads the chain through synapse-core.
 - **The indexer runs outside this repository.** filecoin-api reads the `ozone` schema that the [FilOzone indexer](https://github.com/FilOzone/indexer) writes to Postgres. It never writes to the database. The databases run in Helsinki, and filecoin-api runs in Frankfurt, next to Hyperdrive's connection pool ([placement](../../apps/filecoin-api/README.md#placement)).
@@ -145,7 +145,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - Should the remote MCP server get upload and delete tools? If so, what authentication and upload transport does it use? Or should a local MCP server wrap the CLI instead?
 - What do we need before we recommend mainnet to agents? Candidates are spending limits and keychain storage.
 - Who runs the indexer, and what availability do we promise? The Cloudflare deployment is in FilOz's account.
-- Do mutable names, custom domains, private content, or content over 1 GiB belong in the first release?
+- Do mutable names, custom domains, private content, or content split across pieces (over 63.5 GiB) belong in the first release?
 
 ## Follow-up work
 
