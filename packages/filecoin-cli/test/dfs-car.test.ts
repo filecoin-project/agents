@@ -1,22 +1,65 @@
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
-import { createReadStream, createWriteStream } from 'node:fs'
+import { createReadStream } from 'node:fs'
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
-import { Readable } from 'node:stream'
-import { pipeline } from 'node:stream/promises'
+import { basename, join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { CarBlockIterator } from '@ipld/car'
+import * as CarBufferWriter from '@ipld/car/buffer-writer'
 import * as dagPb from '@ipld/dag-pb'
 import { UnixFS } from 'ipfs-unixfs'
+import { type FileCandidate, importer } from 'ipfs-unixfs-importer'
+import { varint } from 'multiformats'
+import { CID } from 'multiformats/cid'
+import * as raw from 'multiformats/codecs/raw'
+import { sha256 } from 'multiformats/hashes/sha2'
 import { type DfsCar, planDirectory, planFile } from '../src/storage/dfs-car.ts'
-import { extractCar, packDirectory, packFile } from '../src/storage/pack.ts'
-import { tempDir } from './helpers.ts'
+import {
+  directoryCandidates,
+  extractCar,
+  IMPORTER_OPTIONS,
+  listEntries,
+} from '../src/storage/pack.ts'
+import { tempDir, writeCar } from './helpers.ts'
 
-/** Write a planned CAR to `path` and return its bytes. */
-async function writeCar(car: DfsCar, path: string): Promise<Buffer> {
-  await pipeline(Readable.from(car.stream()), createWriteStream(path))
-  return await readFile(path)
+/**
+ * Import `source` straight into a block map, with the planner's candidates
+ * and profile, as a reference: its root CID, its sorted block CIDs, and the
+ * size of a CAR holding each block once.
+ */
+async function importReference(
+  source: string,
+  kind: 'file' | 'folder'
+): Promise<{ rootCid: string; blocks: string[]; size: number }> {
+  const path = resolve(source)
+  const name = basename(path)
+  let candidates: ReturnType<typeof directoryCandidates> | FileCandidate[]
+  if (kind === 'folder') {
+    const { files, directories } = await listEntries(path)
+    candidates = directoryCandidates(path, name, files, directories)
+  } else {
+    candidates = [{ path: name, content: createReadStream(path) }]
+  }
+  const blocks = new Map<string, number>()
+  const blockstore = {
+    put(cid: CID, bytes: Uint8Array) {
+      const length = cid.bytes.length + bytes.length
+      blocks.set(cid.toString(), varint.encodingLength(length) + length)
+      return cid
+    },
+  }
+  let root: CID | undefined
+  for await (const entry of importer(
+    candidates,
+    blockstore,
+    IMPORTER_OPTIONS
+  )) {
+    if (entry.path === name) root = entry.cid
+  }
+  assert.ok(root)
+  let size = CarBufferWriter.headerLength({ roots: [root] })
+  for (const length of blocks.values()) size += length
+  return { rootCid: root.toString(), blocks: [...blocks.keys()].sort(), size }
 }
 
 /**
@@ -48,17 +91,9 @@ async function assertDfs(path: string, rootCid: string): Promise<string[]> {
   return order
 }
 
-/** CIDs of the blocks in a CAR, sorted. */
-async function blockSet(path: string): Promise<string[]> {
-  const blocks = await CarBlockIterator.fromIterable(createReadStream(path))
-  const cids: string[] = []
-  for await (const { cid } of blocks) cids.push(cid.toString())
-  return cids.sort()
-}
-
 /**
- * Plan, write, and check a CAR against the staged packer: same root CID,
- * same blocks, the planned size, DFS order, and an exact extraction.
+ * Plan, write, and check a CAR against a plain import: same root CID, same
+ * blocks, the planned size, DFS order, and an exact extraction.
  */
 async function roundTrip(
   root: string,
@@ -66,20 +101,16 @@ async function roundTrip(
   kind: 'file' | 'folder'
 ): Promise<{ car: DfsCar; bytes: Buffer; out: string }> {
   const car = await (kind === 'folder' ? planDirectory : planFile)(source)
-  const reference = join(root, 'reference.car')
-  const packed = await (kind === 'folder' ? packDirectory : packFile)(
-    source,
-    reference
-  )
-  assert.equal(car.rootCid.toString(), packed.rootCid.toString())
-  assert.equal(car.size, packed.size)
+  const reference = await importReference(source, kind)
+  assert.equal(car.rootCid.toString(), reference.rootCid)
+  assert.equal(car.size, reference.size)
 
   const path = join(root, 'dfs.car')
   const bytes = await writeCar(car, path)
   assert.equal(bytes.length, car.size)
   const order = await assertDfs(path, car.rootCid.toString())
   assert.equal(order.length, car.blocks)
-  assert.deepEqual(await blockSet(path), await blockSet(reference))
+  assert.deepEqual([...order].sort(), reference.blocks)
 
   const out = join(root, 'out')
   const extracted = await extractCar(path, out)
@@ -93,7 +124,8 @@ test('a one-chunk file is a raw root written alone', async () => {
   const path = join(root, 'note.bin')
   await writeFile(path, data)
   const { car, out } = await roundTrip(root, path, 'file')
-  assert.equal(car.rootCid.code, 0x55)
+  const expected = CID.create(1, raw.code, await sha256.digest(data))
+  assert.equal(car.rootCid.toString(), expected.toString())
   assert.equal(car.blocks, 1)
   assert.ok(data.equals(await readFile(out)))
 })

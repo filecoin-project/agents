@@ -15,12 +15,7 @@ import { equals } from 'multiformats/bytes'
 import type { CID } from 'multiformats/cid'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { invalidInput, sourceChanged } from '../errors.ts'
-import {
-  directoryCandidates,
-  IMPORTER_OPTIONS,
-  listEntries,
-  type PackOptions,
-} from './pack.ts'
+import { directoryCandidates, IMPORTER_OPTIONS, listEntries } from './pack.ts'
 
 /** Multicodec of a UnixFS node (directory, HAMT shard, or file node). */
 const DAG_PB = 0x70
@@ -59,6 +54,15 @@ type Visit =
   | { cid: BlockCid; bytes: Uint8Array }
   | { cid: BlockCid; source: string; offset: number; length: number }
 
+/** Options for {@link planDirectory} and {@link planFile}. */
+export type PackOptions = {
+  /**
+   * Largest CAR to plan, in bytes. Planning stops with `invalid_input` as
+   * soon as the imported blocks pass it.
+   */
+  maxSize?: number | undefined
+}
+
 /** A CAR planned by {@link planDirectory} or {@link planFile}. */
 export type DfsCar = {
   rootCid: CID
@@ -82,10 +86,8 @@ export type DfsCar = {
 
 /**
  * Plan a UnixFS CAR of a directory in DFS order, without writing it. The
- * first pass imports the directory with the same candidates as
- * {@link import('./pack.ts').packDirectory}, so the root CID is the same.
- * Only UnixFS nodes stay in memory: directories, HAMT shards, and file
- * nodes.
+ * first pass imports the directory with {@link directoryCandidates}. Only
+ * UnixFS nodes stay in memory: directories, HAMT shards, and file nodes.
  */
 export async function planDirectory(
   dir: string,
@@ -102,8 +104,8 @@ export async function planDirectory(
 }
 
 /**
- * Plan a UnixFS CAR of one file in DFS order, without writing it. The root
- * CID is the one {@link import('./pack.ts').packFile} gives: a raw block for
+ * Plan a UnixFS CAR of one file in DFS order, without writing it, with no
+ * directory around the file. The root CID is the file's own: a raw block for
  * a file of one chunk, otherwise a UnixFS file node.
  */
 export async function planFile(
