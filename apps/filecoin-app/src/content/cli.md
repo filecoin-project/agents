@@ -1,6 +1,6 @@
 # CLI
 
-`filecoin` stores a file or a folder as one copy on one storage provider and returns retrieval links. It runs on the calibration network unless you choose mainnet. It needs Node.js 24 or newer. Install the [`filecoin` package from npm](https://www.npmjs.com/package/filecoin):
+`filecoin` stores a file or a folder as two copies on two storage providers and returns retrieval links. It runs on the calibration network unless you choose mainnet. It needs Node.js 24 or newer. Install the [`filecoin` package from npm](https://www.npmjs.com/package/filecoin):
 
 ```sh
 npm install -g filecoin
@@ -54,7 +54,7 @@ filecoin delete res_… --yes        # schedules removal
 
 Packing skips dotfiles and rejects symlinks. The packed file or folder, or a file stored with `--raw`, must be between 127 bytes and 68,182,605,824 bytes (63.5 GiB).
 
-`delete` schedules removal, and the provider then deletes the stored copy. The content's state becomes `removal_pending`. Without `--yes`, `delete` asks a person at a terminal to confirm. Everyone else, including agents, gets `confirmation_required` with a step for the user.
+`delete` schedules removal of every copy, and the providers then delete them. The content's state becomes `removal_pending`. Without `--yes`, `delete` asks a person at a terminal to confirm. Everyone else, including agents, gets `confirmation_required` with a step for the user.
 
 ## Resume an interrupted put or delete
 
