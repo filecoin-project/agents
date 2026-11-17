@@ -1,7 +1,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMemo } from 'react'
-import { z } from 'zod'
+import * as z from 'zod'
 import { dataSetColumns } from '@/components/columns'
 import { DataTable } from '@/components/data-table'
 import {

@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import * as z from 'zod'
 
 /**
  * Minimal types for the WebMCP imperative API, which TypeScript's DOM types

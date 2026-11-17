@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMemo } from 'react'
-import { z } from 'zod'
+import * as z from 'zod'
 import { Address } from '@/components/address'
 import {
   DataSetStatus,

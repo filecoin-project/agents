@@ -2,7 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 import { createFileRoute, notFound } from '@tanstack/react-router'
 import { ExternalLinkIcon } from 'lucide-react'
 import { type FocusEvent, useMemo } from 'react'
-import { z } from 'zod'
+import * as z from 'zod'
 import {
   dataSetColumns,
   pieceWithDataSetColumns,
