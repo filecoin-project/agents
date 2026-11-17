@@ -29,7 +29,7 @@ Don't guess flags or fields. The installed CLI describes itself:
 
 - Never ask for or pass a private key. Logging in needs the user: `auth_required` or `login_pending` means relay the `by: "user"` step (the Filecoin Pay console approval link) and stop. After the user approves, run `filecoin login --check` once to confirm. On `session_conflict`, keep the saved key unless the user agrees to approve a new one.
 - `insufficient_funds` and `session_expired` also need the user. Relay their `next` steps.
-- `filecoin delete <ref>` needs `--yes`. On `confirmation_required`, relay the reason and rerun with `--yes` only after the user agrees.
+- `filecoin delete <target>` takes a ref, a PieceCID, a root CID, or a `<dataSetId>/<pieceId>` from `ls`. A CID removes every copy the wallet pays for, including other tools' copies. Run it with `--dry-run` first and show the user the copies. It needs `--yes`. On `confirmation_required`, relay the reason and rerun with `--yes` only after the user agrees.
 - Never repeat a failed or interrupted `put` or `delete`: that starts a new paid operation. Run the `filecoin operations resume <id>` command from `next` instead. Errors with a filecoin CLI code also carry the ID in `error.details.operationId`. Find lost operation IDs with `filecoin operations ls --incomplete`.
 - Retry only when `error.retryable` is `true`, after `retryAfterSeconds` when present.
 
