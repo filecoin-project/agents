@@ -24,6 +24,7 @@ import {
   getOperation,
   type LegacyCommit,
   type Operation,
+  type Removal,
   releaseOperation,
   type StorageFormat,
   updateOperation,
@@ -31,6 +32,13 @@ import {
 import { getResource, type Resource, saveResource } from '../state/resources.ts'
 import { type DfsCar, planDirectory, planFile } from './dfs-car.ts'
 import { listEntries } from './pack.ts'
+import {
+  type CopyFailure,
+  copyReport,
+  planSecondaryCopy,
+  selectSecondary,
+  storeSecondaryCopy,
+} from './secondary-copy.ts'
 import type {
   CommittedPiece,
   Placement,
@@ -65,6 +73,7 @@ export type JobPhase =
   | 'uploading'
   | 'link'
   | 'committing'
+  | 'copying'
   | 'removing'
 
 /** Everything a put or delete job needs besides its saved record. */
@@ -95,6 +104,13 @@ export type JobResult = {
   state: 'ready' | 'removal_pending'
   resource: Resource
   urls: RetrievalUrls
+  /**
+   * Copies a put asked for. Fewer `resource.copies` than this means some
+   * failed, and `copyFailures` says why.
+   */
+  requestedCopies?: number
+  /** Providers that failed to store a copy, including replaced ones. */
+  copyFailures?: CopyFailure[]
 }
 
 /** Options for {@link startPut}. */
@@ -185,6 +201,9 @@ export type PutEstimate = {
   rootCid?: string
   /** Chosen provider and quote, when a session key is available. */
   placement?: Placement
+  /** Provider of the second copy, when one answers. */
+  secondaryPlacement?: Placement
+  /** Price of every copy together. */
   quote?: UploadQuote
 }
 
@@ -225,12 +244,28 @@ export async function estimatePut(
     }
   }
   if (!options.backend) return estimate
+  const metadata = metadataFor(source.format)
   const placement = await options.backend.selectPlacement({
-    metadata: metadataFor(source.format),
+    metadata,
     providerId: options.providerId,
   })
-  const quote = await options.backend.quote({ size: estimate.size, placement })
-  return { ...estimate, placement, quote }
+  // secondary-copy: remove to go back to one copy.
+  const secondaryPlacement = await selectSecondary(options.backend, {
+    metadata,
+    primary: placement,
+  })
+  const quote = await options.backend.quote({
+    size: estimate.size,
+    placements: secondaryPlacement
+      ? [placement, secondaryPlacement]
+      : [placement],
+  })
+  return {
+    ...estimate,
+    placement,
+    ...(secondaryPlacement ? { secondaryPlacement } : {}),
+    quote,
+  }
 }
 
 /**
@@ -293,6 +328,7 @@ function jobResult(
     state: op.action === 'put' ? 'ready' : 'removal_pending',
     resource,
     urls: resourceUrls(resource, ctx.apiUrl),
+    ...(op.action === 'put' ? copyReport(op) : {}),
   }
 }
 
@@ -351,6 +387,14 @@ function assertPieceSize(size: number): void {
 /** Data-set metadata for a storage format. */
 function metadataFor(format: StorageFormat) {
   return format === 'car' ? CAR_DATA_SET_METADATA : RAW_DATA_SET_METADATA
+}
+
+/** Piece metadata of a put: its display name and any IPFS root CID. */
+function pieceMetadataFor(op: Operation, name: string): MetadataObject {
+  return {
+    name: name.slice(0, MAX_METADATA_VALUE),
+    ...(op.checkpoint.rootCid ? { ipfsRootCID: op.checkpoint.rootCid } : {}),
+  }
 }
 
 /**
@@ -500,6 +544,16 @@ async function runPut(ctx: JobContext, op: Operation): Promise<JobResult> {
     { pieceCid, name },
     format === 'car' ? reportLink : undefined
   )
+  op = getOperation(ctx.db, op.id) as Operation
+
+  // secondary-copy: remove to go back to one copy.
+  const secondary = await storeSecondaryCopy(ctx, op, {
+    primary: placement,
+    pieceCid,
+    metadata: metadataFor(format),
+    pieceMetadata: pieceMetadataFor(op, name),
+  })
+  op = secondary.op
 
   // Once committed, the indexer ranks the copies; the links need no hint.
   const urls = retrievalUrls({
@@ -525,6 +579,7 @@ async function runPut(ctx: JobContext, op: Operation): Promise<JobResult> {
         pieceId: committed.pieceId.toString(),
         serviceURL: placement.serviceURL,
       },
+      ...(secondary.copy ? [secondary.copy] : []),
     ],
     url: urls.browser,
     status: 'active',
@@ -539,7 +594,13 @@ async function runPut(ctx: JobContext, op: Operation): Promise<JobResult> {
       () => undefined
     )
   }
-  return { operationId: op.id, state: 'ready', resource, urls }
+  return {
+    operationId: op.id,
+    state: 'ready',
+    resource,
+    urls,
+    ...copyReport(op),
+  }
 }
 
 /**
@@ -557,11 +618,21 @@ async function place(
     phase: 'placing',
     message: 'Selecting a storage provider',
   })
+  const metadata = metadataFor(formatOf(op.input))
   const placement = await ctx.backend.selectPlacement({
-    metadata: metadataFor(formatOf(op.input)),
+    metadata,
     providerId: op.input.providerId ? BigInt(op.input.providerId) : undefined,
   })
-  const quote = await ctx.backend.quote({ size, placement })
+  // secondary-copy: remove to go back to one copy, and quote [placement].
+  let secondary: Placement | undefined
+  ;({ op, placement: secondary } = await planSecondaryCopy(ctx, op, {
+    metadata,
+    primary: placement,
+  }))
+  const quote = await ctx.backend.quote({
+    size,
+    placements: secondary ? [placement, secondary] : [placement],
+  })
   if (!quote.ready) throw insufficientFunds(quote)
   op = save(ctx, op, {
     providerId: placement.providerId.toString(),
@@ -624,10 +695,7 @@ async function commit(
   onSent?: () => void
 ): Promise<CommittedPiece> {
   const metadata = metadataFor(formatOf(op.input))
-  const pieceMetadata: Record<string, string> = {
-    name: piece.name.slice(0, MAX_METADATA_VALUE),
-    ...(op.checkpoint.rootCid ? { ipfsRootCID: op.checkpoint.rootCid } : {}),
-  }
+  const pieceMetadata = pieceMetadataFor(op, piece.name)
   let signed: Commit | undefined
   if (op.checkpoint.commit) {
     signed = toCommit(op.checkpoint.commit, {
@@ -803,8 +871,9 @@ export async function startRemove(
   if (resource.status !== 'active') {
     throw invalidInput(`${ref} is already pending removal.`, 'ref')
   }
-  const [copy] = resource.copies
-  if (!copy) throw new Error(`Resource ${ref} has no stored copies.`)
+  if (resource.copies.length === 0) {
+    throw new Error(`Resource ${ref} has no stored copies.`)
+  }
   const op = createOperation(ctx.db, {
     action: 'delete',
     resourceRef: ref,
@@ -812,58 +881,94 @@ export async function startRemove(
     payer: ctx.payer,
     input: {},
     checkpoint: {
-      providerId: copy.providerId,
-      serviceURL: copy.serviceURL,
-      dataSetId: copy.dataSetId,
-      pieceId: copy.pieceId,
+      removals: resource.copies.map((copy) => ({
+        providerId: copy.providerId,
+        serviceURL: copy.serviceURL,
+        dataSetId: copy.dataSetId,
+        pieceId: copy.pieceId,
+      })),
     },
   })
   return await runOperation(ctx, op.id)
 }
 
 /**
- * Schedule removal of the resource's piece and wait for the transaction.
- * The provider deletes the data at its next proving boundary, so the result
- * is `removal_pending`. A reverted transaction leaves the resource active.
+ * The copies a delete removes. A delete saved by `filecoin` 0.7.0 and
+ * earlier names its one copy, and its transaction, in flat checkpoint
+ * fields.
+ */
+function removalsOf(op: Operation): Removal[] {
+  const { removals, providerId, serviceURL, dataSetId, pieceId } = op.checkpoint
+  if (removals) return removals
+  if (!(serviceURL && dataSetId && pieceId)) {
+    throw new Error(`Operation ${op.id} is missing its removal target.`)
+  }
+  return [
+    {
+      providerId: providerId ?? '',
+      serviceURL,
+      dataSetId,
+      pieceId,
+      ...(op.checkpoint.transactionHash
+        ? { transactionHash: op.checkpoint.transactionHash }
+        : {}),
+    },
+  ]
+}
+
+/**
+ * Schedule removal of each copy of the resource's piece and wait for each
+ * transaction. The providers delete the data at their next proving
+ * boundary, so the result is `removal_pending`. A reverted transaction
+ * leaves the resource active; a resume skips the copies already scheduled.
  */
 async function runRemove(ctx: JobContext, op: Operation): Promise<JobResult> {
   const resource = getResource(ctx.db, op.resourceRef)
   if (!resource) throw notFound(`Resource ${op.resourceRef} no longer exists.`)
-  const { serviceURL, dataSetId, pieceId } = op.checkpoint
-  if (!(serviceURL && dataSetId && pieceId)) {
-    throw new Error(`Operation ${op.id} is missing its removal target.`)
+  const removals = removalsOf(op)
+  const saveRemovals = () => {
+    op = save(ctx, op, { removals, transactionHash: undefined })
   }
-  if (!op.checkpoint.transactionHash) {
-    op = save(ctx, op, {}, 'removing')
+  op = save(ctx, op, {}, 'removing')
+  for (const [index, removal] of removals.entries()) {
+    if (removal.scheduled) continue
+    const dataSetId = BigInt(removal.dataSetId)
+    const pieceId = BigInt(removal.pieceId)
+    if (!removal.transactionHash) {
+      ctx.progress?.({
+        phase: 'removing',
+        message: `Scheduling removal of piece ${pieceId} from data set ${dataSetId}`,
+      })
+      const { transactionHash } = await ctx.backend.schedulePieceRemoval({
+        serviceURL: removal.serviceURL,
+        dataSetId,
+        pieceId,
+      })
+      removals[index] = { ...removal, transactionHash }
+      saveRemovals()
+    }
+    const hash = removals[index]?.transactionHash as Hex
     ctx.progress?.({
       phase: 'removing',
-      message: `Scheduling removal of piece ${pieceId}`,
+      message: `Waiting for confirmation of removal transaction ${hash}`,
+      data: { transactionHash: hash },
     })
-    const { transactionHash } = await ctx.backend.schedulePieceRemoval({
-      serviceURL,
-      dataSetId: BigInt(dataSetId),
-      pieceId: BigInt(pieceId),
+    const { scheduled } = await ctx.backend.waitForRemoval({
+      transactionHash: hash,
+      dataSetId,
+      pieceId,
     })
-    op = save(ctx, op, { transactionHash })
-  }
-  const hash = op.checkpoint.transactionHash as `0x${string}`
-  ctx.progress?.({
-    phase: 'removing',
-    message: `Waiting for confirmation of removal transaction ${hash}`,
-    data: { transactionHash: hash },
-  })
-  const { scheduled } = await ctx.backend.waitForRemoval({
-    transactionHash: hash,
-    dataSetId: BigInt(dataSetId),
-    pieceId: BigInt(pieceId),
-  })
-  if (!scheduled) {
-    // The transaction had no effect; a resume signs a new one.
-    save(ctx, op, { transactionHash: undefined })
-    throw new CliError({
-      code: ErrorCodes.removalReverted,
-      message: `Removal transaction ${hash} did not schedule the piece for removal; it is still stored.`,
-    })
+    if (!scheduled) {
+      // The transaction had no effect; a resume signs a new one.
+      removals[index] = { ...removal, transactionHash: undefined }
+      saveRemovals()
+      throw new CliError({
+        code: ErrorCodes.removalReverted,
+        message: `Removal transaction ${hash} did not schedule piece ${pieceId} of data set ${dataSetId} for removal; it is still stored.`,
+      })
+    }
+    removals[index] = { ...removal, transactionHash: hash, scheduled: true }
+    saveRemovals()
   }
   const updated: Resource = { ...resource, status: 'removal_pending' }
   complete(ctx, op, updated)

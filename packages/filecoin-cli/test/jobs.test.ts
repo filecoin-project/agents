@@ -11,9 +11,11 @@ import type { Hex } from 'viem'
 import { invalidInput, operationError } from '../src/errors.ts'
 import { openDatabase } from '../src/state/db.ts'
 import {
+  createOperation,
   getOperation,
   type LegacyCommit,
   listOperations,
+  type Operation,
   updateOperation,
 } from '../src/state/operations.ts'
 import { getResource } from '../src/state/resources.ts'
@@ -23,6 +25,7 @@ import {
   type JobContext,
   RAW_DATA_SET_METADATA,
   runOperation,
+  savedOutcome,
   startPut,
   startRemove,
 } from '../src/storage/jobs.ts'
@@ -52,6 +55,12 @@ type FakeOptions = {
   revertOnce?: boolean
   /** The first streamed upload fails after reading its body. */
   failUploadOnce?: boolean
+  /** Providers that can hold the second copy, in the order they answer. */
+  secondaryProviders?: bigint[]
+  /** This many pulls fail before one succeeds. */
+  failPulls?: number
+  /** The commit wait with this 1-based index fails, as if it dropped. */
+  failWaitAt?: number
 }
 
 /**
@@ -71,6 +80,13 @@ function fakeBackend(options: FakeOptions = {}) {
     find: 0,
     wait: 0,
     remove: 0,
+    /** Placements of each quote, by provider ID. */
+    quotes: [] as bigint[][],
+    /** Provider IDs each secondary selection excluded. */
+    excluded: [] as bigint[][],
+    pulls: [] as { serviceURL: string; sourceUrl: string; extraData: Hex }[],
+    /** Removals scheduled, as `dataSetId/pieceId`. */
+    removals: [] as string[],
   }
   const landed = new Map<string, CommittedPiece>()
   const once = { ...options }
@@ -86,8 +102,32 @@ function fakeBackend(options: FakeOptions = {}) {
           : {}),
       })
     },
-    quote: () =>
-      Promise.resolve({
+    selectSecondaryPlacement({ excludeProviderIds }) {
+      calls.excluded.push(excludeProviderIds)
+      const id = (options.secondaryProviders ?? []).find(
+        (candidate) => !excludeProviderIds.includes(candidate)
+      )
+      return Promise.resolve(
+        id == null
+          ? undefined
+          : {
+              providerId: id,
+              serviceURL: `https://sp${id}.example`,
+              payee: `0x${id.toString(16).padStart(40, '0')}` as Hex,
+            }
+      )
+    },
+    pullPiece({ serviceURL, commit, sourceUrl }) {
+      calls.pulls.push({ serviceURL, sourceUrl, extraData: commit.extraData })
+      if ((once.failPulls ?? 0) > 0) {
+        once.failPulls = (once.failPulls ?? 0) - 1
+        return Promise.reject(new Error('pull failed'))
+      }
+      return Promise.resolve()
+    },
+    quote: ({ placements }) => {
+      calls.quotes.push(placements.map((placement) => placement.providerId))
+      return Promise.resolve({
         ready: !(options.unfunded || options.unapproved),
         depositNeeded: options.unfunded ? 10n ** 18n : 0n,
         needsApproval: options.unapproved ?? false,
@@ -95,7 +135,8 @@ function fakeBackend(options: FakeOptions = {}) {
         lockup: 456n,
         fundingUrl:
           'https://pay.example/console/setup?network=calibration&approval=unlimited',
-      }),
+      })
+    },
     hasPiece: () => Promise.resolve(options.stored ?? false),
     upload() {
       calls.upload++
@@ -168,6 +209,9 @@ function fakeBackend(options: FakeOptions = {}) {
     waitForCommit({ commit }) {
       calls.wait++
       const { nonce } = commit
+      if (calls.wait === options.failWaitAt) {
+        return Promise.reject(new Error('connection reset'))
+      }
       if (once.failWaitOnce) {
         once.failWaitOnce = false
         return Promise.reject(new Error('connection reset'))
@@ -184,8 +228,9 @@ function fakeBackend(options: FakeOptions = {}) {
         return Promise.reject(new Error(`nothing landed for ${nonce}`))
       return Promise.resolve(piece)
     },
-    schedulePieceRemoval() {
+    schedulePieceRemoval({ dataSetId, pieceId }) {
       calls.remove++
+      calls.removals.push(`${dataSetId}/${pieceId}`)
       return Promise.resolve({ transactionHash: TX })
     },
     waitForRemoval() {
@@ -896,3 +941,207 @@ test('estimatePut packs a file by default and sizes it raw with --raw', async ()
   assert.equal(raw.size, 4096)
   assert.deepEqual(calls.select, [CAR_DATA_SET_METADATA, RAW_DATA_SET_METADATA])
 })
+
+test('put stores a second copy that the next provider pulls from the first', async () => {
+  const { backend, calls } = fakeBackend({ secondaryProviders: [8n] })
+  const ctx = await context(backend)
+  const events = recordProgress(ctx)
+  const path = await file(ctx, 'report.pdf', 4096)
+
+  const result = await startPut(ctx, { path, raw: true })
+  assert.equal(result.requestedCopies, 2)
+  assert.equal(result.copyFailures, undefined)
+  assert.deepEqual(result.resource.copies, [
+    {
+      providerId: '7',
+      dataSetId: '100',
+      pieceId: '5',
+      serviceURL: 'https://sp.example',
+    },
+    {
+      providerId: '8',
+      dataSetId: '100',
+      pieceId: '5',
+      serviceURL: 'https://sp8.example',
+    },
+  ])
+  // Both copies are priced together before anything is uploaded.
+  assert.deepEqual(calls.quotes, [[7n, 8n]])
+  assert.equal(calls.upload, 1)
+  // The pull carries the second commit's signature and reads the first copy.
+  assert.deepEqual(calls.pulls, [
+    {
+      serviceURL: 'https://sp8.example',
+      sourceUrl: `https://sp.example/piece/${result.resource.pieceCid}`,
+      extraData: calls.submitted[1],
+    },
+  ])
+  assert.equal(calls.submitted.length, 2)
+  const phases = events.map((event) => event.phase)
+  assert.ok(phases.lastIndexOf('committing') < phases.indexOf('copying'))
+  assert.equal(getResource(ctx.db, result.resource.ref)?.copies.length, 2)
+  assert.deepEqual(
+    savedOutcome(ctx, getOperation(ctx.db, result.operationId) as Operation),
+    result
+  )
+})
+
+test('a failed pull moves the second copy to another provider', async () => {
+  const { backend, calls } = fakeBackend({
+    secondaryProviders: [8n, 9n],
+    failPulls: 1,
+  })
+  const ctx = await context(backend)
+  const path = await file(ctx, 'data.bin', 2048)
+
+  const result = await startPut(ctx, { path })
+  assert.deepEqual(
+    result.resource.copies.map((copy) => copy.providerId),
+    ['7', '9']
+  )
+  assert.deepEqual(result.copyFailures, [
+    { providerId: '8', error: 'pull failed' },
+  ])
+  assert.deepEqual(calls.excluded.at(-1), [7n, 8n])
+  // The abandoned commit for provider 8 was signed but never sent.
+  assert.equal(calls.sign, 3)
+  assert.equal(calls.submitted.length, 2)
+})
+
+test('put keeps one copy when no second provider can store it', async () => {
+  const { backend, calls } = fakeBackend({
+    secondaryProviders: [8n],
+    failPulls: 10,
+  })
+  const ctx = await context(backend)
+  const path = await file(ctx, 'data.bin', 2048)
+
+  const result = await startPut(ctx, { path })
+  assert.equal(result.state, 'ready')
+  assert.equal(result.resource.copies.length, 1)
+  assert.equal(result.requestedCopies, 2)
+  assert.deepEqual(result.copyFailures, [
+    { providerId: '8', error: 'pull failed' },
+    { error: 'No other approved provider is reachable.' },
+  ])
+  assert.equal(calls.submitted.length, 1)
+
+  const { backend: alone } = fakeBackend()
+  const single = await startPut(await context(alone), { path })
+  assert.equal(single.resource.copies.length, 1)
+  assert.deepEqual(single.copyFailures, [
+    { error: 'No other approved provider is reachable.' },
+  ])
+})
+
+test('resume after a dropped second-copy wait finds its commit without sending', async () => {
+  const { backend, calls } = fakeBackend({
+    secondaryProviders: [8n],
+    failWaitAt: 2,
+  })
+  const ctx = await context(backend)
+  const path = await file(ctx, 'data.bin', 2048)
+  await assert.rejects(startPut(ctx, { path }), { code: 'operation_failed' })
+  const failed = onlyOperation(ctx)
+  assert.equal(failed.phase, 'copying')
+  assert.ok(failed.checkpoint.secondary?.transactionHash)
+  assert.equal(getResource(ctx.db, failed.resourceRef), undefined)
+
+  const result = await runOperation(ctx, failed.id)
+  assert.equal(result.resource.copies.length, 2)
+  assert.equal(calls.upload, 1)
+  assert.equal(calls.pulls.length, 1)
+  assert.equal(calls.submitted.length, 2)
+})
+
+test('delete schedules removal of every copy', async () => {
+  const { backend, calls } = fakeBackend({
+    secondaryProviders: [8n],
+    existingDataSet: true,
+  })
+  const ctx = await context(backend)
+  const path = await file(ctx, 'data.bin', 1024)
+  const put = await startPut(ctx, { path })
+  assert.equal(put.resource.copies.length, 2)
+
+  const removed = await startRemove(ctx, put.resource.ref)
+  assert.equal(removed.state, 'removal_pending')
+  assert.deepEqual(calls.removals, ['42/5', '100/5'])
+  assert.equal(removed.requestedCopies, undefined)
+})
+
+test('a resumed delete skips the copies already scheduled', async () => {
+  const { backend, calls } = fakeBackend({ secondaryProviders: [8n] })
+  const ctx = await context(backend)
+  const path = await file(ctx, 'data.bin', 1024)
+  const put = await startPut(ctx, { path })
+  let waits = 0
+  const wait = backend.waitForRemoval
+  backend.waitForRemoval = (options) =>
+    ++waits === 2 ? Promise.resolve({ scheduled: false }) : wait(options)
+
+  const error = await startRemove(ctx, put.resource.ref).catch(
+    (e: unknown) => e
+  )
+  assert.ok(error instanceof CliError)
+  assert.equal(error.code, 'removal_reverted')
+  assert.equal(getResource(ctx.db, put.resource.ref)?.status, 'active')
+  const failed = onlyFailed(ctx)
+  assert.deepEqual(
+    failed.checkpoint.removals?.map((removal) => removal.scheduled ?? false),
+    [true, false]
+  )
+
+  const resumed = await runOperation(ctx, failed.id)
+  assert.equal(resumed.state, 'removal_pending')
+  assert.equal(calls.remove, 3)
+})
+
+test('a delete saved by filecoin 0.7.0 resumes its one flat target', async () => {
+  const { backend, calls } = fakeBackend()
+  const ctx = await context(backend)
+  const path = await file(ctx, 'data.bin', 1024)
+  const put = await startPut(ctx, { path })
+  const op = createOperation(ctx.db, {
+    action: 'delete',
+    resourceRef: put.resource.ref,
+    chainId: ctx.chainId,
+    payer: ctx.payer,
+    input: {},
+    checkpoint: {
+      providerId: '7',
+      serviceURL: 'https://sp.example',
+      dataSetId: '100',
+      pieceId: '5',
+      transactionHash: TX,
+    },
+  })
+
+  const resumed = await runOperation(ctx, op.id)
+  assert.equal(resumed.state, 'removal_pending')
+  // The saved transaction is waited on, not sent again.
+  assert.equal(calls.remove, 0)
+})
+
+test('estimatePut prices both copies and names the second provider', async () => {
+  const { backend, calls } = fakeBackend({ secondaryProviders: [8n] })
+  const ctx = await context(backend)
+  const path = await file(ctx, 'report.pdf', 4096)
+
+  const estimate = await estimatePut({ path, backend })
+  assert.equal(estimate.secondaryPlacement?.providerId, 8n)
+  assert.deepEqual(calls.quotes, [[7n, 8n]])
+  assert.equal(calls.pulls.length + calls.sign, 0)
+})
+
+/** The only failed operation of a context's account. */
+function onlyFailed(ctx: JobContext) {
+  const { items } = listOperations(ctx.db, {
+    chainId: ctx.chainId,
+    payer: ctx.payer,
+    limit: 10,
+    incomplete: true,
+  })
+  assert.equal(items.length, 1)
+  return items[0] as NonNullable<(typeof items)[0]>
+}

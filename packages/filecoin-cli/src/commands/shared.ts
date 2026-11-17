@@ -77,12 +77,29 @@ export const urls = z.object({
     .describe('Link a browser renders: a folder through inbrowser.link'),
 })
 
+/** A provider that failed to store a copy, and why. */
+export const copyFailure = z.object({
+  providerId: z.string().optional(),
+  error: z.string(),
+})
+
 /** Result of a put, a delete, or a resumed operation. */
 export const jobResult = {
   operationId: z.string(),
   state: z.enum(['ready', 'removal_pending']),
   resource,
   urls,
+  requestedCopies: z
+    .number()
+    .int()
+    .optional()
+    .describe(
+      'Copies a put asked for; fewer resource.copies means some failed'
+    ),
+  copyFailures: z
+    .array(copyFailure)
+    .optional()
+    .describe('Providers that failed to store a copy, including replaced ones'),
 }
 
 /** Execution state of an operation. */

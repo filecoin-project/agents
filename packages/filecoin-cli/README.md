@@ -1,6 +1,6 @@
 # filecoin-cli
 
-`filecoin` is a prototype command-line interface for Filecoin. It stores a file or a folder as one copy on one Curio provider and returns retrieval URLs on [filecoin-api's `/get/{cid}` route](../../docs/filecoin/retrieval.md). It runs on the calibration network unless you choose mainnet.
+`filecoin` is a prototype command-line interface for Filecoin. It stores a file or a folder as two copies on two Curio providers and returns retrieval URLs on [filecoin-api's `/get/{cid}` route](../../docs/filecoin/retrieval.md). It runs on the calibration network unless you choose mainnet.
 
 `filecoin` calls [synapse-core](https://github.com/FilOzone/synapse-sdk/tree/master/packages/synapse-core) directly. It uses [clipact](https://github.com/hugomrdias/agents/blob/main/packages/clipact/README.md) for the agent output contract, its folder, and its configuration store. The design follows the [CLI guidelines for agents](https://github.com/hugomrdias/agents/blob/main/docs/agent-cli/guidelines.md). The [architecture](../../docs/filecoin/architecture.md) describes the modules and flows.
 
@@ -79,6 +79,8 @@ filecoin delete res_… --yes        # schedules removal
 
 The links in the result carry no hint. filecoin-api finds providers through its indexer, so they return 404 until the indexer has the piece. `filecoin get` downloads from the provider directly.
 
+`put` stores two copies, as synapse-sdk does. After the first copy confirms, a second provider pulls the piece from the first, so the machine uploads it once. If no second provider can store it, the put still succeeds with one copy. The result's `requestedCopies` is 2, `resource.copies` has one entry, and `copyFailures` lists each provider that failed and why. `--dry-run` names the second provider in `secondaryProvider` and prices both copies.
+
 `filecoin get <target>` checks what it downloads, and the target decides what it returns:
 
 - A ref of a file or folder stored as a CAR, or its root CID, returns the extracted file or folder. `get` streams the root from the provider's `/ipfs/<rootCid>` as a depth-first CAR and checks each block against its CID while it writes, so no CAR goes to disk. Curio serves `/ipfs` a few minutes after the commit. Before that, `get` fails with a retryable `not_found`.
@@ -89,7 +91,7 @@ A ref, or a CID in local state, downloads from the provider of the first saved c
 
 Packing skips dotfiles and rejects symlinks. The packed CAR, or a file stored with `--raw`, must be between 127 and 68,182,605,824 bytes (63.5 GiB).
 
-`delete` schedules removal, and the provider then deletes the stored copy. The resource state becomes `removal_pending`. Without `--yes`, `delete` asks a human at a terminal to confirm. In every other case, including for agents, it returns `confirmation_required` with a step for the user (`by: "user"`).
+`delete` schedules removal of every copy, and the providers then delete them. The resource state becomes `removal_pending`. Without `--yes`, `delete` asks a human at a terminal to confirm. In every other case, including for agents, it returns `confirmation_required` with a step for the user (`by: "user"`).
 
 ## List the wallet's data sets
 

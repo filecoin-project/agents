@@ -1,8 +1,9 @@
 import type { Commit } from '@filoz/synapse-core/sp'
 import type { MetadataObject } from '@filoz/synapse-core/utils'
 import type { Address, Hex } from 'viem'
+import type { SecondaryCopyBackend } from './secondary-copy.ts'
 
-/** Provider and data set chosen for a single-copy upload. */
+/** Provider and data set chosen for one copy of an upload. */
 export type Placement = {
   providerId: bigint
   serviceURL: string
@@ -22,7 +23,7 @@ export type Submission = { transactionHash: Hex }
 /** A confirmed piece in a data set. */
 export type CommittedPiece = { dataSetId: bigint; pieceId: bigint }
 
-/** What storing `size` bytes at a placement costs the payer now. */
+/** What storing `size` bytes at every placement costs the payer now. */
 export type UploadQuote = {
   /** The payer can upload without depositing or approving anything. */
   ready: boolean
@@ -45,14 +46,21 @@ export type UploadQuote = {
  * is built for one invocation and cancels its own calls when that
  * invocation's signal aborts.
  */
-export interface StorageBackend {
+// secondary-copy: drop `extends SecondaryCopyBackend` to go back to one copy.
+export interface StorageBackend extends SecondaryCopyBackend {
   /** Choose one provider, preferring an existing data set with `metadata`. */
   selectPlacement(options: {
     metadata: MetadataObject
     providerId?: bigint | undefined
   }): Promise<Placement>
-  /** Price an upload of `size` bytes and check the payer's readiness. */
-  quote(options: { size: number; placement: Placement }): Promise<UploadQuote>
+  /**
+   * Price an upload of `size` bytes to each placement together and check
+   * the payer's readiness for all of them.
+   */
+  quote(options: {
+    size: number
+    placements: readonly Placement[]
+  }): Promise<UploadQuote>
   /** Whether the provider already holds the piece. */
   hasPiece(options: { serviceURL: string; pieceCid: string }): Promise<boolean>
   /** Upload bytes and wait until the provider has parked the piece. */
