@@ -52,7 +52,7 @@ Give the agent a key that outlives the session instead:
 
 `filecoin` then skips `filecoin login`, and `filecoin status` confirms the key works. The key cannot move funds, and it expires. Revoke it on the same page to stop the agent. Never paste the key into a chat.
 
-`filecoin ls` and `filecoin operations` read a local database, which a new session starts without. [Find stored content](/docs/retrieve#find-stored-content) shows how to look it up by wallet.
+`filecoin ls` lists the wallet's pieces from filecoin-api, so a new session sees what earlier ones stored. Refs and `filecoin operations` live in a local database, which a new session starts without. [Find stored content](/docs/retrieve#find-stored-content) shows how to get content back without a ref.
 
 ## Browser agents
 
