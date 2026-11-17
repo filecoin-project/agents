@@ -55,7 +55,9 @@ export const get = defineCommand({
     size: z
       .number()
       .int()
-      .describe('Verified bytes downloaded: the piece, or the CAR of a root'),
+      .describe(
+        'Bytes written to output: the extracted files, or the piece as stored'
+      ),
     files: z.number().int().optional().describe('Files extracted'),
     url: z.string().describe('URL the bytes came from, after redirects'),
   }),

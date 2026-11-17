@@ -143,6 +143,8 @@ test('get <ref> of a folder streams its root from the provider /ipfs', async () 
   assert.equal(data.rootCid, site.rootCid)
   assert.equal(data.pieceCid, site.pieceCid)
   assert.equal(data.files, 2)
+  // The bytes written: index.html and big.bin, not the CAR.
+  assert.equal(data.size, '<h1>site</h1>'.length + 1_500_000)
   assert.equal(data.url, `${SP}/ipfs/${site.rootCid}`)
   assert.deepEqual(seen, [`ipfs ${DFS_CAR_ACCEPT}`])
   assert.deepEqual(
