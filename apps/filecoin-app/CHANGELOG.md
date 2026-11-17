@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/filecoin-project/agents/compare/filecoin-app-v0.9.0...filecoin-app-v0.9.1) (2026-11-17)
+
+
+### Dependencies
+
+* update nine patch and minor dependencies ([#148](https://github.com/filecoin-project/agents/issues/148)) ([86d08b9](https://github.com/filecoin-project/agents/commit/86d08b980ce36a79dee19de2df901af1dcf598a0))
+
 ## [0.9.0](https://github.com/filecoin-project/agents/compare/filecoin-app-v0.8.0...filecoin-app-v0.9.0) (2026-11-17)
 
 
