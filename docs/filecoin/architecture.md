@@ -193,7 +193,7 @@ Before the commit confirms, `put` reports early links as `link` progress, with `
 
 A root CID's browser URL carries no hint, because filecoin-api never looks it up. inbrowser.link finds the blocks through IPNI, and Curio advertises them shortly after it receives the commit, before the transaction confirms ([what Curio announces](retrieval.md#what-curio-announces-for-fwss)). `put` therefore reports a CAR's early link once the commit is sent.
 
-`<api>` is `https://api.filecoin.io` unless `FILECOIN_API_URL` sets another origin. `inspect` rebuilds the URLs from the resource, and `ls` builds the browser URL from the piece, so both follow `FILECOIN_API_URL`.
+`<api>` is `https://api.filecoin.io` unless `FILECOIN_API_URL` sets another origin. `inspect` rebuilds the URLs from the resource, or else from the PieceCID and root CID of its pieces. `ls` builds the browser URL from the piece. Both follow `FILECOIN_API_URL`.
 
 ### Phases and checkpoints
 
@@ -371,9 +371,17 @@ The provider removes the piece later, at a proving boundary. Until then, `ls` st
 
 ## Piece and data set reads
 
-`filecoin ls`, `filecoin datasets ls`, and `filecoin datasets inspect <id>` read the wallet's pieces and data sets from filecoin-api through `@filecoin-project/api-client`, not from the chain. They need credentials: a saved session, or both `FILECOIN_SESSION_KEY` and `FILECOIN_ROOT_ADDRESS`. They use only the wallet address and sign nothing, so the session key needs no scopes.
+`filecoin ls`, `filecoin inspect <target>`, `filecoin datasets ls`, and `filecoin datasets inspect <id>` read the wallet's pieces and data sets from filecoin-api through `@filecoin-project/api-client`, not from the chain. They need credentials: a saved session, or both `FILECOIN_SESSION_KEY` and `FILECOIN_ROOT_ADDRESS`. They use only the wallet address and sign nothing, so the session key needs no scopes.
 
 - `ls` calls `GET /{network}/pieces` with `owner` set to the payer, so it lists the pieces of every data set the wallet pays for, newest data set and piece first. It sends `removed=false` unless you pass `--all`, and `provider_id` for `--provider`. It reads `name` and `rootCid` from the `name` and `ipfsRootCID` piece metadata that `put` writes, and builds `url`, the browser URL, from the root CID or else the PieceCID. It adds a `resourceRef` to each piece that a managed resource has a copy at, matching the copy's `dataSetId` and `pieceId` in `state.db`. A resource with two copies shows up as two pieces.
+- `inspect` tells a ref, a `<dataSetId>/<pieceId>` pair, a PieceCID, and a root CID apart, in that order. A root CID is converted to CIDv1 first.
+  - A ref reads the resource from `state.db`, then calls `GET /{network}/pieces` with `owner` and `cid` set to the resource's PieceCID. `pieces` is empty until the indexer has the put, and the result is not an error.
+  - A PieceCID calls `GET /{network}/pieces` with `owner` and `cid`. A root CID sends `ipfs_cid` instead, which matches the `ipfsRootCID` piece metadata.
+  - A pair calls `GET /{network}/data-sets/{id}/pieces/{pieceId}` and `GET /{network}/data-sets/{id}` in parallel. The single-piece route returns no owner or provider, so `inspect` takes both from the data set.
+  - `inspect` sends no `removed` filter, so removed pieces show with `removed: true`. It reads one page of up to 200 pieces. Each piece gets a `resourceRef` the same way as in `ls`.
+  - A target other than a ref gets `resource` when exactly one managed resource has a copy at its pieces.
+  - A target that matches no piece of the payer is `not_found`. When `state.db` has a resource for it, the next step is `filecoin inspect <ref>`.
+  - A root CID that matches pieces with different PieceCIDs is `invalid_input`, with one `filecoin inspect <pieceCid>` step for each.
 - `datasets ls` calls `GET /{network}/data-sets` with `owner` set to the payer. It sends `deleted=false` unless you pass `--all`, and `provider_id` for `--provider`.
 - In both list commands, the `--cursor` value is filecoin-api's own cursor, passed through unchanged.
 - `datasets inspect` calls `GET /{network}/data-sets/{id}` and `GET /{network}/data-sets/{id}/pieces` in parallel, then `GET /{network}/providers/{providerId}`. It sends `removed=false` unless you pass `--removed`. It adds a `resourceRef` to each piece that a managed resource has a copy at, matching the copy's `dataSetId` and `pieceId` in `state.db`. A data set that filecoin-api doesn't have, or that another wallet pays for, is `not_found`.
