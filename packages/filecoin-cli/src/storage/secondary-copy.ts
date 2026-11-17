@@ -178,7 +178,11 @@ export async function planSecondaryCopy(
   op: Operation,
   options: { metadata: MetadataObject; primary: Placement }
 ): Promise<{ op: Operation; placement?: Placement }> {
-  let saved = op.checkpoint.secondary ?? { failures: [] }
+  if (!wantsSecondary(op)) return { op }
+  let saved = apart(
+    op.checkpoint.secondary ?? { failures: [] },
+    options.primary
+  )
   if (!saved.placement && !saved.exhausted) {
     try {
       const placement = await selectSecondary(ctx.backend, options)
@@ -225,8 +229,9 @@ export async function storeSecondaryCopy(
     pieceMetadata: MetadataObject
   }
 ): Promise<SecondaryCopyResult> {
+  if (!wantsSecondary(op)) return { op, failures: [] }
   const { backend } = ctx
-  let saved: SecondaryCheckpoint = op.checkpoint.secondary ?? { failures: [] }
+  let saved = apart(op.checkpoint.secondary ?? { failures: [] }, piece.primary)
   const save = (next: SecondaryCheckpoint) => {
     saved = next
     op = persist(ctx, op, saved)
@@ -343,12 +348,39 @@ export function copyReport(op: Operation): {
   requestedCopies: number
   copyFailures?: CopyFailure[]
 } {
-  const saved = op.checkpoint.secondary
-  if (!saved) return { requestedCopies: 1 }
+  const failures = op.checkpoint.secondary?.failures ?? []
   return {
-    requestedCopies: REQUESTED_COPIES,
-    ...(saved.failures.length > 0 ? { copyFailures: saved.failures } : {}),
+    requestedCopies: op.input.copies ?? 1,
+    ...(failures.length > 0 ? { copyFailures: failures } : {}),
   }
+}
+
+/**
+ * Whether a put asked for the second copy. Puts saved by `filecoin` 0.7.0
+ * and earlier did not, and their quote priced one copy.
+ */
+function wantsSecondary(op: Operation): boolean {
+  return (op.input.copies ?? 1) >= REQUESTED_COPIES
+}
+
+/**
+ * Forget a saved second placement on the first copy's provider. A put that
+ * stopped at the funds check saved the second placement but not the first,
+ * so a resume can choose that same provider for the first copy. A signed
+ * commit is kept: it is signed only after the first copy confirms.
+ */
+function apart(
+  saved: SecondaryCheckpoint,
+  primary: Placement
+): SecondaryCheckpoint {
+  if (
+    saved.commit ||
+    saved.placement?.providerId !== primary.providerId.toString()
+  ) {
+    return saved
+  }
+  const { placement: _, pulled: __, ...rest } = saved
+  return rest
 }
 
 /** Save the second copy's checkpoint, and the phase when given. */

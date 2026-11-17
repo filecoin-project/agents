@@ -36,6 +36,13 @@ export type OperationInput = {
    */
   format?: StorageFormat
   providerId?: string
+  // secondary-copy: remove this field to go back to one copy.
+  /**
+   * Copies a put asks for. Puts saved by `filecoin` 0.7.0 and earlier have
+   * none and ask for one, so a resume never adds a copy they did not pay
+   * for.
+   */
+  copies?: number
 }
 
 /** How a put stores its content; see {@link OperationInput.format}. */
