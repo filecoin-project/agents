@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2](https://github.com/filecoin-project/agents/compare/filecoin-api-v0.7.1...filecoin-api-v0.7.2) (2026-11-17)
+
+
+### Dependencies
+
+* update nine patch and minor dependencies ([#148](https://github.com/filecoin-project/agents/issues/148)) ([86d08b9](https://github.com/filecoin-project/agents/commit/86d08b980ce36a79dee19de2df901af1dcf598a0))
+
 ## [0.7.1](https://github.com/filecoin-project/agents/compare/filecoin-api-v0.7.0...filecoin-api-v0.7.1) (2026-11-17)
 
 
