@@ -62,7 +62,7 @@ async function rejectsWith(promise: Promise<unknown>, code: string) {
 test('downloadDag extracts a folder from a depth-first CAR stream', async () => {
   const root = await tempDir()
   const dir = await site(root)
-  const { car, rootCid, fetch } = await served(root, dir)
+  const { rootCid, fetch } = await served(root, dir)
   const output = join(root, 'out')
   const result = await downloadDag({
     url: SP_URL,
@@ -73,7 +73,7 @@ test('downloadDag extracts a folder from a depth-first CAR stream', async () => 
   assert.equal(result.kind, 'folder')
   assert.equal(result.files, 3)
   assert.equal(result.url, SP_URL)
-  assert.ok(result.size > (await stat(car)).size, 'dups make it larger')
+  assert.equal(result.size, await treeSize(dir))
   assert.deepEqual(fetch.accepts, [DFS_CAR_ACCEPT])
   for (const path of ['index.html', 'assets/img/big.bin', 'zeros.bin']) {
     assert.deepEqual(
@@ -394,6 +394,14 @@ async function files(dir: string): Promise<string[]> {
     .sort()
 }
 
+/** Total bytes of the files under `dir`. */
+async function treeSize(dir: string): Promise<number> {
+  let total = 0
+  for (const path of await files(dir))
+    total += (await stat(join(dir, path))).size
+  return total
+}
+
 test('downloadDag rebuilds repeats a dups=n CAR sends once', async () => {
   const root = await tempDir()
   const dir = await repeats(root)
@@ -423,6 +431,7 @@ test('downloadDag rebuilds repeats a dups=n CAR sends once', async () => {
     })
     const expected = await files(dir)
     assert.equal(result.files, expected.length)
+    assert.equal(result.size, await treeSize(dir), 'repeats count once each')
     assert.deepEqual(await files(output), expected)
     for (const path of expected) {
       assert.deepEqual(
@@ -451,6 +460,7 @@ test('downloadDag reads a dups=y CAR of repeats without rebuilding', async () =>
     fetch: carFetch(() => carStream(rootCid, dfsBlocks(car))),
   })
   assert.equal(result.files, (await files(dir)).length)
+  assert.equal(result.size, await treeSize(dir))
   assert.deepEqual(
     await readFile(join(output, 'zeros.bin')),
     await readFile(join(dir, 'zeros.bin'))

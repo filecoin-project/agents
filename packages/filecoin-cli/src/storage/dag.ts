@@ -56,7 +56,7 @@ export type DownloadDagOptions = {
 export type DownloadDagResult = {
   /** `folder` when the root is a UnixFS directory, else `file`. */
   kind: 'file' | 'folder'
-  /** CAR bytes received. */
+  /** Bytes written to `output`: the sum of the extracted files' sizes. */
   size: number
   files: number
   /** URL the CAR came from, after redirects. */
@@ -188,14 +188,6 @@ export async function downloadDag(
   // With `dups=y` every repeat arrives again, so there is nothing to keep.
   const reuse = !/dups=y/.test(type)
 
-  let size = 0
-  async function* counted(): AsyncGenerator<Uint8Array> {
-    for await (const chunk of response.body as AsyncIterable<Uint8Array>) {
-      size += chunk.length
-      yield chunk
-    }
-  }
-
   const tmp = `${output}.filecoin-partial`
   await rm(tmp, { recursive: true, force: true })
   await mkdir(dirname(output), { recursive: true })
@@ -203,7 +195,9 @@ export async function downloadDag(
     if (kind === 'folder' && existing) throw outputExists(options.output)
   })
   try {
-    const blocks = await CarBlockIterator.fromIterable(counted())
+    const blocks = await CarBlockIterator.fromIterable(
+      response.body as AsyncIterable<Uint8Array>
+    )
     const [headerRoot] = await blocks.getRoots()
     if (headerRoot && !sameBlock(root, CID.decode(headerRoot.bytes))) {
       throw invalid(`CAR root is ${headerRoot}, expected ${root}.`)
@@ -214,7 +208,7 @@ export async function downloadDag(
     await walk.end()
     if (existing) await rm(output, { force: true })
     await rename(tmp, output)
-    return { kind: walk.kind, size, files: walk.files, url }
+    return { kind: walk.kind, size: walk.bytes, files: walk.files, url }
   } catch (error) {
     await walk.abort()
     stop.abort()
@@ -234,6 +228,8 @@ class DagWalk {
   /** Kind of the root, known once its block arrives. */
   kind: 'file' | 'folder' = 'file'
   files = 0
+  /** Bytes of the files written so far, copies of repeats included. */
+  bytes = 0
   readonly #target: string
   readonly #stack: Frame[]
   readonly #open = new Set<Sink>()
@@ -244,7 +240,7 @@ class DagWalk {
   /** Dag-pb nodes by key: their checked bytes. */
   readonly #nodes = new Map<string, Uint8Array>()
   /** Finished whole files by the key of their root block. */
-  readonly #files = new Map<string, string>()
+  readonly #files = new Map<string, { path: string; size: number }>()
 
   /** Start a walk that extracts `root` to `target`. */
   constructor(
@@ -307,11 +303,12 @@ class DagWalk {
     if (role.kind === 'entry' && file) {
       this.#stack.pop()
       await copyFile(
-        file,
+        file.path,
         role.path,
         constants.COPYFILE_EXCL | constants.COPYFILE_FICLONE
       )
       this.files++
+      this.bytes += file.size
       return true
     }
     const span = this.#spans.get(key)
@@ -504,8 +501,9 @@ class DagWalk {
         `${sink.path} has ${sink.written} bytes, but its UnixFS size is ${sink.expected}.`
       )
     }
+    this.bytes += sink.written
     if (this.#reuse && sink.key && !this.#files.has(sink.key)) {
-      this.#files.set(sink.key, sink.path)
+      this.#files.set(sink.key, { path: sink.path, size: sink.written })
     }
   }
 }
