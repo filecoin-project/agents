@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.9.0](https://github.com/filecoin-project/agents/compare/filecoin-app-v0.8.0...filecoin-app-v0.9.0) (2026-11-17)
+
+
+### Features
+
+* **filecoin-app:** link npm packages and the MCP card from llms.txt ([09c7d4b](https://github.com/filecoin-project/agents/commit/09c7d4bbf2dca0b12c2ba77ab7cc2282fb20254f)), closes [#63](https://github.com/filecoin-project/agents/issues/63)
+
+
+### Bug Fixes
+
+* **filecoin-app:** wait on chain before a piece deletion succeeds ([df7d9f4](https://github.com/filecoin-project/agents/commit/df7d9f4ae5a0c87e9272aba21c5ccc2e8f36f7d4))
+* stop publishing tsconfig.tsbuildinfo in npm packages ([#143](https://github.com/filecoin-project/agents/issues/143)) ([7147ac7](https://github.com/filecoin-project/agents/commit/7147ac7db30db032ce97992520d0919807af3847))
+
+
+### Dependencies
+
+* **filecoin-app:** take zod from the catalog ([1a16162](https://github.com/filecoin-project/agents/commit/1a16162bcd3627c1059a4a30fc9c00259c6bfde4))
+* **filecoin-app:** update minor and patch dependencies ([173f2d4](https://github.com/filecoin-project/agents/commit/173f2d47105a47d6f97717b2aafb9104887cce4c))
+* **filecoin-app:** update synapse-react to 0.6.0 for synapse-core 0.11.0 ([685323f](https://github.com/filecoin-project/agents/commit/685323f18ae52883df09147ffa593a06b4f0c405))
+
 ## [0.8.0](https://github.com/filecoin-project/agents/compare/filecoin-app-v0.7.0...filecoin-app-v0.8.0) (2026-10-22)
 
 
