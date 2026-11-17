@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.8.0](https://github.com/filecoin-project/agents/compare/filecoin-cli-v0.7.0...filecoin-cli-v0.8.0) (2026-11-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* **filecoin-cli:** the `delete` input field `ref` is now `target`, and its output is `{ dryRun, operationId, state, target, removals, resources }` instead of a resource with URLs. `operations resume` of a delete returns the same shape.
+* **filecoin-cli:** the positional is `target` instead of `ref`, so `--ref` no longer works. The output adds `network` and `pieces`, `resource` is present only when local state has one, and `urls` is absent when filecoin-api has no PieceCID for the piece.
+* **filecoin-cli:** ls returns pieces instead of resources. --all now includes removed pieces, and --provider filters by storage provider.
+* **filecoin-cli:** `get <pieceCid>` of a managed file or folder stored as a CAR writes the CAR instead of extracting it. The result's `pieceCid` is optional, and a new `rootCid` names the root an extraction checked.
+* **filecoin-cli:** a file stored without `--raw` is now a CAR, so its `/piece` URL serves the CAR and its browser link goes through inbrowser.link. Pass `--raw` to store the exact bytes.
+
+### Features
+
+* **filecoin-cli:** add datasets ls and datasets inspect ([fd2d711](https://github.com/filecoin-project/agents/commit/fd2d711e339ddd3131c61b232b0a2885e86ff330))
+* **filecoin-cli:** commit with synapse-core 0.11.0's JSON-safe commits ([010609b](https://github.com/filecoin-project/agents/commit/010609b3740a28ebd89e848efd52d46dde371166)), closes [#105](https://github.com/filecoin-project/agents/issues/105)
+* **filecoin-cli:** delete pieces by ref, PieceCID, root CID, or ID pair ([5726eae](https://github.com/filecoin-project/agents/commit/5726eaeab676c586395bb317ae043531972ccd9f))
+* **filecoin-cli:** extract depth-first CARs that send each block once ([aacd4cf](https://github.com/filecoin-project/agents/commit/aacd4cfd78628bddda747458aab81804b8f644ce))
+* **filecoin-cli:** inspect pieces by ref, PieceCID, root CID, or ID pair ([a65dbe3](https://github.com/filecoin-project/agents/commit/a65dbe35b3c8b018e661a798cdf374fa4b11a33d))
+* **filecoin-cli:** list the wallet's pieces from filecoin-api in ls ([cb431dd](https://github.com/filecoin-project/agents/commit/cb431dd49bb67888ab5c21356d9fa70d8a2d7daa))
+* **filecoin-cli:** select providers with selectReachableProviders ([3545ea7](https://github.com/filecoin-project/agents/commit/3545ea7e099819376d76e5c22b0f6f02bd4480fa)), closes [#105](https://github.com/filecoin-project/agents/issues/105)
+* **filecoin-cli:** store a second copy on another provider ([bfb8ec9](https://github.com/filecoin-project/agents/commit/bfb8ec93495faa414bdc632952a99299e3650ea3))
+* **filecoin-cli:** store files as IPFS-indexed CARs by default ([4ae5b1d](https://github.com/filecoin-project/agents/commit/4ae5b1df6be49060c7a70ad50264542c9e796ae2))
+* **filecoin-cli:** stream put CARs in DFS order without staging ([1ddeb4e](https://github.com/filecoin-project/agents/commit/1ddeb4e509d6f7579c2be35432d564ebcfe5bb47))
+* **filecoin-cli:** stream roots from /ipfs and resolve other CIDs through filecoin-api ([6b5b5a8](https://github.com/filecoin-project/agents/commit/6b5b5a8d3c4ef6f3355c88747bbb29f1afe50ee1))
+* **filecoin-cli:** wait for removals with SP.waitForDeletePieces ([bee2dd1](https://github.com/filecoin-project/agents/commit/bee2dd1a274247b638cd0654c95db0f2444397f1)), closes [#105](https://github.com/filecoin-project/agents/issues/105)
+
+
+### Bug Fixes
+
+* **filecoin-cli:** accept a CIDv1 answer to a CIDv0 root in get ([9a231b2](https://github.com/filecoin-project/agents/commit/9a231b22db9dc07aaadbfd398381b529bd33cf30))
+* **filecoin-cli:** keep the second copy off the first copy's provider ([28bcf2d](https://github.com/filecoin-project/agents/commit/28bcf2dbbbd048c754aaf52756a65ed9370fb49b))
+* **filecoin-cli:** read every page and filter providers first in delete ([6c986b4](https://github.com/filecoin-project/agents/commit/6c986b4e9bd2368f3c618561966ea1c0095dfdd1))
+* **filecoin-cli:** reject oversized content before staging its CAR ([eea14b0](https://github.com/filecoin-project/agents/commit/eea14b02b9ca0a57593ac78fae987fae94b9ecd7))
+* **filecoin-cli:** report the bytes get writes as its size ([f62c5ed](https://github.com/filecoin-project/agents/commit/f62c5ed033a2ba81e6b9f25081984f5c26b04aa6))
+* stop publishing tsconfig.tsbuildinfo in npm packages ([#143](https://github.com/filecoin-project/agents/issues/143)) ([7147ac7](https://github.com/filecoin-project/agents/commit/7147ac7db30db032ce97992520d0919807af3847))
+
+
+### Dependencies
+
+* **filecoin-cli:** take zod from the catalog ([9647687](https://github.com/filecoin-project/agents/commit/9647687901e5816013f7749a959b65c8f08171ba))
+* **filecoin-cli:** update viem to 2.57.19 and zod to 4.6.7 ([a826f08](https://github.com/filecoin-project/agents/commit/a826f08df6cb32fdd94d6dd403b388f3e47d84ea))
+
 ## [0.7.0](https://github.com/filecoin-project/agents/compare/filecoin-cli-v0.6.0...filecoin-cli-v0.7.0) (2026-10-23)
 
 
