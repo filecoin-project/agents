@@ -99,7 +99,7 @@ export default defineHandler(get, async (ctx) => {
       throw notFound(`No managed resource, PieceCID, or CID ${target}.`, {
         by: 'agent',
         command: 'filecoin ls',
-        description: 'List managed resources',
+        description: "List the wallet's stored pieces and their refs",
       })
     }
     const output = resolve(input.output ?? target)

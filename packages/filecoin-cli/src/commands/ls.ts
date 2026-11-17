@@ -3,49 +3,80 @@ import * as z from 'zod'
 import { ErrorCodes, STORAGE_ERRORS } from '../errors.ts'
 import { account, accountEnv, formatBytes, paging } from './shared.ts'
 
-/** `filecoin ls`: list managed resources, newest first, one page at a time. */
+/**
+ * One piece the wallet pays for, from filecoin-api. `name` and `rootCid` come
+ * from the piece metadata that `put` writes; `resourceRef` from local state.
+ */
+export const storedPiece = z.object({
+  dataSetId: z.string(),
+  pieceId: z.string(),
+  providerId: z.string().optional(),
+  pieceCid: z.string().optional(),
+  rootCid: z
+    .string()
+    .optional()
+    .describe('IPFS root CID, from the ipfsRootCID piece metadata'),
+  name: z.string().optional().describe('From the name piece metadata'),
+  rawSize: z.string().optional().describe('Bytes before padding'),
+  metadata: z.record(z.string(), z.unknown()),
+  removed: z.boolean(),
+  addedAtBlock: z.string().optional(),
+  url: z
+    .string()
+    .optional()
+    .describe('filecoin-api link a browser renders; absent without a CID'),
+  resourceRef: z
+    .string()
+    .optional()
+    .describe('Managed resource stored as this piece, from local state'),
+})
+
+/** `filecoin ls`: the wallet's pieces from filecoin-api, newest first. */
 export const ls = defineCommand({
   name: 'ls',
-  description: 'List managed resources, newest first',
-  examples: ['filecoin ls', 'filecoin ls --all --limit 50'],
+  description: "List the wallet's stored pieces, newest first",
+  examples: [
+    'filecoin ls',
+    'filecoin ls --provider 9',
+    'filecoin ls --all --limit 50',
+  ],
   input: z.strictObject({
     ...paging,
+    provider: z
+      .string()
+      .regex(/^\d+$/, 'Expected a decimal provider ID')
+      .optional()
+      .describe('Only pieces with this storage provider'),
     all: z
       .boolean()
       .default(false)
-      .describe('Include resources pending removal'),
+      .describe('Include pieces removed from their data sets'),
     ...account,
   }),
   env: accountEnv,
   secrets: ['sessionKey'],
   output: z.object({
     network: z.string(),
-    resources: z.array(
-      z.object({
-        ref: z.string(),
-        kind: z.enum(['file', 'folder']),
-        name: z.string(),
-        size: z.number().int(),
-        rootCid: z
-          .string()
-          .optional()
-          .describe('IPFS root CID; absent for a file stored with --raw'),
-        status: z.enum(['active', 'removal_pending']),
-        url: z.string().describe('filecoin-api link a browser renders'),
-        createdAt: z.string(),
-      })
-    ),
+    pieces: z.array(storedPiece),
     nextCursor: z.string().optional(),
   }),
   errors: [...STORAGE_ERRORS, ErrorCodes.authRequired, ErrorCodes.loginPending],
   readOnly: true,
   human: (data) =>
-    data.resources.length === 0
-      ? `No resources on ${data.network}.`
+    data.pieces.length === 0
+      ? `No pieces on ${data.network}.`
       : [
-          ...data.resources.map(
-            (r) =>
-              `${r.ref}  ${r.kind.padEnd(8)} ${formatBytes(r.size).padStart(10)}  ${r.name}${r.status === 'active' ? '' : ` (${r.status})`}${r.rootCid ? `  ${r.rootCid}` : ''}`
+          ...data.pieces.map((p) =>
+            [
+              `${p.dataSetId}/${p.pieceId}`.padEnd(12),
+              (p.rawSize ? formatBytes(Number(p.rawSize)) : '?').padStart(10),
+              p.name ?? '',
+              p.resourceRef ?? '',
+              p.rootCid ?? p.pieceCid ?? '',
+              p.removed ? 'removed' : '',
+            ]
+              .filter(Boolean)
+              .join('  ')
           ),
           ...(data.nextCursor ? [`more: --cursor ${data.nextCursor}`] : []),
         ].join('\n'),

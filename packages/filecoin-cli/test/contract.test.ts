@@ -46,7 +46,7 @@ test('every outcome keeps the output contract and hides the session key', async 
   }
   const cases: [string[], Record<string, string>, string][] = [
     [['ls'], {}, 'auth_required'],
-    [['ls', '--debug'], withKey, 'ok'],
+    [['operations', 'ls', '--debug'], withKey, 'ok'],
     [['ls', '--limit', '0'], withKey, 'invalid_input'],
     [['operations', 'inspect', 'op_x'], withKey, 'not_found'],
     [['delete', 'res_x'], withKey, 'confirmation_required'],

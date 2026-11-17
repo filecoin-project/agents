@@ -868,7 +868,7 @@ export async function startRemove(
     throw notFound(`No managed resource ${ref} for this account.`, {
       by: 'agent',
       command: 'filecoin ls',
-      description: 'List managed resources',
+      description: "List the wallet's stored pieces and their refs",
     })
   }
   if (resource.status !== 'active') {

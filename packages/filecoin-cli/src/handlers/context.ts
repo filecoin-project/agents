@@ -121,7 +121,7 @@ export function findResource(app: App, ref: string): Resource {
     throw notFound(`No managed resource ${ref}.`, {
       by: 'agent',
       command: 'filecoin ls',
-      description: 'List managed resources',
+      description: "List the wallet's stored pieces and their refs",
     })
   }
   return resource
