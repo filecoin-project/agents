@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
 import { createReadStream } from 'node:fs'
-import { mkdir, open, readFile, symlink, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, symlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { CarIndexer } from '@ipld/car'
@@ -10,8 +10,8 @@ import { CID } from 'multiformats/cid'
 import * as raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { planDirectory } from '../src/storage/dfs-car.ts'
-import { extractCar, listEntries, READ_WINDOW } from '../src/storage/pack.ts'
-import { tempDir, writeCar } from './helpers.ts'
+import { listEntries } from '../src/storage/pack.ts'
+import { extractCar, tempDir, writeCar } from './helpers.ts'
 
 /** Create a small site with nested assets, a dotfile, and an empty dir. */
 async function site(root: string): Promise<string> {
@@ -24,7 +24,7 @@ async function site(root: string): Promise<string> {
   return dir
 }
 
-test('extractCar restores a packed tree without its dotfiles', async () => {
+test('a packed tree extracts without its dotfiles', async () => {
   const root = await tempDir()
   const dir = await site(root)
   const car = await planDirectory(dir)
@@ -32,8 +32,11 @@ test('extractCar restores a packed tree without its dotfiles', async () => {
   await writeCar(car, join(root, 'a.car'))
 
   const out = join(root, 'out')
-  const extracted = await extractCar(join(root, 'a.car'), out)
-  assert.equal(extracted.rootCid.toString(), car.rootCid.toString())
+  const extracted = await extractCar(
+    join(root, 'a.car'),
+    car.rootCid.toString(),
+    out
+  )
   assert.equal(extracted.files, 2)
   assert.deepEqual(
     await readFile(join(out, 'assets', 'img', 'big.bin')),
@@ -91,7 +94,7 @@ test('a packed folder keeps empty directories, including an empty root', async (
   assert.equal(packed.files, 0)
   await writeCar(packed, join(root, 'blank.car'))
   const out = join(root, 'out')
-  await extractCar(join(root, 'blank.car'), out)
+  await extractCar(join(root, 'blank.car'), packed.rootCid.toString(), out)
   const entries = await listEntries(out)
   assert.deepEqual(entries.directories, ['nested', 'nested/deeper'])
 
@@ -99,39 +102,6 @@ test('a packed folder keeps empty directories, including an empty root', async (
   await mkdir(empty)
   await writeCar(await planDirectory(empty), join(root, 'empty.car'))
   assert.equal(await countBlocks(join(root, 'empty.car')), 1)
-})
-
-test('extractCar rejects a block that does not match its CID', async () => {
-  const root = await tempDir()
-  const dir = await site(root)
-  const car = join(root, 'site.car')
-  const packed = await planDirectory(dir)
-  await writeCar(packed, car)
-  // Flip a byte inside big.bin's data, well past the header.
-  const handle = await open(car, 'r+')
-  try {
-    const offset = Math.floor(packed.size / 2)
-    const byte = Buffer.alloc(1)
-    await handle.read(byte, 0, 1, offset)
-    byte[0] = (byte[0] ?? 0) ^ 0xff
-    await handle.write(byte, 0, 1, offset)
-  } finally {
-    await handle.close()
-  }
-  await assert.rejects(extractCar(car, join(root, 'out')), {
-    code: 'verification_failed',
-  })
-})
-
-test('extractCar restores files larger than one read window', async () => {
-  const root = await tempDir()
-  const dir = join(root, 'large')
-  await mkdir(dir)
-  const bytes = randomBytes(READ_WINDOW * 2 + 12_345)
-  await writeFile(join(dir, 'blob.bin'), bytes)
-  await writeCar(await planDirectory(dir), join(root, 'large.car'))
-  await extractCar(join(root, 'large.car'), join(root, 'out'))
-  assert.ok(bytes.equals(await readFile(join(root, 'out', 'blob.bin'))))
 })
 
 test('the importer encodes 2–4 GiB file sizes as full varints', async () => {

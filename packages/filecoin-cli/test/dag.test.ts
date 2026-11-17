@@ -12,9 +12,8 @@ import { CID } from 'multiformats/cid'
 import * as Raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { DFS_CAR_ACCEPT, downloadDag } from '../src/storage/dag.ts'
-import { packDirectory, packFile } from '../src/storage/pack.ts'
 import { type Block, carFetch, carStream, dfsBlocks } from './dfs-car.ts'
-import { tempDir } from './helpers.ts'
+import { packDirectory, packFile, tempDir } from './helpers.ts'
 
 const SP_URL = 'https://sp.example/ipfs/root'
 
@@ -121,8 +120,8 @@ test('downloadDag extracts a HAMT-sharded directory', async () => {
   }
   const car = join(root, 'many.car')
   const { rootCid } = await packDirectory(dir, car)
-  const [first] = await storedBlocks(car).then((b) => b.slice(-1))
-  assert.ok(first)
+  const [first] = await storedBlocks(car)
+  assert.ok(first?.cid.equals(rootCid))
   const unixfs = UnixFS.unmarshal(
     DagPb.decode(first.bytes).Data ?? new Uint8Array()
   )
@@ -143,11 +142,11 @@ test('downloadDag extracts a HAMT-sharded directory', async () => {
   )
 })
 
-test('downloadDag rejects a CAR in another order, such as /piece', async () => {
+test('downloadDag rejects a CAR in another order, such as leaves first', async () => {
   const root = await tempDir()
   const dir = await site(root)
   const { car, rootCid } = await served(root, dir)
-  const blocks = await storedBlocks(car)
+  const blocks = (await storedBlocks(car)).reverse()
   const output = join(root, 'out')
   await rejectsWith(
     downloadDag({

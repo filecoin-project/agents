@@ -16,11 +16,10 @@ import { sha256 } from 'multiformats/hashes/sha2'
 import { type DfsCar, planDirectory, planFile } from '../src/storage/dfs-car.ts'
 import {
   directoryCandidates,
-  extractCar,
   IMPORTER_OPTIONS,
   listEntries,
 } from '../src/storage/pack.ts'
-import { tempDir, writeCar } from './helpers.ts'
+import { extractCar, tempDir, writeCar } from './helpers.ts'
 
 /**
  * Import `source` straight into a block map, with the planner's candidates
@@ -93,7 +92,7 @@ async function assertDfs(path: string, rootCid: string): Promise<string[]> {
 
 /**
  * Plan, write, and check a CAR against a plain import: same root CID, same
- * blocks, the planned size, DFS order, and an exact extraction.
+ * blocks, the planned size, and DFS order. Then extract it with `get`.
  */
 async function roundTrip(
   root: string,
@@ -113,8 +112,8 @@ async function roundTrip(
   assert.deepEqual([...order].sort(), reference.blocks)
 
   const out = join(root, 'out')
-  const extracted = await extractCar(path, out)
-  assert.equal(extracted.rootCid.toString(), car.rootCid.toString())
+  const extracted = await extractCar(path, car.rootCid.toString(), out)
+  assert.equal(extracted.files, car.files)
   return { car, bytes, out }
 }
 
