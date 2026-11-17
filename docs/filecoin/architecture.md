@@ -357,15 +357,33 @@ The previous path computed the PieceCID, at about 6 seconds per GiB. The streami
 
 ## The delete flow
 
-`delete <ref>` needs confirmation. clipact asks a human at a terminal. Everyone else, including agents, gets `confirmation_required` until they pass `--yes`. `delete` then creates an operation that saves every stored copy in `removals` and runs these steps for each copy in turn:
+`delete <target>` takes a ref, a PieceCID, a root CID, or the `<dataSetId>/<pieceId>` that `ls` prints, and tells them apart the way [`inspect`](#piece-and-data-set-reads) does. It first finds the copies that the target names:
+
+- A ref names the copies of its resource in `state.db`. `delete` reads nothing from filecoin-api for a ref. A resource that is already `removal_pending` is `invalid_input`.
+- A PieceCID or root CID names the payer's pieces that filecoin-api has for it and doesn't show as removed. It also names the copies of every resource in `state.db` with that PieceCID or root CID, which covers a put newer than filecoin-api's index. A root CID that matches more than one PieceCID is `invalid_input`, with one `filecoin delete <pieceCid>` step for each.
+- A pair names that one copy, from filecoin-api or from a resource in `state.db`.
+
+For a copy that only filecoin-api has, `delete` reads the provider's service URL from `GET /{network}/providers/{id}` and the data set's `source` from `GET /{network}/data-sets/{id}`. A copy from `state.db` is in a data set that `filecoin` created, so its `source` is `filecoin-cli`. `--provider <id>` keeps only the copies on that provider. A target with no copy is `not_found`. A target whose pieces filecoin-api shows only as removed is `invalid_input`.
+
+filecoin-api lags the chain, so `delete` then checks each copy on chain before it signs anything. It reads the data set with the FWSS view's `getDataSet`, and the piece with PDPVerifier's `pieceLive` and `getScheduledRemovals`:
+
+- A data set that another wallet pays for is `invalid_input`.
+- A piece that is already scheduled for removal is skipped as `already_scheduled`. A piece that is gone is skipped as `removed`.
+- When no live copy is left, the delete is `invalid_input` and saves no operation.
+
+`delete` needs confirmation. clipact asks a human at a terminal. Everyone else, including agents, gets `confirmation_required` until they pass `--yes`. clipact builds the reason from the input before the handler runs, so the reason depends on the target's form and can't list the copies. For a PieceCID or root CID, it says that the copies can be in data sets that other tools created. `--dry-run` skips the confirmation, runs the lookups and checks above, and returns the copies with their state. It signs nothing and saves no operation.
+
+`delete` then creates an operation. The operation saves the target in `input.target` and every copy in `removals`, with the copy's `resourceRef` and `source` when they are known. The operation's own `resourceRef` is set only when all the copies that have a resource belong to the same one. The delete runs these steps for each live copy in turn:
 
 1. Read `clientDataSetId` from the data set and call `SP.schedulePieceDeletions`.
 2. Save the transaction hash.
 3. Call `SP.waitForDeletePieces`, which waits for the receipt and checks that its `PiecesScheduledForRemoval` event names the piece. It skips Filecoin's null rounds while it waits. Save `scheduled`.
 
-When every copy is scheduled, mark the resource `removal_pending` and complete the operation in one transaction.
+When every copy is scheduled or skipped, `delete` updates each resource with a copy among them and completes the operation, in one transaction. A resource with no copy left becomes `removal_pending` and keeps its copies. A resource with copies left stays `active` and keeps only those. The result lists each copy with its `state`: `scheduled`, `already_scheduled`, or `removed`. In a dry run, a copy that the delete would remove is `live`.
 
-If a transaction reverts or schedules no removal of the piece, synapse-core throws `TransactionNotAppliedError`. The resource stays `active` and the delete fails with `removal_reverted`. `filecoin` clears that copy's saved hash, so a resume signs a new removal for it and skips the copies already scheduled ([#2](https://github.com/filecoin-project/agents/issues/2)). A delete saved by `filecoin` 0.7.0 and earlier names its one copy in flat checkpoint fields, and a resume reads them.
+If a transaction reverts or schedules no removal of the piece, synapse-core throws `TransactionNotAppliedError`. The resources stay as they were and the delete fails with `removal_reverted`. `filecoin` clears that copy's saved hash, so a resume signs a new removal for it and skips the copies already scheduled ([#2](https://github.com/filecoin-project/agents/issues/2)). Before a resume signs for a copy, it checks the chain again and skips a copy that is no longer live. A delete saved by `filecoin` 0.7.0 and earlier names its one copy in flat checkpoint fields, and a resume reads them.
+
+The session key's `schedulePieceRemovals` scope covers every data set that the payer pays for. FWSS checks the signer against the session key registry by payer, key, and operation. The signed message names only the client data set ID and the piece IDs. So `delete` can remove copies in data sets that another session key or another tool, such as filecoin-pin, created.
 
 The provider removes the piece later, at a proving boundary. Until then, `ls` still lists the piece. After that, `ls` hides it unless you pass `--all`.
 
@@ -390,7 +408,7 @@ The output keeps filecoin-api's fields and drops the ones it reports as `null`. 
 
 `api.ts` builds the client from `FILECOIN_API_URL`. Each request aborts with the handler's signal or after 30 seconds. `map-error.ts` maps a 429 response to `rate_limited`, a 5xx response or a failed `fetch` to `service_unavailable`, and the timeout to `timeout`. clipact marks all three retryable for these read-only commands.
 
-filecoin-api reads the chain through its indexer, so a data set or piece added in the last few minutes can be missing. Commands that change state, such as `put` and `delete`, still read the chain.
+filecoin-api reads the chain through its indexer, so a data set or piece added in the last few minutes can be missing. `put` reads the chain. `delete` finds the copies of a CID or pair through filecoin-api, then checks each copy on chain before it signs ([the delete flow](#the-delete-flow)).
 
 ## Local state
 
@@ -434,16 +452,17 @@ The tests use the Node test runner and need no network. msw replaces `fetch` for
 
 | Test | Covers |
 | --- | --- |
-| `state.test.ts` | Migrations, including `rm` → `delete` and `artifact` → `folder`, account-scoped queries, cursor paging, checkpoint merging, the lock against a live child process, a second caller in the same process, and a reused PID |
+| `state.test.ts` | Migrations, including `rm` → `delete`, `artifact` → `folder`, and an operation without a resource, account-scoped queries, cursor paging, checkpoint merging, the lock against a live child process, a second caller in the same process, and a reused PID |
 | `login.test.ts` | The console link formats and their analytics tags, scope classification, and the windowed event scan against a fake viem transport |
 | `login-flow.test.ts` | `filecoin login` in process against a fake JSON-RPC registry. It covers confirming a custom-scope key with bare `filecoin login` and `--check`, saving an approval found before a conflicting request, `session_conflict` for pending and approved keys, subsets, `--fresh` and expired-key renewal keeping the saved request, and partial grants |
 | `pack.test.ts` | A deterministic root CID, byte-exact extraction, no unreferenced blocks, empty directories, rejection of a tampered block, the dotfile and symlink rules, and the canonical encoding of a 3 GiB file root built from fake leaves |
-| `jobs.test.ts` | A fake `StorageBackend` that simulates FWSS nonces. It covers new and existing data sets, a lost commit response, a commit that never landed, a rejected commit, a resume of a completed job, insufficient funds, an approval-only funding error, a reverted removal, interruption, dry-run estimates, and the operation ID and resume step on every job error |
+| `jobs.test.ts` | A fake `StorageBackend` that simulates FWSS nonces. It covers new and existing data sets, a lost commit response, a commit that never landed, a rejected commit, a resume of a completed job, insufficient funds, an approval-only funding error, a reverted removal, a delete of copies with no resource, copies the chain shows scheduled or removed, another wallet's data set, a delete of some of a resource's copies, a resumed delete that checks the chain again, interruption, dry-run estimates, and the operation ID and resume step on every job error |
 | `urls.test.ts` | The filecoin-api piece and browser URLs for files and folders, an API base path, an unknown chain ID, and the provider URL for `get` |
 | `cli.test.ts` | The whole CLI in process through `clipact/testing` in strict mode. It covers definitions, schemas, auth and pending-login errors, the logout revoke link, confirmation, a dry run without a session, secrets kept out of flags and output, and the globals in root help, `schema --list`, validation, and `doctor` sources, including the folder from `FILECOIN_CONFIG_DIR` or the platform default. Globals and the folder come from the env passed to `invoke`, not from `process.env` |
 | `contract.test.ts` | The built binary without a TTY. It covers one JSON line on stdout, exit codes, no leaked session key, and a SIGTERM during a hanging RPC call that gives an `interrupted` result and exit 143 |
 | `app.test.ts` | The signal-bound RPC transport: it rejects requests once the signal aborts and keeps its request timeout |
 | `datasets.test.ts` | `datasets ls` and `datasets inspect` in process against filecoin-api responses mocked with [msw](https://mswjs.io/), which fails on any request without a handler. It covers the query each flag sends, the mapping of `null` fields and a zero `pdpEndEpoch`, pieces linked to local resources, `not_found` for an unknown data set and another wallet's data set, `rate_limited` for 429, and `service_unavailable` for 503 and a network failure |
+| `delete.test.ts` | `delete` in process against filecoin-api and chain RPC responses mocked with msw. It covers how each target form finds its copies, with `--dry-run` and `--provider`, a local copy newer than the index, a root CID of several PieceCIDs, copies already removed or scheduled, `not_found`, and the confirmation for each target form |
 | `config.test.ts` | Network resolution, the `0700` folder clipact creates, a relative `FILECOIN_CONFIG_DIR`, and a corrupt `config.json` |
 
 ### Calibration run on 2026-09-29
