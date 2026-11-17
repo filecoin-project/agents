@@ -23,7 +23,7 @@ Don't guess flags or fields. The installed CLI describes itself:
 1. `filecoin status` shows whether a session key is approved and the account is funded.
 2. `filecoin put <path> --dry-run` reports the size, provider, cost, and missing authorization without storing anything.
 3. `filecoin put <path>` stores it. Give the user `data.urls.browser` exactly as returned, with `data.resource.ref`.
-4. `filecoin get <ref>` downloads the content and verifies it. `filecoin ls` and `filecoin inspect <ref>` find what this machine stored. `filecoin datasets ls` and `filecoin datasets inspect <id>` list every data set and piece the wallet pays for.
+4. `filecoin get <ref>` downloads the content and verifies it. `filecoin ls` lists every piece the wallet pays for, with a `resourceRef` when this machine stored it. `filecoin inspect <ref>` shows one of those. `filecoin datasets ls` and `filecoin datasets inspect <id>` list the data sets.
 
 ## Rules
 
@@ -38,4 +38,4 @@ Don't guess flags or fields. The installed CLI describes itself:
 Fetch these pages; each is Markdown:
 
 - No browser to open, or a disk that is gone when the session ends, such as a cloud sandbox: read [Cloud agents](https://poc.filecoin.cloud/agents.md#cloud-agents) before `filecoin login`.
-- A link returns 404, the user wants proof the content is intact, or `filecoin ls` is missing content stored elsewhere: read [Retrieve and verify](https://poc.filecoin.cloud/docs/retrieve.md).
+- A link returns 404, the user wants proof the content is intact, or a piece in `filecoin ls` has no `resourceRef`: read [Retrieve and verify](https://poc.filecoin.cloud/docs/retrieve.md).
