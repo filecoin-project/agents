@@ -19,18 +19,18 @@
     "@filoz/synapse-core": "catalog:",
     "@hono/zod-openapi": "1.6.3",
     "@modelcontextprotocol/server": "2.4.0",
-    "@scalar/hono-api-reference": "0.12.20",
-    "hono": "4.13.18",
+    "@scalar/hono-api-reference": "0.12.21",
+    "hono": "4.13.19",
     "multiformats": "14.0.5",
     "postgres": "4.1.1",
-    "viem": "2.57.19",
+    "viem": "2.57.20",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@cloudflare/vitest-plugin": "1.8.1",
+    "@cloudflare/vitest-plugin": "1.8.3",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "5.1.0",
-    "wrangler": "4.161.0"
+    "wrangler": "4.163.0"
   }
 }

@@ -20,7 +20,7 @@
     "check:fix": "biome check --fix ."
   },
   "devDependencies": {
-    "@biomejs/biome": "2.6.7",
+    "@biomejs/biome": "2.6.8",
     "@hugomrdias/configs": "2.0.0",
     "@hugomrdias/vite-plugin-agent-skills": "0.1.0",
     "@tanstack/intent": "0.5.6",
