@@ -321,6 +321,8 @@ For a ref, or a CID found in `state.db`, `get` uses the `serviceURL` of the firs
 
 `downloadDag` reads UnixFS files, directories, and HAMT-sharded directories, made of dag-pb and raw blocks. It checks each file's length against its UnixFS size. It rejects a symlink, an empty entry name, `.`, `..`, a name with a path separator, and a path outside the output, with `unsafe_path`. `--force` replaces an existing file with a file, but never replaces a directory, and a folder never replaces a file. When the walk fails, it aborts the request and deletes the partial output.
 
+The `size` that `get` returns is the number of bytes it wrote to the output. For an extracted root, `size` is the total of the files' sizes, with each copy of a repeated file counted, so it matches the source folder. It doesn't count the CAR bytes received, because those depend on the provider: a `dups=y` stream sends every repeat again. For a piece, `size` is the bytes of the piece.
+
 Curio answers `/ipfs/<rootCid>` only after it indexes the CAR, a few minutes after the commit ([retrieval](retrieval.md#what-curios-ipfs-endpoint-returns)). Until then, `get <ref>` fails with a retryable `not_found` and `retryAfterSeconds: 60`. Its next steps are to retry, or to run `get <pieceCid>` for the CAR itself. `get` doesn't fall back to `/piece` yet. A CAR that `put` writes now is root first in DFS order, which `downloadDag` reads, but `downloadDag` accepts only a response with a CAR content type. A CAR from `filecoin` 0.7.0 and earlier has the root last, so extracting it needs the whole CAR on disk first.
 
 We measured `get` on 2026-11-16 against a local server that sends a CAR depth-first, on an Apple silicon Mac. Node alone used 139 MiB of RSS with the modules loaded.
