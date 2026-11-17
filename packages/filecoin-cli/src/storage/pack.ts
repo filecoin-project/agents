@@ -1,18 +1,14 @@
-import { createReadStream, createWriteStream } from 'node:fs'
-import { lstat, mkdir, readdir } from 'node:fs/promises'
-import { dirname, join, relative, resolve, sep } from 'node:path'
-import { Readable } from 'node:stream'
-import { pipeline } from 'node:stream/promises'
-import { CarIndexedReader } from '@ipld/car'
+import { createReadStream } from 'node:fs'
+import { lstat, readdir } from 'node:fs/promises'
+import { join, relative, sep } from 'node:path'
 import { CliError } from 'clipact'
-import { exporter } from 'ipfs-unixfs-exporter'
 import type {
   DirectoryCandidate,
   FileCandidate,
   ImporterOptions,
 } from 'ipfs-unixfs-importer'
 import { equals } from 'multiformats/bytes'
-import { CID } from 'multiformats/cid'
+import type { CID } from 'multiformats/cid'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { ErrorCodes, invalidInput } from '../errors.ts'
 
@@ -90,32 +86,6 @@ export function* directoryCandidates(
   }
 }
 
-/** Bytes read from a UnixFS file per exporter call during extraction. */
-export const READ_WINDOW = 8 * 1024 * 1024
-
-/**
- * Read a UnixFS file in bounded windows. The exporter pushes a file's blocks
- * into an unbounded queue without waiting for the consumer, so with a fast
- * local CAR one `content()` call buffers the whole file. Reading
- * `READ_WINDOW` bytes per call keeps memory bounded.
- */
-async function* readWindows(
-  node: {
-    content: (options: {
-      offset: number
-      length: number
-    }) => AsyncIterable<Uint8Array>
-  },
-  size: number
-): AsyncGenerator<Uint8Array> {
-  for (let offset = 0; offset < size; offset += READ_WINDOW) {
-    yield* node.content({
-      offset,
-      length: Math.min(READ_WINDOW, size - offset),
-    })
-  }
-}
-
 /** Multihash code for identity CIDs, whose digest is the block itself. */
 export const IDENTITY_CODE = 0x00
 
@@ -145,74 +115,5 @@ export async function assertBlock(cid: CID, bytes: Uint8Array): Promise<void> {
       code: ErrorCodes.verificationFailed,
       message: `Block ${cid} does not match its CID.`,
     })
-  }
-}
-
-/**
- * Extract a UnixFS CAR into `outDir`, verifying every block against its CID
- * unless `verifyBlocks` is false, and rejecting entries that would escape
- * `outDir`. Returns the root CID read from the CAR header.
- */
-export async function extractCar(
-  carPath: string,
-  outDir: string,
-  options: { verifyBlocks?: boolean } = {}
-): Promise<{ rootCid: CID; files: number }> {
-  const verifyBlocks = options.verifyBlocks ?? true
-  const reader = await CarIndexedReader.fromFile(carPath)
-  try {
-    const [headerRoot] = await reader.getRoots()
-    if (!headerRoot) throw new Error('CAR has no root.')
-    // Normalize to this package's multiformats CID class for the exporter.
-    const rootCid = CID.decode(headerRoot.bytes)
-    const blockstore = {
-      async *get(cid: CID) {
-        const block = await reader.get(cid)
-        if (!block) throw new Error(`Block ${cid} missing from CAR.`)
-        if (verifyBlocks) await assertBlock(cid, block.bytes)
-        yield block.bytes
-      },
-    }
-    const target = resolve(outDir)
-    let files = 0
-    async function write(cid: CID, dest: string): Promise<void> {
-      if (dest !== target && !dest.startsWith(target + sep)) {
-        throw new CliError({
-          code: ErrorCodes.unsafePath,
-          message: `Refusing to write outside ${outDir}: ${dest}`,
-        })
-      }
-      const node = await exporter(cid, blockstore)
-      if (node.type === 'directory') {
-        await mkdir(dest, { recursive: true })
-        for await (const entry of node.entries()) {
-          if (entry.name.includes('/') || entry.name.includes('\\')) {
-            throw new CliError({
-              code: ErrorCodes.unsafePath,
-              message: `Refusing entry name with a path separator: ${entry.name}`,
-            })
-          }
-          await write(entry.cid, resolve(dest, entry.name))
-        }
-      } else if (node.type === 'file') {
-        await mkdir(dirname(dest), { recursive: true })
-        await pipeline(
-          Readable.from(readWindows(node, Number(node.unixfs.fileSize()))),
-          createWriteStream(dest)
-        )
-        files++
-      } else if (node.type === 'raw' || node.type === 'identity') {
-        await mkdir(dirname(dest), { recursive: true })
-        await pipeline(
-          Readable.from(node.content() as AsyncIterable<Uint8Array>),
-          createWriteStream(dest)
-        )
-        files++
-      }
-    }
-    await write(rootCid, target)
-    return { rootCid, files }
-  } finally {
-    await reader.close()
   }
 }
