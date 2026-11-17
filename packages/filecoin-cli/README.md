@@ -61,7 +61,8 @@ filecoin get res_… --output ./copy # extracts a CAR from /ipfs, checking each 
 filecoin ls                        # add --all to include removed pieces
 filecoin inspect res_… --check     # sends a HEAD request to the piece URL
 filecoin inspect 39723/0           # a piece from ls, or a PieceCID or root CID
-filecoin delete res_… --yes        # schedules removal
+filecoin delete res_… --yes        # schedules removal of every copy
+filecoin delete 39723/0 --dry-run  # lists the copies a target names; signs nothing
 ```
 
 `filecoin` packs a file or a folder into a UnixFS CAR with the IPIP-499 `unixfs-v1-2025` profile, the same way as [Filecoin Pin](https://github.com/filecoin-project/filecoin-pin). The CAR goes into a data set with `withIPFSIndexing`, so Curio serves it at `/ipfs/<rootCid>`. `put` and `ls` print the root CID. A file's root CID is the file's own, with no directory around it. Curio's `/ipfs` endpoint is a trustless gateway. It returns blocks and CARs, not rendered pages.
@@ -92,7 +93,13 @@ A ref, or a CID in local state, downloads from the provider of the first saved c
 
 Packing skips dotfiles and rejects symlinks. The packed CAR, or a file stored with `--raw`, must be between 127 and 68,182,605,824 bytes (63.5 GiB).
 
-`delete` schedules removal of every copy, and the providers then delete them. The resource state becomes `removal_pending`. Without `--yes`, `delete` asks a human at a terminal to confirm. In every other case, including for agents, it returns `confirmation_required` with a step for the user (`by: "user"`).
+`filecoin delete <target>` schedules removal of stored copies, and the providers then delete them. The target is a ref, a PieceCID, a root CID, or the `<dataSetId>/<pieceId>` that `ls` prints:
+
+- A ref removes every copy of the resource. Its state becomes `removal_pending`.
+- A PieceCID or root CID removes every copy that the wallet pays for, including copies stored from another machine or by another tool, such as filecoin-pin. Each copy's `source` names the tool that created its data set.
+- `<dataSetId>/<pieceId>` removes that one copy.
+
+`--provider <id>` keeps only the copies on one provider. `delete` finds the copies of a CID or pair through filecoin-api, then checks each one on chain before it signs. It skips copies that are already scheduled for removal or removed. `--dry-run` lists the copies and their state without signing. Without `--yes`, `delete` asks a human at a terminal to confirm. In every other case, including for agents, it returns `confirmation_required` with a step for the user (`by: "user"`).
 
 ## List the wallet's data sets
 

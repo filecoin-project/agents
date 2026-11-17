@@ -18,7 +18,10 @@ export const inspect = defineCommand({
   output: z.object({
     id: z.string(),
     action: z.enum(['put', 'delete']),
-    resourceRef: z.string(),
+    resourceRef: z
+      .string()
+      .optional()
+      .describe('Absent for a delete whose pieces no managed resource holds'),
     chainId: z.string(),
     payer: z.string(),
     executionStatus,
