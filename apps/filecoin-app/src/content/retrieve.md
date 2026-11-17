@@ -32,7 +32,7 @@ Use `filecoin get` when the content must be intact. When you hand over a link th
 
 ## Find stored content
 
-`filecoin ls` lists what this machine stored. The list lives in a local database, so a new machine, or a cloud sandbox that was reset, starts empty. The content is still on Filecoin, under the wallet that paid for it:
+`filecoin ls` lists every piece the wallet pays for, from filecoin-api, whichever machine stored it. A piece gets a `resourceRef` only on the machine that stored it, because refs live in a local database. A new machine, or a cloud sandbox that was reset, has none. Other tools find the same pieces by wallet:
 
 - In a browser, the dashboard's data sets page, or the WebMCP tools `list_data_sets` and `list_pieces`.
 - Over MCP, `list_pieces` with the wallet as `owner`. Over HTTP, `GET /{network}/pieces?owner=<wallet>` on filecoin-api.
