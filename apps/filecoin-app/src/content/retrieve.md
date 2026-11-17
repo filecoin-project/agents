@@ -10,7 +10,7 @@ Everything `filecoin` stores has a PieceCID, and a folder also has a root CID:
 - `urls.browser` is the link to share. A browser renders a file straight from the provider, and opens a folder through [inbrowser.link](https://inbrowser.link).
 - `urls.piece` returns the exact stored bytes.
 
-filecoin-api finds providers through its indexer, so a new piece link returns 404 until the indexer has the piece. `filecoin inspect <ref> --check` reports when the piece link answers.
+filecoin-api finds providers through its indexer, so a new piece link returns 404 until the indexer has the piece. `filecoin inspect <ref> --check` reports when the piece link answers, and `pieces` stays empty until the indexer has the put.
 
 While the commit confirms, `filecoin put` prints an early browser link to stderr as `filecoin: link: <url>`:
 
@@ -38,6 +38,8 @@ Use `filecoin get` when the content must be intact. When you hand over a link th
 - Over MCP, `list_pieces` with the wallet as `owner`. Over HTTP, `GET /{network}/pieces?owner=<wallet>` on filecoin-api.
 
 Each piece comes with a retrieval link. `filecoin get <PieceCID>` downloads and checks one, and `filecoin get <root CID>` extracts a file or folder stored as a CAR. Neither needs a login: for content outside local state, `filecoin` finds the provider through filecoin-api.
+
+`filecoin inspect` shows a piece without a ref by the `<dataSetId>/<pieceId>` that `ls` prints, its PieceCID, or its root CID, and adds `--check` to probe the piece link. Unlike `get`, it needs a login, because it lists only the wallet's own pieces.
 
 ## Store without the CLI
 

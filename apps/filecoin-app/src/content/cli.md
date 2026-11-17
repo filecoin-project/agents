@@ -47,6 +47,7 @@ filecoin put ./site --dry-run      # size, provider, cost, and authorization; st
 filecoin get res_… --output ./copy # extracts a CAR, checking each block
 filecoin ls                        # every piece the wallet pays for; add --all to include removed ones
 filecoin inspect res_… --check     # checks that the piece link answers
+filecoin inspect 39723/0           # a piece from ls, or a PieceCID or root CID
 filecoin delete res_… --yes        # schedules removal
 ```
 
