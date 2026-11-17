@@ -37,7 +37,7 @@ const { data: providers, nextCursor } = unwrap(
 
 So a pull request that changes the API also updates the client types, and nothing reads the deployed API at build time.
 
-openapi-typescript needs the TypeScript 5 compiler API, which the repository's TypeScript 7 lacks, so the generator runs it through `pnpm dlx` with TypeScript 5. `pnpm gen` and `pnpm test` need network access the first time pnpm downloads it ([#26](https://github.com/filecoin-project/agents/issues/26)).
+openapi-typescript needs the TypeScript 5 compiler API, which the repository's TypeScript 7 lacks. The private workspace package in [`generator/`](generator/package.json) depends on openapi-typescript and TypeScript 5.9.3, so pnpm resolves openapi-typescript's `typescript` peer to 5.9.3 there, and `pnpm-lock.yaml` locks both. `scripts/generate.ts` runs the CLI from that package, so `pnpm gen` and `pnpm test` work offline after `pnpm install`. The client itself still typechecks with the repository's TypeScript 7.
 
 ## Development
 
