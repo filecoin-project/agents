@@ -16,6 +16,9 @@ catalogs:
       specifier: 7.0.2
       version: 7.0.2
 
+overrides:
+  zod: ^4.6.6
+
 importers:
 
   .:
@@ -69,7 +72,7 @@ importers:
         specifier: 2.57.19
         version: 2.57.19(typescript@7.0.2)(zod@4.6.7)
       zod:
-        specifier: 4.6.7
+        specifier: ^4.6.6
         version: 4.6.7
     devDependencies:
       '@cloudflare/vitest-plugin':
@@ -163,7 +166,7 @@ importers:
         specifier: 3.7.11
         version: 3.7.11(@tanstack/query-core@5.107.1)(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.1))(@types/react@19.3.0)(react@19.3.1)(typescript@7.0.2)(viem@2.57.19(typescript@7.0.2)(zod@4.6.7))
       zod:
-        specifier: 4.6.7
+        specifier: ^4.6.6
         version: 4.6.7
     devDependencies:
       '@cloudflare/vite-plugin':
@@ -264,7 +267,7 @@ importers:
         specifier: ^2.57.19
         version: 2.57.19(typescript@7.0.2)(zod@4.6.7)
       zod:
-        specifier: 4.6.7
+        specifier: ^4.6.6
         version: 4.6.7
 
 packages:
@@ -278,7 +281,7 @@ packages:
   '@asteasolutions/zod-to-openapi@9.1.0':
     resolution: {integrity: sha512-pLMeRgRYS7/vZIgAAkOe2P6+XGTifR1MT9pqDoxZ11EmcJJ+DPmdPqLN8ZZF4U8R9KHCCQCS9c2wtuE8wSrfkw==}
     peerDependencies:
-      zod: ^4.0.0
+      zod: ^4.6.6
 
   '@babel/code-frame@7.29.7':
     resolution: {integrity: sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==}
@@ -789,13 +792,13 @@ packages:
     engines: {node: '>=16.0.0'}
     peerDependencies:
       hono: '>=4.10.0'
-      zod: ^4.0.0
+      zod: ^4.6.6
 
   '@hono/zod-validator@0.9.1':
     resolution: {integrity: sha512-iiv6w0qrIc0arfvCtUqBWsvl4fXjzaTcQcCJTTtCnkawF9HHGE+KjEl0ox3gQJ6rKZEgE3mLExlQCF72M+mNuw==}
     peerDependencies:
       hono: '>=4.11.2'
-      zod: ^3.25.0 || ^4.0.0
+      zod: ^4.6.6
 
   '@hugomrdias/commp-wasm@0.1.4':
     resolution: {integrity: sha512-e2oiHAmjtFZ3cxalwqJQgxW8FHlFqj0cXN6PM4NPEhEH/Mf5wjLBzlslA11hUsyOMmMK9+WtWPPNycg5RdiBKg==}
@@ -2047,7 +2050,7 @@ packages:
     resolution: {integrity: sha512-Ofer5QUnuUdTFsBRwARMoWKOH1ND5ehwYhJ3OJ/BQO+StkwQjHw0XyVh4vDttzHB7QOFhPHa/o413PJ82gU/Tg==}
     peerDependencies:
       typescript: '>=5.0.4'
-      zod: ^3.22.0 || ^4.0.0
+      zod: ^4.6.6
     peerDependenciesMeta:
       typescript:
         optional: true
@@ -2058,7 +2061,7 @@ packages:
     resolution: {integrity: sha512-fk6Te+bojIFrMvMZrnOO+SxCB+RUksTGOzq/60ZRvs1L+BVzvi2bqt9L3W/17ZLdZsyM1FuYf65P5nlmoiH1Bg==}
     peerDependencies:
       typescript: '>=5.0.4'
-      zod: ^3.22.0 || ^4.0.0
+      zod: ^4.6.6
     peerDependenciesMeta:
       typescript:
         optional: true
@@ -4003,9 +4006,6 @@ packages:
   youch@4.1.0-beta.10:
     resolution: {integrity: sha512-rLfVLB4FgQneDr0dv1oddCVZmKjcJ6yX6mS4pU82Mq/Dt9a3cLZQ62pDBL4AUO+uVrCvtWz3ZFUL2HFAFJ/BXQ==}
 
-  zod@4.6.6:
-    resolution: {integrity: sha512-4UmzQUF5fxvfcYHlbjBmejU+w+hbDnWFx4aS8kBx7nPBHcO2SqPbpAG8snbdg+Xse4pRefR98hgjFgIMCI/UhA==}
-
   zod@4.6.7:
     resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
 
@@ -4325,7 +4325,7 @@ snapshots:
       miniflare: 5.20261110.2-beta(@types/node@26.6.6)
       vitest: 5.1.0(@types/node@26.6.6)(msw@3.0.5(@types/node@26.6.6)(supports-color@10.2.2)(typescript@7.0.2)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       wrangler: 4.161.0(@types/node@26.6.6)
-      zod: 4.6.6
+      zod: 4.6.7
     transitivePeerDependencies:
       - '@cloudflare/workers-types'
       - '@types/node'
@@ -4483,12 +4483,12 @@ snapshots:
       dnum: 2.17.0
       iso-web: 4.0.0
       multiformats: 14.0.5
-      ox: 0.14.34(typescript@7.0.2)(zod@4.6.6)
+      ox: 0.14.34(typescript@7.0.2)(zod@4.6.7)
       p-locate: 7.0.0
       p-some: 7.0.0
       sync-multihash-sha2: 1.0.0
       viem: 2.57.19(typescript@7.0.2)(zod@4.6.7)
-      zod: 4.6.6
+      zod: 4.6.7
     transitivePeerDependencies:
       - typescript
 
@@ -5656,11 +5656,6 @@ snapshots:
       typescript: 7.0.2
       zod: 4.6.7
 
-  abitype@1.3.0(typescript@7.0.2)(zod@4.6.6):
-    optionalDependencies:
-      typescript: 7.0.2
-      zod: 4.6.6
-
   abitype@1.3.0(typescript@7.0.2)(zod@4.6.7):
     optionalDependencies:
       typescript: 7.0.2
@@ -6576,7 +6571,7 @@ snapshots:
 
   outvariant@1.4.3: {}
 
-  ox@0.14.34(typescript@7.0.2)(zod@4.6.6):
+  ox@0.14.34(typescript@7.0.2)(zod@4.6.7):
     dependencies:
       '@adraffy/ens-normalize': 1.11.1
       '@noble/ciphers': 1.3.0
@@ -6584,7 +6579,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
-      abitype: 1.3.0(typescript@7.0.2)(zod@4.6.6)
+      abitype: 1.3.0(typescript@7.0.2)(zod@4.6.7)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 7.0.2
@@ -7349,8 +7344,6 @@ snapshots:
       '@speed-highlight/core': 1.2.24
       cookie: 1.1.1
       youch-core: 0.3.3
-
-  zod@4.6.6: {}
 
   zod@4.6.7: {}
 

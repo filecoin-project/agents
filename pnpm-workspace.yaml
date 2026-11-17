@@ -20,6 +20,13 @@ catalog:
   "@filoz/synapse-core": 0.11.0
   "@types/node": 26.6.6
   typescript: 7.0.2
+  zod: ^4.6.6
+
+# One zod for the workspace. synapse-core 0.11.0 pins zod to exactly 4.6.6, so
+# without this the CLI bundle carries a second copy whenever another package
+# resolves a newer zod. https://github.com/FilOzone/synapse-sdk/issues/1146
+overrides:
+  zod: "catalog:"
 
 minimumReleaseAgeExclude:
   - iso-conf@1.0.0
