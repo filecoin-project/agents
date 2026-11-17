@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/filecoin-project/agents/compare/filecoin-api-v0.7.0...filecoin-api-v0.7.1) (2026-11-17)
+
+
+### Bug Fixes
+
+* stop publishing tsconfig.tsbuildinfo in npm packages ([#143](https://github.com/filecoin-project/agents/issues/143)) ([7147ac7](https://github.com/filecoin-project/agents/commit/7147ac7db30db032ce97992520d0919807af3847))
+
 ## [0.7.0](https://github.com/filecoin-project/agents/compare/filecoin-api-v0.6.0...filecoin-api-v0.7.0) (2026-11-17)
 
 
