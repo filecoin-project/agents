@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "incremental": true,
-    "composite": true,
+    "incremental": false,
+    "composite": false,
     "target": "esnext",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "moduleDetection": "force",
