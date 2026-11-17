@@ -161,8 +161,9 @@ const routes = {
     method: 'get',
     path: '/{network}/pieces',
     tags: ['Pieces'],
-    summary: 'Find pieces by owner, PieceCID or provider',
-    description: 'Requires at least one of owner, cid or provider_id.',
+    summary: 'Find pieces by owner, PieceCID, IPFS root CID or provider',
+    description:
+      'Requires at least one of owner, cid, ipfs_cid or provider_id.',
     request: { params: NetworkParams, query: ListPiecesQuery },
     responses: {
       ...ok(

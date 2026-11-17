@@ -16,11 +16,13 @@ export interface ListDataSetPiecesParams {
 
 /**
  * Filters for {@link listPieces}, named like the API query parameters; at
- * least one of owner, cid or provider_id is required.
+ * least one of owner, cid, ipfs_cid or provider_id is required.
  */
 export interface ListPiecesParams {
   owner?: string
   cid?: string
+  /** `ipfsRootCID` metadata as a base32 CIDv1, from `parseIpfsRootCid`. */
+  ipfs_cid?: string
   provider_id?: string
   removed?: boolean
   limit: number
@@ -108,8 +110,15 @@ export async function getPiece(
 }
 
 /**
- * List pieces across data sets by owner, PieceCID or provider, newest first.
- * `owner` matches the data set's paying client.
+ * List pieces across data sets by owner, PieceCID, IPFS root CID or provider,
+ * newest first. `owner` matches the data set's paying client.
+ *
+ * `ipfs_cid` matches `p.ipfs_root_cid`, which the indexer stores normalized
+ * to a base32 CIDv1, so pass it through `parseIpfsRootCid` in `cid.ts`. Unlike
+ * {@link findIpfsRootProvider}, it does not require `with_ipfs_indexing`:
+ * this lists the pieces recorded on chain, and the metadata names the root
+ * whether or not the provider announces it to IPFS. Only retrieval through
+ * `/ipfs/{cid}` needs an IPFS-indexed data set.
  */
 export async function listPieces(
   db: Db,
@@ -137,6 +146,8 @@ export async function listPieces(
      join ${table(network, 'data_sets')} d on d.data_set_id = p.data_set_id
      ${where([
        params.cid !== undefined && sql`p.cid = ${params.cid}`,
+       params.ipfs_cid !== undefined &&
+         sql`p.ipfs_root_cid = ${params.ipfs_cid}`,
        params.removed !== undefined && sql`p.removed = ${params.removed}`,
        inDataSets,
        dataSetId !== undefined &&

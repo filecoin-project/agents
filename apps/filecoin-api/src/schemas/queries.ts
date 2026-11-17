@@ -2,6 +2,7 @@ import type { z } from '@hono/zod-openapi'
 import {
   Address,
   BooleanQuery,
+  IpfsRootCidInput,
   PageQuery,
   PieceCidInput,
   UintInput,
@@ -33,6 +34,9 @@ export const filters = {
   pieces: <B extends Bool>(bool: B) => ({
     owner: Address.optional().describe('Client address that owns the data set'),
     cid: PieceCidInput.optional().describe('PieceCID v2'),
+    ipfs_cid: IpfsRootCidInput.optional().describe(
+      'IPFS root CID in the ipfsRootCID piece metadata, any CID version or base'
+    ),
     provider_id: UintInput.optional().describe('Storage provider id'),
     removed: bool.optional().describe('Removed pieces'),
   }),
@@ -58,16 +62,20 @@ export const filters = {
 export function hasPieceSelector(q: {
   owner?: string
   cid?: string
+  ipfs_cid?: string
   provider_id?: string
 }) {
   return (
-    q.owner !== undefined || q.cid !== undefined || q.provider_id !== undefined
+    q.owner !== undefined ||
+    q.cid !== undefined ||
+    q.ipfs_cid !== undefined ||
+    q.provider_id !== undefined
   )
 }
 
 /** Message for {@link hasPieceSelector} failures. */
 export const PIECE_SELECTOR_MESSAGE =
-  'Provide at least one of owner, cid or provider_id'
+  'Provide at least one of owner, cid, ipfs_cid or provider_id'
 
 /** `GET /{network}/providers` query. */
 export const ListProvidersQuery = PageQuery.extend(

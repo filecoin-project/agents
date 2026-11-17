@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { parsePieceCid, parseRetrievalCid } from '../src/cid.ts'
+import {
+  parseIpfsRootCid,
+  parsePieceCid,
+  parseRetrievalCid,
+} from '../src/cid.ts'
 import { rows } from './helpers.ts'
 
 describe('parseRetrievalCid', () => {
@@ -58,5 +62,36 @@ describe('parsePieceCid', () => {
     ['notacid', 'Expected a PieceCID v2'],
   ])('rejects %s', (input, message) => {
     expect(() => parsePieceCid(input)).toThrow(message)
+  })
+})
+
+describe('parseIpfsRootCid', () => {
+  it.each([
+    [
+      'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+      'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+    ],
+    [
+      'QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG',
+      'bafybeie5nqv6kd3qnfjupgvz34woh3oksc3iau6abmyajn7qvtf6d2ho34',
+    ],
+    [
+      'zdj7Wg2Qkk4mYgAkVU1kppfQ2sMGz5zPwERVpeWmxCQLDxVoC',
+      'bafybeie5nqv6kd3qnfjupgvz34woh3oksc3iau6abmyajn7qvtf6d2ho34',
+    ],
+  ])('normalizes %s to a base32 CIDv1', (input, cid) => {
+    expect(parseIpfsRootCid(input)).toBe(cid)
+  })
+
+  it.each([
+    [rows.piece.cid, 'not a PieceCID'],
+    [
+      'baga6ea4seaqao7s73y24kcutaosvacpdjgfe5pw76ooefnyqw4ynr3d2y6x2mpq',
+      'not a PieceCID',
+    ],
+    ['notacid', 'Expected a CID'],
+    ['', 'Expected a CID'],
+  ])('rejects %s', (input, message) => {
+    expect(() => parseIpfsRootCid(input)).toThrow(message)
   })
 })

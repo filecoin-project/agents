@@ -185,6 +185,34 @@ describe('owner filters', () => {
     expect(q?.text).not.toContain('any(array(')
     expect(q?.params).toEqual(['bafk', false, 6])
   })
+
+  it('filters pieces by IPFS root CID without a data set lookup', async () => {
+    const { db, queries } = fakeDb()
+    await listPieces(db, network, { ipfs_cid: 'bafy', limit: 5 })
+    const [q] = queries
+    expect(q?.text).toContain('where p.ipfs_root_cid = $1')
+    expect(q?.text).not.toContain('any(array(')
+    expect(q?.text).not.toContain('with_ipfs_indexing')
+    expect(q?.params).toEqual(['bafy', 6])
+  })
+
+  it('combines an IPFS root CID with the owner data set lookup', async () => {
+    const { db, queries } = fakeDb()
+    await listPieces(db, network, {
+      owner: '0x305025d07c1dee47f25a4990179eff2becddca0b',
+      ipfs_cid: 'bafy',
+      limit: 5,
+    })
+    const [q] = queries
+    expect(q?.text).toMatch(
+      /where p\.ipfs_root_cid = \$1 and p\.data_set_id = any\(array\(select data_set_id\s+from "ozone"\.data_sets where payer = \$2\)\)/
+    )
+    expect(q?.params).toEqual([
+      'bafy',
+      '0x305025d07c1dee47f25a4990179eff2becddca0b',
+      6,
+    ])
+  })
 })
 
 describe('rails', () => {
