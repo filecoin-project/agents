@@ -141,37 +141,37 @@ Ctrl+C, SIGTERM, or SIGHUP stops the work at the next step. `filecoin` returns a
 
 `filecoin` follows the [clipact](https://github.com/hugomrdias/agents/blob/main/packages/clipact/README.md) output contract. It uses machine mode when you pass `--json`, set `FILECOIN_OUTPUT=json`, run it from a detected agent, or redirect stdout away from a terminal. In machine mode, it writes one JSON object to stdout, with `data` on success or `error` on failure, then optional `next` steps. The exit code is `0` when the result has `data` and `1` when it has `error`. Diagnostics and progress go to stderr in every mode.
 
-| Command | Prints |
-| --- | --- |
-| `filecoin schema --list` | Every command, offline |
-| `filecoin schema <command>` | The command's input and output as JSON Schema, and its error codes |
-| `filecoin completion <shell>` | A completion script for `bash`, `zsh`, or `fish` |
-| `filecoin skills install` | Installs the bundled [agent skill](../../plugins/filecoin/skills/filecoin/SKILL.md), which the build copies from the [filecoin plugin](../../plugins/filecoin/README.md) |
+| Command                       | Prints                                                                                                                                                                   |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `filecoin schema --list`      | Every command, offline                                                                                                                                                   |
+| `filecoin schema <command>`   | The command's input and output as JSON Schema, and its error codes                                                                                                       |
+| `filecoin completion <shell>` | A completion script for `bash`, `zsh`, or `fish`                                                                                                                         |
+| `filecoin skills install`     | Installs the bundled [agent skill](../../plugins/filecoin/skills/filecoin/SKILL.md), which the build copies from the [filecoin plugin](../../plugins/filecoin/README.md) |
 
-| Error code | Meaning |
-| --- | --- |
-| `auth_required`, `login_pending`, `session_expired`, `permission_denied` | The user must log in or approve scopes |
-| `session_conflict` | `filecoin login --scopes` would replace a pending or valid key. Keep it with `filecoin login --check`, or replace it with `--fresh` |
-| `insufficient_funds` | The user must fund the account or approve Warm Storage at the console link |
-| `not_found` | No resource, operation, provider, or piece has that name |
-| `output_exists` | The `filecoin get` output path exists. Pass `--force` to overwrite it |
-| `operation_failed`, `commit_rejected`, `removal_reverted`, `source_changed`, `staging_missing`, `operation_running` | A put or delete stopped. Follow the `next` steps |
-| `verification_failed` | Retrieved bytes or blocks do not match their CIDs |
-| `unsafe_path` | A retrieved archive tried to write outside the output directory |
-| `invalid_input`, `confirmation_required`, `interrupted`, `internal_error`, `service_unavailable`, `timeout` | Built into clipact. See [clipact errors](https://github.com/hugomrdias/agents/blob/main/packages/clipact/README.md#errors) |
+| Error code                                                                                                          | Meaning                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `auth_required`, `login_pending`, `session_expired`, `permission_denied`                                            | The user must log in or approve scopes                                                                                              |
+| `session_conflict`                                                                                                  | `filecoin login --scopes` would replace a pending or valid key. Keep it with `filecoin login --check`, or replace it with `--fresh` |
+| `insufficient_funds`                                                                                                | The user must fund the account or approve Warm Storage at the console link                                                          |
+| `not_found`                                                                                                         | No resource, operation, provider, or piece has that name                                                                            |
+| `output_exists`                                                                                                     | The `filecoin get` output path exists. Pass `--force` to overwrite it                                                               |
+| `operation_failed`, `commit_rejected`, `removal_reverted`, `source_changed`, `staging_missing`, `operation_running` | A put or delete stopped. Follow the `next` steps                                                                                    |
+| `verification_failed`                                                                                               | Retrieved bytes or blocks do not match their CIDs                                                                                   |
+| `unsafe_path`                                                                                                       | A retrieved archive tried to write outside the output directory                                                                     |
+| `invalid_input`, `confirmation_required`, `interrupted`, `internal_error`, `service_unavailable`, `timeout`         | Built into clipact. See [clipact errors](https://github.com/hugomrdias/agents/blob/main/packages/clipact/README.md#errors)          |
 
 ## Configuration and state
 
-| Variable | Purpose |
-| --- | --- |
-| `FILECOIN_NETWORK` | `mainnet` or `calibration`. `--network` takes precedence, then `FILECOIN_NETWORK`, then the config file, then `calibration` |
-| `FILECOIN_SESSION_KEY`, `FILECOIN_ROOT_ADDRESS` | Session key and wallet address, used instead of `filecoin login` |
-| `FILECOIN_CONFIG_DIR` | Absolute path of the folder that holds `config.json` and `state.db`. Default: `~/Library/Application Support/filecoin` on macOS, `%LOCALAPPDATA%\filecoin` on Windows, and `$XDG_DATA_HOME/filecoin` (`~/.local/share/filecoin`) elsewhere |
-| `FILECOIN_RPC_URL` | RPC endpoint. Default: synapse-core's fallback transport for the chain |
-| `FILECOIN_CONSOLE_URL` | Filecoin Pay console origin for approval, funding, and revoke links, such as `https://filecoin-pay-explorer-staging.vercel.app` for staging. Default: `https://pay.filecoin.cloud` |
-| `FILECOIN_API_URL` | filecoin-api origin for retrieval links and `datasets` reads, such as `http://localhost:8787` for a local API. Default: `https://api.filecoin.io` |
-| `DO_NOT_TRACK`, `FILECOIN_TELEMETRY` | `DO_NOT_TRACK=1` or `FILECOIN_TELEMETRY=0` drops the `utm_*` tags from console links, as clipact's telemetry opt-outs. The tags tell the console's analytics that the visit came from the `filecoin` CLI, which flow printed the link, and which agent ran it, if any |
-| `FILECOIN_OUTPUT`, `FILECOIN_AGENT` | Override clipact's output mode and agent detection |
+| Variable                                        | Purpose                                                                                                                                                                                                                                                               |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FILECOIN_NETWORK`                              | `mainnet` or `calibration`. `--network` takes precedence, then `FILECOIN_NETWORK`, then the config file, then `calibration`                                                                                                                                           |
+| `FILECOIN_SESSION_KEY`, `FILECOIN_ROOT_ADDRESS` | Session key and wallet address, used instead of `filecoin login`                                                                                                                                                                                                      |
+| `FILECOIN_CONFIG_DIR`                           | Absolute path of the folder that holds `config.json` and `state.db`. Default: `~/Library/Application Support/filecoin` on macOS, `%LOCALAPPDATA%\filecoin` on Windows, and `$XDG_DATA_HOME/filecoin` (`~/.local/share/filecoin`) elsewhere                            |
+| `FILECOIN_RPC_URL`                              | RPC endpoint. Default: synapse-core's fallback transport for the chain                                                                                                                                                                                                |
+| `FILECOIN_CONSOLE_URL`                          | Filecoin Pay console origin for approval, funding, and revoke links, such as `https://filecoin-pay-explorer-staging.vercel.app` for staging. Default: `https://pay.filecoin.cloud`                                                                                    |
+| `FILECOIN_API_URL`                              | filecoin-api origin for retrieval links and `datasets` reads, such as `http://localhost:8787` for a local API. Default: `https://api.filecoin.io`                                                                                                                     |
+| `DO_NOT_TRACK`, `FILECOIN_TELEMETRY`            | `DO_NOT_TRACK=1` or `FILECOIN_TELEMETRY=0` drops the `utm_*` tags from console links, as clipact's telemetry opt-outs. The tags tell the console's analytics that the visit came from the `filecoin` CLI, which flow printed the link, and which agent ran it, if any |
+| `FILECOIN_OUTPUT`, `FILECOIN_AGENT`             | Override clipact's output mode and agent detection                                                                                                                                                                                                                    |
 
 `FILECOIN_RPC_URL`, `FILECOIN_CONSOLE_URL`, `FILECOIN_API_URL`, and `FILECOIN_CONFIG_DIR` apply to every command and have no flags. `filecoin --help` lists them under Environment, `filecoin schema --list` publishes the three URLs under `globals`, and `filecoin doctor` shows each value and its source. An invalid URL, or a relative `FILECOIN_CONFIG_DIR`, fails with `invalid_input` that names the variable. clipact creates the folder with mode 0700 the first time a command needs it.
 

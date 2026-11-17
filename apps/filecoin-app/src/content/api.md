@@ -22,12 +22,12 @@ Conventions:
 
 `GET /get/{cid}?network=mainnet&browser=false` redirects to where the content can be fetched. It never proxies the bytes. `network` defaults to `mainnet`.
 
-| CID | `browser` | Redirect |
-| --- | --- | --- |
-| PieceCID v2 (`bafkzcib…`) | `false` or absent | The provider's `/piece/{cid}` |
-| PieceCID v2 (`bafkzcib…`) | `true` | `https://inbrowser.link/ipfs/{root}` when the piece is a folder, otherwise the provider's `/piece/{cid}` |
-| Other CID (IPFS content) | `false` or absent | The provider's `/ipfs/{cid}`, for a folder root or for any file or block inside it |
-| Other CID (IPFS content) | `true` | `https://inbrowser.link/ipfs/{cid}` |
+| CID                       | `browser`         | Redirect                                                                                                 |
+| ------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------- |
+| PieceCID v2 (`bafkzcib…`) | `false` or absent | The provider's `/piece/{cid}`                                                                            |
+| PieceCID v2 (`bafkzcib…`) | `true`            | `https://inbrowser.link/ipfs/{root}` when the piece is a folder, otherwise the provider's `/piece/{cid}` |
+| Other CID (IPFS content)  | `false` or absent | The provider's `/ipfs/{cid}`, for a folder root or for any file or block inside it                       |
+| Other CID (IPFS content)  | `true`            | `https://inbrowser.link/ipfs/{cid}`                                                                      |
 
 `provider={id}` names a provider to redirect to when the indexer has no copy yet. It covers the time between a provider receiving a piece and the indexer seeing the commit. An indexed copy always wins over it. `filecoin put` adds it to the early links it prints before the commit confirms.
 
@@ -39,15 +39,15 @@ Legacy v1 PieceCIDs (`baga…`) and strings that aren't CIDs return `400`. If no
 
 The MCP server at `https://mcp.filecoin.io` offers one read-only tool for each data route, plus `search_docs`. Each data tool requires a `network` argument.
 
-| Tool | Reads |
-| --- | --- |
-| `get_status` | Indexer progress |
-| `list_providers`, `get_provider` | Storage providers |
-| `list_data_sets`, `get_data_set` | Data sets |
-| `list_data_set_pieces`, `get_piece`, `list_pieces` | Pieces |
-| `list_rails`, `get_rail`, `list_rail_settlements` | Filecoin Pay rails and settlements |
-| `list_session_keys`, `list_session_key_events` | Session keys and their history |
-| `search_docs` | Page excerpts from the [Filecoin docs](https://docs.filecoin.io) that match a `query` |
+| Tool                                               | Reads                                                                                 |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `get_status`                                       | Indexer progress                                                                      |
+| `list_providers`, `get_provider`                   | Storage providers                                                                     |
+| `list_data_sets`, `get_data_set`                   | Data sets                                                                             |
+| `list_data_set_pieces`, `get_piece`, `list_pieces` | Pieces                                                                                |
+| `list_rails`, `get_rail`, `list_rail_settlements`  | Filecoin Pay rails and settlements                                                    |
+| `list_session_keys`, `list_session_key_events`     | Session keys and their history                                                        |
+| `search_docs`                                      | Page excerpts from the [Filecoin docs](https://docs.filecoin.io) that match a `query` |
 
 [Agents](/agents#mcp-server) shows how to add it to an agent.
 

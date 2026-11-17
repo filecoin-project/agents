@@ -102,14 +102,14 @@ We measured startup on Node 26 as the median of 20 runs after 5 warmups, with a 
   "network": "calibration",
   "sessions": {
     "calibration": {
-      "privateKey": "0x…",        // session key, never printed
-      "address": "0x…",           // session key address
-      "rootAddress": "0x…",       // owner; absent while approval is pending
+      "privateKey": "0x…", // session key, never printed
+      "address": "0x…", // session key address
+      "rootAddress": "0x…", // owner; absent while approval is pending
       "scopes": ["createDataSet", "addPieces", "schedulePieceRemovals"],
-      "name": "filecoin-cli",          // key name requested as the on-chain origin
-      "days": 30,                 // requested expiry; absent means the console's default
-      "fromBlock": "4112865",     // block when the key was created
-      "expiresAt": "1793304656",  // earliest granted scope expiry
+      "name": "filecoin-cli", // key name requested as the on-chain origin
+      "days": 30, // requested expiry; absent means the console's default
+      "fromBlock": "4112865", // block when the key was created
+      "expiresAt": "1793304656", // earliest granted scope expiry
       "createdAt": "…"
     }
   }
@@ -168,11 +168,11 @@ Before each mutation, `requireSession` rebuilds the key with `fromSecp256k1` and
 
 `put` packs files and folders into UnixFS CARs. `put --raw` stores a file as its exact bytes:
 
-| Input | Stored bytes | Data set metadata | Piece metadata | Browser URL |
-| --- | --- | --- | --- | --- |
-| File | UnixFS CAR | `source=filecoin-cli`, `withIPFSIndexing` | `name`, `ipfsRootCID` | `<api>/get/<rootCid>?network=<net>&browser=true` |
-| Folder | UnixFS CAR | `source=filecoin-cli`, `withIPFSIndexing` | `name`, `ipfsRootCID` | `<api>/get/<rootCid>?network=<net>&browser=true` |
-| File with `--raw` | exact file bytes | `source=filecoin-cli` | `name` | `<api>/get/<pieceCid>?network=<net>&browser=true` |
+| Input             | Stored bytes     | Data set metadata                         | Piece metadata        | Browser URL                                       |
+| ----------------- | ---------------- | ----------------------------------------- | --------------------- | ------------------------------------------------- |
+| File              | UnixFS CAR       | `source=filecoin-cli`, `withIPFSIndexing` | `name`, `ipfsRootCID` | `<api>/get/<rootCid>?network=<net>&browser=true`  |
+| Folder            | UnixFS CAR       | `source=filecoin-cli`, `withIPFSIndexing` | `name`, `ipfsRootCID` | `<api>/get/<rootCid>?network=<net>&browser=true`  |
+| File with `--raw` | exact file bytes | `source=filecoin-cli`                     | `name`                | `<api>/get/<pieceCid>?network=<net>&browser=true` |
 
 `filecoin-cli` comes from `APPLICATION_SOURCE` in `source.ts`, which is also the default session-key name. filecoin-pin uses its own name for both in the same way.
 
@@ -264,20 +264,20 @@ The output is deterministic. The staged packer of `filecoin` 0.7.0 and earlier w
 
 We measured both packers on 2026-11-16 on an Apple M1 Pro with Node.js 26, each stage in its own process. The staged path packs the CAR to disk, then hashes it. The DFS path builds the DAG, then writes the CAR into `Piece.hasher()`, as the upload does:
 
-| Input | Staged pack + CommP | DFS pass 1 + pass 2 with CommP | Peak heap, staged and DFS |
-| --- | --- | --- | --- |
-| 900 MiB random file | 1.2 s + 5.2 s, and a 900 MiB staged CAR | 1.0 s + 5.6 s, nothing on disk | 32 MiB and 32 MiB |
-| 53,000 files of 1 to 200 bytes | 3.9 s + 0.1 s | 4.0 s + 1.0 to 1.5 s | 143 to 162 MiB and 205 to 286 MiB |
+| Input                          | Staged pack + CommP                     | DFS pass 1 + pass 2 with CommP | Peak heap, staged and DFS         |
+| ------------------------------ | --------------------------------------- | ------------------------------ | --------------------------------- |
+| 900 MiB random file            | 1.2 s + 5.2 s, and a 900 MiB staged CAR | 1.0 s + 5.6 s, nothing on disk | 32 MiB and 32 MiB                 |
+| 53,000 files of 1 to 200 bytes | 3.9 s + 0.1 s                           | 4.0 s + 1.0 to 1.5 s           | 143 to 162 MiB and 205 to 286 MiB |
 
 CommP dominates the large file, at about 175 MiB/s. In a real put, the upload sends the bytes while it hashes them. For small files, the second pass spends its time opening each file, and the read-ahead cut it from 3.6 s to about 0.8 s. The DFS path holds 1 to 2 KiB more heap per file, for the CID keys and source paths it keeps between the passes.
 
 [ipfs-car](https://github.com/storacha/ipfs-car) 3.1.0 uses `@ipld/unixfs` with raw leaves, 1 MiB chunks, and a width of 1024. It switches to a sharded directory above 1,000 entries. We compared the two packers on 2026-09-29:
 
-| Input | filecoin | ipfs-car |
-| --- | --- | --- |
-| 480 MB single file in a folder | 0.6 s, with a CAR byte-identical to ipfs-car's | 0.8 s |
-| Nested folders of small files, no shard | Same root CID | Same root CID |
-| Flat folder of 3,000 files | Different root CID | Different root CID |
+| Input                                   | filecoin                                       | ipfs-car           |
+| --------------------------------------- | ---------------------------------------------- | ------------------ |
+| 480 MB single file in a folder          | 0.6 s, with a CAR byte-identical to ipfs-car's | 0.8 s              |
+| Nested folders of small files, no shard | Same root CID                                  | Same root CID      |
+| Flat folder of 3,000 files              | Different root CID                             | Different root CID |
 
 Large directories get different root CIDs, as expected. `unixfs-v1-2025` shards by encoded block size, which is the rule Kubo and Boxo use for this profile. ipfs-car shards by entry count. `filecoin` keeps the IPIP-499 profile so that its CIDs match other implementations of that profile. The comparison also found the unreferenced-block issue described above. That finding is why `filecoin` verifies every block on extraction.
 
@@ -328,11 +328,11 @@ clipact aborts `ctx.signal` on the first SIGINT, SIGTERM, or SIGHUP. Handlers pa
 
 What the target names decides what `get` returns and how it checks it:
 
-| Target | Returns | Checked against | Source |
-| --- | --- | --- | --- |
-| A ref of a file or folder stored as a CAR, or its root CID | The extracted file or folder | Each block's CID, walked from the root CID | Curio `/ipfs/<rootCid>` |
-| A ref of a file stored with `--raw` | The file | The PieceCID | Curio `/piece/<pieceCid>` |
-| A PieceCID | The stored bytes as one file. For a CAR, that is the CAR, named `<name>.car` by default | The PieceCID | Curio `/piece/<pieceCid>` |
+| Target                                                     | Returns                                                                                 | Checked against                            | Source                    |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------ | ------------------------- |
+| A ref of a file or folder stored as a CAR, or its root CID | The extracted file or folder                                                            | Each block's CID, walked from the root CID | Curio `/ipfs/<rootCid>`   |
+| A ref of a file stored with `--raw`                        | The file                                                                                | The PieceCID                               | Curio `/piece/<pieceCid>` |
+| A PieceCID                                                 | The stored bytes as one file. For a CAR, that is the CAR, named `<name>.car` by default | The PieceCID                               | Curio `/piece/<pieceCid>` |
 
 For a ref, or a CID found in `state.db`, `get` uses the `serviceURL` of the first saved copy and skips filecoin-api. A CID lookup in `state.db` needs credentials, because local state is per account. Without them, or when the CID is not in local state, `get` requests filecoin-api `/get/<cid>?network=<network>`. That route redirects a PieceCID to a provider's `/piece` and any other CID to a provider's `/ipfs`, through the indexer and then cid.contact ([retrieval](retrieval.md)). `fetch` follows the redirect and keeps the `Accept` header, and the result's `url` is the URL the bytes came from. `get` no longer calls synapse-core's `resolvePieceUrl`, which tried FilBeam first.
 
@@ -348,10 +348,10 @@ Curio answers `/ipfs/<rootCid>` only after it indexes the CAR, a few minutes aft
 
 We measured `get` on 2026-11-16 against a local server that sends a CAR depth-first, on an Apple silicon Mac. Node alone used 139 MiB of RSS with the modules loaded.
 
-| Content | Streaming from `/ipfs` | The previous path: `/piece` to disk, then `CarIndexedReader` |
-| --- | --- | --- |
-| One 900 MiB file | 1.6 s, 277 MiB peak RSS, 900 MiB on disk | 6.9 s, 399 MiB peak RSS, 1.8 GiB on disk |
-| 10,000 files of 10 KB in 50 directories, and 6,000 files of 1 KB in one sharded directory | 2.7 s, 227 MiB peak RSS | 3.7 s, 412 MiB peak RSS |
+| Content                                                                                   | Streaming from `/ipfs`                   | The previous path: `/piece` to disk, then `CarIndexedReader` |
+| ----------------------------------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------ |
+| One 900 MiB file                                                                          | 1.6 s, 277 MiB peak RSS, 900 MiB on disk | 6.9 s, 399 MiB peak RSS, 1.8 GiB on disk                     |
+| 10,000 files of 10 KB in 50 directories, and 6,000 files of 1 KB in one sharded directory | 2.7 s, 227 MiB peak RSS                  | 3.7 s, 412 MiB peak RSS                                      |
 
 The previous path computed the PieceCID, at about 6 seconds per GiB. The streaming path computes one SHA-256 per block instead.
 
@@ -420,10 +420,10 @@ filecoin-api reads the chain through its indexer, so a data set or piece added i
 └── staging/<op_id>/   staged CARs of unfinished puts from filecoin 0.7.0 and earlier
 ```
 
-| Table | Key | Contents |
-| --- | --- | --- |
-| `resources` | `ref` | kind, name, chain ID, payer, PieceCID, root CID, size, `copies` (JSON: providerId, dataSetId, pieceId, serviceURL), URL, status |
-| `operations` | `id` | action, resource ref, chain ID, payer, execution status, phase, `input` (JSON), `checkpoint` (JSON), pid, error, timestamps |
+| Table        | Key   | Contents                                                                                                                        |
+| ------------ | ----- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `resources`  | `ref` | kind, name, chain ID, payer, PieceCID, root CID, size, `copies` (JSON: providerId, dataSetId, pieceId, serviceURL), URL, status |
+| `operations` | `id`  | action, resource ref, chain ID, payer, execution status, phase, `input` (JSON), `checkpoint` (JSON), pid, error, timestamps     |
 
 Every query filters on `(chainId, payer)`, so one database can hold several networks and accounts. Neither table holds file bytes or keys.
 
@@ -435,35 +435,35 @@ The JSON object has `data` on success or `error` on failure, then optional `next
 
 Errors are clipact `CliError`s with a stable snake_case `code`, a `retryable` flag, optional `details`, and `next` steps. Each command lists its codes in its definition, and `schema` and help show them. An error from viem or synapse-core that is not a `CliError` goes through the lazily loaded `map-error.ts`. That module maps RPC and HTTP failures to `service_unavailable` or `timeout`, and a filecoin-api 429 to `rate_limited`. clipact marks those codes retryable only for read-only and idempotent commands. Any other error becomes `internal_error`.
 
-| Code | Next step | Raised by |
-| --- | --- | --- |
-| `auth_required`, `login_pending`, `session_expired`, `permission_denied` | The user logs in or approves scopes | Session checks, login |
-| `session_conflict` | The agent keeps the saved key with `filecoin login --check`, or the user agrees to replace it with `--fresh` | login |
-| `insufficient_funds` | The user funds the account or approves Warm Storage at the console funding link | The put funding check |
-| `not_found` | The agent lists resources, operations, or data sets | Lookups |
-| `output_exists` | The agent chooses another path or passes `--force` | get |
-| `operation_failed`, `commit_rejected`, `removal_reverted`, `source_changed`, `staging_missing`, `operation_running` | The agent resumes or inspects the operation | put, delete, resume |
-| `verification_failed`, `unsafe_path` | None | get |
-| `invalid_input`, `confirmation_required`, `interrupted`, `internal_error`, `rate_limited`, `service_unavailable`, `timeout` | Built into clipact | clipact |
+| Code                                                                                                                        | Next step                                                                                                    | Raised by             |
+| --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------- |
+| `auth_required`, `login_pending`, `session_expired`, `permission_denied`                                                    | The user logs in or approves scopes                                                                          | Session checks, login |
+| `session_conflict`                                                                                                          | The agent keeps the saved key with `filecoin login --check`, or the user agrees to replace it with `--fresh` | login                 |
+| `insufficient_funds`                                                                                                        | The user funds the account or approves Warm Storage at the console funding link                              | The put funding check |
+| `not_found`                                                                                                                 | The agent lists resources, operations, or data sets                                                          | Lookups               |
+| `output_exists`                                                                                                             | The agent chooses another path or passes `--force`                                                           | get                   |
+| `operation_failed`, `commit_rejected`, `removal_reverted`, `source_changed`, `staging_missing`, `operation_running`         | The agent resumes or inspects the operation                                                                  | put, delete, resume   |
+| `verification_failed`, `unsafe_path`                                                                                        | None                                                                                                         | get                   |
+| `invalid_input`, `confirmation_required`, `interrupted`, `internal_error`, `rate_limited`, `service_unavailable`, `timeout` | Built into clipact                                                                                           | clipact               |
 
 ## Testing
 
 The tests use the Node test runner and need no network. msw replaces `fetch` for the filecoin-api tests. `pnpm --filter filecoin test` runs them, and `pnpm check` runs them with the other checks.
 
-| Test | Covers |
-| --- | --- |
-| `state.test.ts` | Migrations, including `rm` → `delete`, `artifact` → `folder`, and an operation without a resource, account-scoped queries, cursor paging, checkpoint merging, the lock against a live child process, a second caller in the same process, and a reused PID |
-| `login.test.ts` | The console link formats and their analytics tags, scope classification, and the windowed event scan against a fake viem transport |
-| `login-flow.test.ts` | `filecoin login` in process against a fake JSON-RPC registry. It covers confirming a custom-scope key with bare `filecoin login` and `--check`, saving an approval found before a conflicting request, `session_conflict` for pending and approved keys, subsets, `--fresh` and expired-key renewal keeping the saved request, and partial grants |
-| `pack.test.ts` | A deterministic root CID, byte-exact extraction, no unreferenced blocks, empty directories, rejection of a tampered block, the dotfile and symlink rules, and the canonical encoding of a 3 GiB file root built from fake leaves |
-| `jobs.test.ts` | A fake `StorageBackend` that simulates FWSS nonces. It covers new and existing data sets, a lost commit response, a commit that never landed, a rejected commit, a resume of a completed job, insufficient funds, an approval-only funding error, a reverted removal, a delete of copies with no resource, copies the chain shows scheduled or removed, another wallet's data set, a delete of some of a resource's copies, a resumed delete that checks the chain again, interruption, dry-run estimates, and the operation ID and resume step on every job error |
-| `urls.test.ts` | The filecoin-api piece and browser URLs for files and folders, an API base path, an unknown chain ID, and the provider URL for `get` |
-| `cli.test.ts` | The whole CLI in process through `clipact/testing` in strict mode. It covers definitions, schemas, auth and pending-login errors, the logout revoke link, confirmation, a dry run without a session, secrets kept out of flags and output, and the globals in root help, `schema --list`, validation, and `doctor` sources, including the folder from `FILECOIN_CONFIG_DIR` or the platform default. Globals and the folder come from the env passed to `invoke`, not from `process.env` |
-| `contract.test.ts` | The built binary without a TTY. It covers one JSON line on stdout, exit codes, no leaked session key, and a SIGTERM during a hanging RPC call that gives an `interrupted` result and exit 143 |
-| `app.test.ts` | The signal-bound RPC transport: it rejects requests once the signal aborts and keeps its request timeout |
-| `datasets.test.ts` | `datasets ls` and `datasets inspect` in process against filecoin-api responses mocked with [msw](https://mswjs.io/), which fails on any request without a handler. It covers the query each flag sends, the mapping of `null` fields and a zero `pdpEndEpoch`, pieces linked to local resources, `not_found` for an unknown data set and another wallet's data set, `rate_limited` for 429, and `service_unavailable` for 503 and a network failure |
-| `delete.test.ts` | `delete` in process against filecoin-api and chain RPC responses mocked with msw. It covers how each target form finds its copies, with `--dry-run` and `--provider`, a local copy newer than the index, a root CID of several PieceCIDs, copies already removed or scheduled, `not_found`, and the confirmation for each target form |
-| `config.test.ts` | Network resolution, the `0700` folder clipact creates, a relative `FILECOIN_CONFIG_DIR`, and a corrupt `config.json` |
+| Test                 | Covers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `state.test.ts`      | Migrations, including `rm` → `delete`, `artifact` → `folder`, and an operation without a resource, account-scoped queries, cursor paging, checkpoint merging, the lock against a live child process, a second caller in the same process, and a reused PID                                                                                                                                                                                                                                                                                                         |
+| `login.test.ts`      | The console link formats and their analytics tags, scope classification, and the windowed event scan against a fake viem transport                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `login-flow.test.ts` | `filecoin login` in process against a fake JSON-RPC registry. It covers confirming a custom-scope key with bare `filecoin login` and `--check`, saving an approval found before a conflicting request, `session_conflict` for pending and approved keys, subsets, `--fresh` and expired-key renewal keeping the saved request, and partial grants                                                                                                                                                                                                                  |
+| `pack.test.ts`       | A deterministic root CID, byte-exact extraction, no unreferenced blocks, empty directories, rejection of a tampered block, the dotfile and symlink rules, and the canonical encoding of a 3 GiB file root built from fake leaves                                                                                                                                                                                                                                                                                                                                   |
+| `jobs.test.ts`       | A fake `StorageBackend` that simulates FWSS nonces. It covers new and existing data sets, a lost commit response, a commit that never landed, a rejected commit, a resume of a completed job, insufficient funds, an approval-only funding error, a reverted removal, a delete of copies with no resource, copies the chain shows scheduled or removed, another wallet's data set, a delete of some of a resource's copies, a resumed delete that checks the chain again, interruption, dry-run estimates, and the operation ID and resume step on every job error |
+| `urls.test.ts`       | The filecoin-api piece and browser URLs for files and folders, an API base path, an unknown chain ID, and the provider URL for `get`                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `cli.test.ts`        | The whole CLI in process through `clipact/testing` in strict mode. It covers definitions, schemas, auth and pending-login errors, the logout revoke link, confirmation, a dry run without a session, secrets kept out of flags and output, and the globals in root help, `schema --list`, validation, and `doctor` sources, including the folder from `FILECOIN_CONFIG_DIR` or the platform default. Globals and the folder come from the env passed to `invoke`, not from `process.env`                                                                           |
+| `contract.test.ts`   | The built binary without a TTY. It covers one JSON line on stdout, exit codes, no leaked session key, and a SIGTERM during a hanging RPC call that gives an `interrupted` result and exit 143                                                                                                                                                                                                                                                                                                                                                                      |
+| `app.test.ts`        | The signal-bound RPC transport: it rejects requests once the signal aborts and keeps its request timeout                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `datasets.test.ts`   | `datasets ls` and `datasets inspect` in process against filecoin-api responses mocked with [msw](https://mswjs.io/), which fails on any request without a handler. It covers the query each flag sends, the mapping of `null` fields and a zero `pdpEndEpoch`, pieces linked to local resources, `not_found` for an unknown data set and another wallet's data set, `rate_limited` for 429, and `service_unavailable` for 503 and a network failure                                                                                                                |
+| `delete.test.ts`     | `delete` in process against filecoin-api and chain RPC responses mocked with msw. It covers how each target form finds its copies, with `--dry-run` and `--provider`, a local copy newer than the index, a root CID of several PieceCIDs, copies already removed or scheduled, `not_found`, and the confirmation for each target form                                                                                                                                                                                                                              |
+| `config.test.ts`     | Network resolution, the `0700` folder clipact creates, a relative `FILECOIN_CONFIG_DIR`, and a corrupt `config.json`                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 
 ### Calibration run on 2026-09-29
 

@@ -19,12 +19,12 @@ While the commit confirms, `filecoin put` prints an early browser link to stderr
 
 ## What each way checks
 
-| Way | Who can use it | Gets | Checks |
-| --- | --- | --- | --- |
-| `filecoin get <ref>` or `filecoin get <root CID>` | Agents with a shell, and people | The file or folder, extracted | Each block against its CID, from the root CID down. On a mismatch it keeps nothing and fails with `verification_failed` |
-| `filecoin get <PieceCID>` | Agents with a shell, and people | The stored bytes as one file. For a file or folder stored as a CAR, that is the CAR | The bytes against the PieceCID |
-| A folder's `urls.browser` | Browser agents, and people | The folder, rendered | Each block, in the browser |
-| A file's `urls.browser`, or `urls.piece` | Anything that speaks HTTP | The bytes | Nothing |
+| Way                                               | Who can use it                  | Gets                                                                                | Checks                                                                                                                  |
+| ------------------------------------------------- | ------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `filecoin get <ref>` or `filecoin get <root CID>` | Agents with a shell, and people | The file or folder, extracted                                                       | Each block against its CID, from the root CID down. On a mismatch it keeps nothing and fails with `verification_failed` |
+| `filecoin get <PieceCID>`                         | Agents with a shell, and people | The stored bytes as one file. For a file or folder stored as a CAR, that is the CAR | The bytes against the PieceCID                                                                                          |
+| A folder's `urls.browser`                         | Browser agents, and people      | The folder, rendered                                                                | Each block, in the browser                                                                                              |
+| A file's `urls.browser`, or `urls.piece`          | Anything that speaks HTTP       | The bytes                                                                           | Nothing                                                                                                                 |
 
 Use `filecoin get` when the content must be intact. When you hand over a link that checks nothing, say so.
 

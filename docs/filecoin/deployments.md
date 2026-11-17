@@ -6,10 +6,10 @@ This document describes where Filecoin for Agents runs and which hostnames serve
 
 `filecoin.io` is the primary domain. The plugin, the CLI, and the site advertise its hostnames. Both apps are Cloudflare Workers in the FilOz Cloudflare account, and both run on the account's `filecoin.cloud` zone.
 
-| App | Worker | Hostnames | Purpose |
-| --- | --- | --- | --- |
-| [filecoin-api](../../apps/filecoin-api/README.md) | `fil-api` | `api.filecoin.io`, `mcp.filecoin.io`, `api.filecoin.cloud`, and `mcp.filecoin.cloud` | The REST API and the MCP server |
-| [filecoin-app](../../apps/filecoin-app/README.md) | `fil-app` | `poc.filecoin.cloud` | A prototype site for agent discovery, with the explorer and the wallet dashboard |
+| App                                               | Worker    | Hostnames                                                                            | Purpose                                                                          |
+| ------------------------------------------------- | --------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| [filecoin-api](../../apps/filecoin-api/README.md) | `fil-api` | `api.filecoin.io`, `mcp.filecoin.io`, `api.filecoin.cloud`, and `mcp.filecoin.cloud` | The REST API and the MCP server                                                  |
+| [filecoin-app](../../apps/filecoin-app/README.md) | `fil-app` | `poc.filecoin.cloud`                                                                 | A prototype site for agent discovery, with the explorer and the wallet dashboard |
 
 - **Only two `filecoin.io` hostnames point to Cloudflare.** `filecoin.io`'s DNS is on DNSimple. `filecoin.io` is the Filecoin website, a Next.js site on Vercel that this repository doesn't deploy. `api.filecoin.io` and `mcp.filecoin.io` are CNAMEs to `fallback.filecoin.cloud`. Cloudflare for SaaS connects each one to the `filecoin.cloud` zone, and a Worker route sends it to filecoin-api ([Subdomains of filecoin.io](#subdomains-of-filecoinio)).
 - **`api.filecoin.io` and `mcp.filecoin.io` both serve the MCP server.** `api.filecoin.io` serves the REST API, and the MCP server at `/mcp`. `mcp.filecoin.io` reaches the same Worker, which serves the MCP server at `/` ([MCP hosts](../../apps/filecoin-api/README.md#mcp-hosts)). `api.filecoin.cloud` and `mcp.filecoin.cloud` are Custom Domains on the same Worker. Releases from before the move to `filecoin.io` still call them, and filecoin-app's server renders need `api.filecoin.cloud` ([Same-zone fetches](#same-zone-fetches)).
@@ -19,12 +19,12 @@ This document describes where Filecoin for Agents runs and which hostnames serve
 
 Four hostnames serve filecoin-api and its MCP server:
 
-| Hostname | Serves | How it reaches the Worker |
-| --- | --- | --- |
-| `api.filecoin.io` | The REST API, `/mcp`, and the server card at `/mcp/server-card` | Cloudflare for SaaS custom hostname on the `filecoin.cloud` zone, plus a Worker route |
-| `mcp.filecoin.io` | The MCP server only, at `/`, and its server card at `/server-card` | Cloudflare for SaaS custom hostname on the `filecoin.cloud` zone, plus a Worker route |
-| `api.filecoin.cloud` | The REST API, `/mcp`, and the server card at `/mcp/server-card` | Custom Domain |
-| `mcp.filecoin.cloud` | The MCP server only, at `/`, and its server card at `/server-card` | Custom Domain |
+| Hostname             | Serves                                                             | How it reaches the Worker                                                             |
+| -------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| `api.filecoin.io`    | The REST API, `/mcp`, and the server card at `/mcp/server-card`    | Cloudflare for SaaS custom hostname on the `filecoin.cloud` zone, plus a Worker route |
+| `mcp.filecoin.io`    | The MCP server only, at `/`, and its server card at `/server-card` | Cloudflare for SaaS custom hostname on the `filecoin.cloud` zone, plus a Worker route |
+| `api.filecoin.cloud` | The REST API, `/mcp`, and the server card at `/mcp/server-card`    | Custom Domain                                                                         |
+| `mcp.filecoin.cloud` | The MCP server only, at `/`, and its server card at `/server-card` | Custom Domain                                                                         |
 
 We checked the Cloudflare behavior below against the Cloudflare docs on 2026-10-14.
 
@@ -45,12 +45,12 @@ We checked the Cloudflare behavior below against the Cloudflare docs on 2026-10-
 
 [Cloudflare for SaaS](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/) connects both hostnames to the `filecoin.cloud` zone as custom hostnames, on the zone's Free plan ([Plans](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/plans/)). The setup has four parts:
 
-| Where | What |
-| --- | --- |
-| DNSimple | `api.filecoin.io` and `mcp.filecoin.io` are CNAMEs to `fallback.filecoin.cloud` |
-| `filecoin.cloud` zone, **SSL/TLS > Custom Hostnames** | `api.filecoin.io` and `mcp.filecoin.io` are custom hostnames. Cloudflare issues and renews their certificates through [HTTP validation](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/security/certificate-management/issue-and-validate/validate-certificates/http/) |
-| `filecoin.cloud` zone, DNS | A proxied `fallback.filecoin.cloud AAAA 100::` record is the fallback origin. The Worker is the real origin, so the record only has to exist ([Workers as your fallback origin](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/start/advanced-settings/worker-as-origin/)) |
-| filecoin-api's `wrangler.jsonc` | Worker routes on the `filecoin.cloud` zone send both hostnames to the Worker. They are routes, not Custom Domains |
+| Where                                                 | What                                                                                                                                                                                                                                                                                                       |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DNSimple                                              | `api.filecoin.io` and `mcp.filecoin.io` are CNAMEs to `fallback.filecoin.cloud`                                                                                                                                                                                                                            |
+| `filecoin.cloud` zone, **SSL/TLS > Custom Hostnames** | `api.filecoin.io` and `mcp.filecoin.io` are custom hostnames. Cloudflare issues and renews their certificates through [HTTP validation](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/security/certificate-management/issue-and-validate/validate-certificates/http/)     |
+| `filecoin.cloud` zone, DNS                            | A proxied `fallback.filecoin.cloud AAAA 100::` record is the fallback origin. The Worker is the real origin, so the record only has to exist ([Workers as your fallback origin](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/start/advanced-settings/worker-as-origin/)) |
+| filecoin-api's `wrangler.jsonc`                       | Worker routes on the `filecoin.cloud` zone send both hostnames to the Worker. They are routes, not Custom Domains                                                                                                                                                                                          |
 
 The `filecoin.cloud` zone also serves other FilOz sites, such as `docs.filecoin.cloud` and `pay.filecoin.cloud`. All custom hostnames on the zone share one fallback origin, so change the fallback origin only with whoever manages the zone.
 

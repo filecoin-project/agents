@@ -6,36 +6,37 @@ Built with [Hono](https://hono.dev), [`@hono/zod-openapi`](https://github.com/ho
 
 ## Routes
 
-| Route | Description |
-| --- | --- |
-| `GET /` | The API's name, version, networks, and route paths, as JSON. A `Link` header points to `/openapi.json` as `service-desc` and to `/docs` as `service-doc` ([RFC 8631](https://www.rfc-editor.org/rfc/rfc8631)) |
-| `GET /openapi.json` | OpenAPI 3.1 document |
-| `GET /docs` | API reference (Scalar) |
-| `POST /mcp` | MCP server (Streamable HTTP, stateless) |
-| `GET /mcp/server-card` | The MCP server's [server card](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/seps/2127-mcp-server-cards.md), at the location SEP-2127 reserves next to the endpoint (see [Server card](#server-card)) |
-| `GET /.well-known/mcp/server-card.json`, `GET /.well-known/mcp-server-card` | The same card, at the paths of older drafts, which scanners still check |
-| `GET /health` | Latest indexed block per network and indexer; `503` if a configured database fails |
-| `GET /get/{cid}` | Redirect to where a PieceCID or IPFS CID can be retrieved (see [Retrieval](#retrieval)) |
+| Route                                                                       | Description                                                                                                                                                                                                                    |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET /`                                                                     | The API's name, version, networks, and route paths, as JSON. A `Link` header points to `/openapi.json` as `service-desc` and to `/docs` as `service-doc` ([RFC 8631](https://www.rfc-editor.org/rfc/rfc8631))                  |
+| `GET /openapi.json`                                                         | OpenAPI 3.1 document                                                                                                                                                                                                           |
+| `GET /docs`                                                                 | API reference (Scalar)                                                                                                                                                                                                         |
+| `POST /mcp`                                                                 | MCP server (Streamable HTTP, stateless)                                                                                                                                                                                        |
+| `GET /mcp/server-card`                                                      | The MCP server's [server card](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/seps/2127-mcp-server-cards.md), at the location SEP-2127 reserves next to the endpoint (see [Server card](#server-card)) |
+| `GET /.well-known/mcp/server-card.json`, `GET /.well-known/mcp-server-card` | The same card, at the paths of older drafts, which scanners still check                                                                                                                                                        |
+| `GET /health`                                                               | Latest indexed block per network and indexer; `503` if a configured database fails                                                                                                                                             |
+| `GET /get/{cid}`                                                            | Redirect to where a PieceCID or IPFS CID can be retrieved (see [Retrieval](#retrieval))                                                                                                                                        |
 
 Every data route is namespaced by network: `/calibration/...` or `/mainnet/...`.
 
-| Route | Filters |
-| --- | --- |
-| `/{network}/status` | none |
-| `/{network}/providers` | `approved`, `active`, `endorsed` |
-| `/{network}/providers/{providerId}` | none |
-| `/{network}/data-sets` | `owner`, `provider_id`, `deleted`, `with_cdn` |
-| `/{network}/data-sets/{dataSetId}` | none |
-| `/{network}/data-sets/{dataSetId}/pieces` | `removed` |
-| `/{network}/data-sets/{dataSetId}/pieces/{pieceId}` | none |
-| `/{network}/pieces` | `owner`, `cid` (a PieceCID v2; legacy v1 PieceCIDs and other strings return `400`), `ipfs_cid` (the `ipfsRootCID` piece metadata, in any CID version or base; PieceCIDs and other strings return `400`), `provider_id`, `removed` (at least one of the first four is required) |
-| `/{network}/rails` | `payer`, `payee`, `operator`, `token`, `state` (`active`, `terminated` or `finalized`) |
-| `/{network}/rails/{railId}` | none |
-| `/{network}/rails/{railId}/settlements` | none |
-| `/{network}/session-keys` | `identity`, `signer`, `active` |
-| `/{network}/session-keys/history` | `identity`, `signer` |
+| Route                                               | Filters                                                                                                                                                                                                                                                                        |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `/{network}/status`                                 | none                                                                                                                                                                                                                                                                           |
+| `/{network}/providers`                              | `approved`, `active`, `endorsed`                                                                                                                                                                                                                                               |
+| `/{network}/providers/{providerId}`                 | none                                                                                                                                                                                                                                                                           |
+| `/{network}/data-sets`                              | `owner`, `provider_id`, `deleted`, `with_cdn`                                                                                                                                                                                                                                  |
+| `/{network}/data-sets/{dataSetId}`                  | none                                                                                                                                                                                                                                                                           |
+| `/{network}/data-sets/{dataSetId}/pieces`           | `removed`                                                                                                                                                                                                                                                                      |
+| `/{network}/data-sets/{dataSetId}/pieces/{pieceId}` | none                                                                                                                                                                                                                                                                           |
+| `/{network}/pieces`                                 | `owner`, `cid` (a PieceCID v2; legacy v1 PieceCIDs and other strings return `400`), `ipfs_cid` (the `ipfsRootCID` piece metadata, in any CID version or base; PieceCIDs and other strings return `400`), `provider_id`, `removed` (at least one of the first four is required) |
+| `/{network}/rails`                                  | `payer`, `payee`, `operator`, `token`, `state` (`active`, `terminated` or `finalized`)                                                                                                                                                                                         |
+| `/{network}/rails/{railId}`                         | none                                                                                                                                                                                                                                                                           |
+| `/{network}/rails/{railId}/settlements`             | none                                                                                                                                                                                                                                                                           |
+| `/{network}/session-keys`                           | `identity`, `signer`, `active`                                                                                                                                                                                                                                                 |
+| `/{network}/session-keys/history`                   | `identity`, `signer`                                                                                                                                                                                                                                                           |
 
 Conventions:
+
 - **Owner** is the client address that pays for a data set (`data_sets.payer`).
 - **IPFS root CIDs** in `ipfs_cid` are normalized to base32 CIDv1, the form the indexer stores. The filter matches pieces in every data set, IPFS-indexed or not. `/get/{cid}` redirects a root CID only to a copy in an IPFS-indexed data set.
 - **Rails** are rebuilt from Filecoin Pay events. Session keys are rebuilt from SessionKeyRegistry `AuthorizationsUpdated` events, keeping the latest expiry for each permission.
@@ -47,14 +48,14 @@ Conventions:
 
 The hostnames in the `MCP_HOSTS` variable of `wrangler.jsonc`, separated by commas, serve only the MCP server and its server card. In production, they are `mcp.filecoin.io` and `mcp.filecoin.cloud`. Adding a hostname needs no code change. [`src/mcp-host.ts`](src/mcp-host.ts) wraps the Hono app and rewrites each request to an MCP host before the app sees it. The MCP hosts therefore share the `/mcp` handler, its rate limit, CORS, request ids, and tracing:
 
-| Request on an MCP host | Result |
-| --- | --- |
-| `POST /` | The MCP endpoint, the same as `POST https://api.filecoin.io/mcp` |
-| `GET /`, `DELETE /` | `405`, as on `/mcp`, because the server is stateless |
-| `OPTIONS /` | The CORS preflight |
-| `GET /server-card` | The [server card](#server-card), the same as `GET https://api.filecoin.io/mcp/server-card` |
-| `GET /.well-known/mcp/server-card.json`, `GET /.well-known/mcp-server-card` | The same card, at the paths of older drafts |
-| Any other path, such as `/mcp`, `/mcp/server-card`, `/health`, `/docs`, or `/calibration/providers` | `404 not_found` |
+| Request on an MCP host                                                                              | Result                                                                                     |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `POST /`                                                                                            | The MCP endpoint, the same as `POST https://api.filecoin.io/mcp`                           |
+| `GET /`, `DELETE /`                                                                                 | `405`, as on `/mcp`, because the server is stateless                                       |
+| `OPTIONS /`                                                                                         | The CORS preflight                                                                         |
+| `GET /server-card`                                                                                  | The [server card](#server-card), the same as `GET https://api.filecoin.io/mcp/server-card` |
+| `GET /.well-known/mcp/server-card.json`, `GET /.well-known/mcp-server-card`                         | The same card, at the paths of older drafts                                                |
+| Any other path, such as `/mcp`, `/mcp/server-card`, `/health`, `/docs`, or `/calibration/providers` | `404 not_found`                                                                            |
 
 Plugins released before the MCP hosts existed, and connectors added by hand, point to `https://api.filecoin.cloud/mcp`. So `/mcp` keeps working on the API hosts. Previews set `MCP_HOSTS` to an empty string, so they serve the MCP server only at `/mcp`. [Deployments and domains](../../docs/filecoin/deployments.md) lists every hostname and how it reaches the Worker.
 
@@ -62,14 +63,14 @@ Plugins released before the MCP hosts existed, and connectors added by hand, poi
 
 The card describes the MCP server before a client connects: its name, title, icons, version, and Streamable HTTP endpoint. [`src/server-card.ts`](src/server-card.ts) builds it, and `serverInfo` reads the same name, title, and icons from there, so a client sees the same identity before and after it connects:
 
-| Field | Value |
-| --- | --- |
-| `name` | `io.filecoin/mcp`, which is `mcp.filecoin.io` in reverse-DNS form. The MCP registry entry uses the same name ([#75](https://github.com/filecoin-project/agents/issues/75)) |
-| `title` | `Filecoin` |
-| `icons` | A 192-pixel PNG and an SVG of the Filecoin logo, which filecoin-app serves at `https://poc.filecoin.cloud/icon-192.png` and `https://poc.filecoin.cloud/favicon.svg`. MCP clients that show icons must support PNG |
-| `version` | The filecoin-api version |
-| `remotes[0].url` | `MCP_PUBLIC_URL`, which is `https://mcp.filecoin.io` in production, on every host. Previews and `pnpm dev` set it to an empty string, so the card advertises the endpoint on the request's host: its root on an MCP host, and `/mcp` elsewhere |
-| `remotes[0].supportedProtocolVersions` | `2026-07-28`, then the MCP SDK's `initialize` versions that include Streamable HTTP, from `2025-03-26` |
+| Field                                  | Value                                                                                                                                                                                                                                          |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                                 | `io.filecoin/mcp`, which is `mcp.filecoin.io` in reverse-DNS form. The MCP registry entry uses the same name ([#75](https://github.com/filecoin-project/agents/issues/75))                                                                     |
+| `title`                                | `Filecoin`                                                                                                                                                                                                                                     |
+| `icons`                                | A 192-pixel PNG and an SVG of the Filecoin logo, which filecoin-app serves at `https://poc.filecoin.cloud/icon-192.png` and `https://poc.filecoin.cloud/favicon.svg`. MCP clients that show icons must support PNG                             |
+| `version`                              | The filecoin-api version                                                                                                                                                                                                                       |
+| `remotes[0].url`                       | `MCP_PUBLIC_URL`, which is `https://mcp.filecoin.io` in production, on every host. Previews and `pnpm dev` set it to an empty string, so the card advertises the endpoint on the request's host: its root on an MCP host, and `/mcp` elsewhere |
+| `remotes[0].supportedProtocolVersions` | `2026-07-28`, then the MCP SDK's `initialize` versions that include Streamable HTTP, from `2025-03-26`                                                                                                                                         |
 
 The card is sent as `application/mcp-server-card+json`, with `Cache-Control: public, max-age=3600` and an `ETag`, and shares the REST API's rate limit.
 
@@ -102,6 +103,7 @@ pnpm --filter filecoin-api dev
 The `dev` script passes `--var MCP_PUBLIC_URL:`, so the server card advertises the dev server's own `/mcp` instead of production. Wrangler sets the request host to the first route in `wrangler.jsonc`, so the card's URL, like the OpenAPI document's server URL, shows `http://api.filecoin.cloud` instead of `localhost`.
 
 Scripts:
+
 - `pnpm test`: vitest in workerd via `@cloudflare/vitest-plugin`, with a fake database. It fails when `openapi.json` differs from the document the Worker serves.
 - `pnpm gen:openapi`: rewrites `openapi.json` from the routes. Run it after changing a route or schema, then `pnpm --filter @filecoin-project/api-client gen` to update the [client](../../packages/filecoin-api-client/README.md) types.
 - `pnpm typecheck`: checks that the generated worker types are current and runs `tsc`
@@ -111,11 +113,11 @@ Scripts:
 
 [`.github/workflows/filecoin-api.yml`](../../.github/workflows/filecoin-api.yml) deploys automatically:
 
-| Trigger | Result |
-| --- | --- |
-| Push to `main` | Runs typecheck, tests and lint, then `wrangler deploy` to https://api.filecoin.io and https://mcp.filecoin.io, and to https://api.filecoin.cloud and https://mcp.filecoin.cloud. Probes `/health` on https://api.filecoin.io, and sends an MCP `initialize` to https://mcp.filecoin.io |
-| Pull request opened or updated | `wrangler preview --name pr-<number>` creates a [Worker Preview](https://developers.cloudflare.com/workers/previews/) on `workers.dev`, probes `/health` and comments its URL on the PR |
-| Pull request closed | `wrangler preview delete` removes the preview |
+| Trigger                        | Result                                                                                                                                                                                                                                                                                 |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Push to `main`                 | Runs typecheck, tests and lint, then `wrangler deploy` to https://api.filecoin.io and https://mcp.filecoin.io, and to https://api.filecoin.cloud and https://mcp.filecoin.cloud. Probes `/health` on https://api.filecoin.io, and sends an MCP `initialize` to https://mcp.filecoin.io |
+| Pull request opened or updated | `wrangler preview --name pr-<number>` creates a [Worker Preview](https://developers.cloudflare.com/workers/previews/) on `workers.dev`, probes `/health` and comments its URL on the PR                                                                                                |
+| Pull request closed            | `wrangler preview delete` removes the preview                                                                                                                                                                                                                                          |
 
 The production deploy uses the `fil-api-production` GitHub environment, so its deployment history, URL and any protection rules stay separate from filecoin-app's. The workflow only runs when `apps/filecoin-api`, the lockfile, `pnpm-workspace.yaml`, `turbo.json` or the workflow itself changes. Pull requests from forks get no preview, because they can't read the secrets.
 
@@ -127,13 +129,16 @@ Both Workers deploy to the FilOz Cloudflare account, which `account_id` in `wran
 
 1. Create a Cloudflare API token from the **Edit Cloudflare Workers** template. Scope it to the FilOz account and the `filecoin.cloud` zone.
 2. Add it as a repository secret:
+
    ```bash
    gh secret set CLOUDFLARE_API_TOKEN
    ```
 3. Create a Hyperdrive config for each network and put the ids in `wrangler.jsonc`, in both the top-level `hyperdrive` list and `previews.hyperdrive`:
+
    ```bash
    wrangler hyperdrive create fil-api-calibration --connection-string="postgresql://user:password@host:5432/indexers" --max-age 5 --swr 0 --origin-connection-limit 60
    ```
+
    Hyperdrive caches read queries for 60 seconds by default and never invalidates them, which would make the indexer status, and every read after a write, up to 75 seconds stale. Both configs cache for 5 seconds with no stale-while-revalidate. To change an existing config, run `wrangler hyperdrive update <id> --caching-disabled=false --max-age 5 --swr 0`.
 4. Connect `api.filecoin.io` and `mcp.filecoin.io`, whose DNS is on DNSimple, as Cloudflare for SaaS custom hostnames on the `filecoin.cloud` zone. These are one-time dashboard steps, described in [Deployments and domains](../../docs/filecoin/deployments.md#subdomains-of-filecoinio). The deploy token can create the Worker routes but not the custom hostnames.
 
@@ -151,14 +156,14 @@ Both indexer databases run on Hetzner in Helsinki, and Hyperdrive keeps their co
 
 We measured this on 2026-10-07 with test Workers sharing production's Hyperdrive configs. An uncached query took this long from each Worker location:
 
-| Worker location | Time per query |
-| --- | --- |
-| Frankfurt | ~30 ms |
-| Amsterdam | ~37 ms |
-| London | ~45 ms |
-| Helsinki, next to the databases | ~60 ms |
-| Lisbon, with no placement | ~70 ms |
-| US East | ~127 ms |
+| Worker location                 | Time per query |
+| ------------------------------- | -------------- |
+| Frankfurt                       | ~30 ms         |
+| Amsterdam                       | ~37 ms         |
+| London                          | ~45 ms         |
+| Helsinki, next to the databases | ~60 ms         |
+| Lisbon, with no placement       | ~70 ms         |
+| US East                         | ~127 ms        |
 
 From [Globalping](https://globalping.io) probes in ten cities, with uncached reads and no placement, database time grew with distance from Frankfurt, up to 610 ms from Sydney. Pinned to Frankfurt, it stayed between 40 and 65 ms from every city, and median time to first byte about halved outside Europe. Clients close to Frankfurt gain little: from Lisbon, the median rose from 106 to 122 ms.
 

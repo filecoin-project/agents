@@ -6,13 +6,13 @@ We checked each host with `curl` on 2026-10-21, after [#76](https://github.com/f
 
 ## The hosts
 
-| Host | What it is | Who runs it |
-| --- | --- | --- |
-| `poc.filecoin.cloud` | The Filecoin for Agents site, with the landing page, docs, Agents page, explorer, and dashboard ([`apps/filecoin-app`](../../apps/filecoin-app/README.md)) | Us |
-| `api.filecoin.io` | The REST API, and the MCP server at `/mcp` ([`apps/filecoin-api`](../../apps/filecoin-api/README.md)) | Us |
-| `mcp.filecoin.io` | The MCP server only, from the same Worker as `api.filecoin.io` | Us |
-| `filecoin.io` | The Filecoin website, a Next.js site on Vercel. `filecoin.io` redirects to it with a `301` | The filecoin.io web team |
-| `docs.filecoin.io` | The Filecoin docs, on GitBook, with GitBook's docs MCP server | The Filecoin docs team, through GitBook |
+| Host                 | What it is                                                                                                                                                 | Who runs it                             |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| `poc.filecoin.cloud` | The Filecoin for Agents site, with the landing page, docs, Agents page, explorer, and dashboard ([`apps/filecoin-app`](../../apps/filecoin-app/README.md)) | Us                                      |
+| `api.filecoin.io`    | The REST API, and the MCP server at `/mcp` ([`apps/filecoin-api`](../../apps/filecoin-api/README.md))                                                      | Us                                      |
+| `mcp.filecoin.io`    | The MCP server only, from the same Worker as `api.filecoin.io`                                                                                             | Us                                      |
+| `filecoin.io`        | The Filecoin website, a Next.js site on Vercel. `filecoin.io` redirects to it with a `301`                                                                 | The filecoin.io web team                |
+| `docs.filecoin.io`   | The Filecoin docs, on GitBook, with GitBook's docs MCP server                                                                                              | The Filecoin docs team, through GitBook |
 
 In this document, "the sites" means `poc.filecoin.cloud`, `filecoin.io`, and `docs.filecoin.io`. "filecoin-api's hosts" means `api.filecoin.io` and `mcp.filecoin.io`. `api.filecoin.cloud` and `mcp.filecoin.cloud` run the same Worker as `api.filecoin.io` and `mcp.filecoin.io`, so they serve the same files ([Deployments and domains](deployments.md)).
 
@@ -40,34 +40,34 @@ flowchart LR
 
 Each cell has one of these values:
 
-| Value | Meaning |
-| --- | --- |
-| Served | The host serves the file or header today |
-| Missing | The host should serve it and doesn't. [What's missing](#whats-missing) lists the issues |
-| Not applicable | The spec doesn't apply to this host |
-| Theirs | Another team runs the host. The rest of the cell says what the host serves today |
+| Value          | Meaning                                                                                 |
+| -------------- | --------------------------------------------------------------------------------------- |
+| Served         | The host serves the file or header today                                                |
+| Missing        | The host should serve it and doesn't. [What's missing](#whats-missing) lists the issues |
+| Not applicable | The spec doesn't apply to this host                                                     |
+| Theirs         | Another team runs the host. The rest of the cell says what the host serves today        |
 
-| Spec | Spec status | poc.filecoin.cloud | api.filecoin.io | mcp.filecoin.io | filecoin.io | docs.filecoin.io |
-| --- | --- | --- | --- | --- | --- | --- |
-| [`llms.txt`, `llms-full.txt`](#llmstxt-and-llms-fulltxt) | Proposal | Served | Not applicable | Not applicable | Theirs, missing | Theirs, served |
-| [Markdown versions of pages](#markdown-versions-of-pages) | Convention | Served | Not applicable | Not applicable | Theirs, missing | Theirs, served in part |
-| [API catalog](#api-catalog) | Final (RFC 9727) | Served | Not applicable | Not applicable | Theirs, missing | Not applicable |
-| [`integrations.json`](#integrationsjson) | Vendor format | Served | Not applicable | Not applicable | Theirs, missing | Not applicable |
-| [MCP server card](#mcp-server-card) | Final (SEP-2127) | Served, as a redirect | Served | Served | Not applicable | Theirs, served for its own server |
-| [AI Catalog](#ai-catalog) | Draft | Served | Not applicable | Not applicable | Theirs, missing | Theirs, served for its own server |
-| [ARD](#ai-catalog) | Proposal (v0.91) | Missing | Not applicable | Not applicable | Theirs, missing | Theirs, missing |
-| [MCP registry `server.json`](#mcp-registry-serverjson) | Preview | Not applicable | Not applicable | Not applicable | Theirs, for the HTTP ownership proof | Not applicable |
-| [Agent skills discovery](#agent-skills-discovery) | Draft | Served | Not applicable | Not applicable | Theirs, missing | Not applicable |
-| [WebMCP](#webmcp) | Draft | Served | Not applicable | Not applicable | Theirs, not served | Theirs, served |
-| [OpenAPI document](#openapi-document) | Final (3.1) | Not applicable | Served | Not applicable | Not applicable | Not applicable |
-| [`service-desc` link](#service-desc-link) | Final (RFC 8631) | Missing | Served | Not applicable | Not applicable | Not applicable |
-| [`robots.txt`](#robotstxt-and-content-signal) | Final (RFC 9309) | Served | Not applicable | Not applicable | Theirs, served | Theirs, served |
-| [Content-Signal](#robotstxt-and-content-signal) | Vendor policy | Missing | Not applicable | Not applicable | Theirs, missing | Theirs, served |
-| [Sitemap](#sitemap-json-ld-and-open-graph) | Final (0.9) | Served | Not applicable | Not applicable | Theirs, served | Theirs, served |
-| [JSON-LD](#sitemap-json-ld-and-open-graph) | Final | Served in part | Not applicable | Not applicable | Theirs, served | Theirs, missing |
-| [Open Graph and canonical URLs](#sitemap-json-ld-and-open-graph) | Stable | Served | Not applicable | Not applicable | Theirs, served | Theirs, served |
-| [`RateLimit-Policy`](#ratelimit-policy) | Draft | Not applicable | Served | Served | Not applicable | Not applicable |
-| [`Deprecation` and `Sunset`](#deprecation-and-sunset) | Final (RFC 9745, RFC 8594) | Not applicable | Missing | Not applicable | Not applicable | Not applicable |
+| Spec                                                             | Spec status                | poc.filecoin.cloud    | api.filecoin.io | mcp.filecoin.io | filecoin.io                          | docs.filecoin.io                  |
+| ---------------------------------------------------------------- | -------------------------- | --------------------- | --------------- | --------------- | ------------------------------------ | --------------------------------- |
+| [`llms.txt`, `llms-full.txt`](#llmstxt-and-llms-fulltxt)         | Proposal                   | Served                | Not applicable  | Not applicable  | Theirs, missing                      | Theirs, served                    |
+| [Markdown versions of pages](#markdown-versions-of-pages)        | Convention                 | Served                | Not applicable  | Not applicable  | Theirs, missing                      | Theirs, served in part            |
+| [API catalog](#api-catalog)                                      | Final (RFC 9727)           | Served                | Not applicable  | Not applicable  | Theirs, missing                      | Not applicable                    |
+| [`integrations.json`](#integrationsjson)                         | Vendor format              | Served                | Not applicable  | Not applicable  | Theirs, missing                      | Not applicable                    |
+| [MCP server card](#mcp-server-card)                              | Final (SEP-2127)           | Served, as a redirect | Served          | Served          | Not applicable                       | Theirs, served for its own server |
+| [AI Catalog](#ai-catalog)                                        | Draft                      | Served                | Not applicable  | Not applicable  | Theirs, missing                      | Theirs, served for its own server |
+| [ARD](#ai-catalog)                                               | Proposal (v0.91)           | Missing               | Not applicable  | Not applicable  | Theirs, missing                      | Theirs, missing                   |
+| [MCP registry `server.json`](#mcp-registry-serverjson)           | Preview                    | Not applicable        | Not applicable  | Not applicable  | Theirs, for the HTTP ownership proof | Not applicable                    |
+| [Agent skills discovery](#agent-skills-discovery)                | Draft                      | Served                | Not applicable  | Not applicable  | Theirs, missing                      | Not applicable                    |
+| [WebMCP](#webmcp)                                                | Draft                      | Served                | Not applicable  | Not applicable  | Theirs, not served                   | Theirs, served                    |
+| [OpenAPI document](#openapi-document)                            | Final (3.1)                | Not applicable        | Served          | Not applicable  | Not applicable                       | Not applicable                    |
+| [`service-desc` link](#service-desc-link)                        | Final (RFC 8631)           | Missing               | Served          | Not applicable  | Not applicable                       | Not applicable                    |
+| [`robots.txt`](#robotstxt-and-content-signal)                    | Final (RFC 9309)           | Served                | Not applicable  | Not applicable  | Theirs, served                       | Theirs, served                    |
+| [Content-Signal](#robotstxt-and-content-signal)                  | Vendor policy              | Missing               | Not applicable  | Not applicable  | Theirs, missing                      | Theirs, served                    |
+| [Sitemap](#sitemap-json-ld-and-open-graph)                       | Final (0.9)                | Served                | Not applicable  | Not applicable  | Theirs, served                       | Theirs, served                    |
+| [JSON-LD](#sitemap-json-ld-and-open-graph)                       | Final                      | Served in part        | Not applicable  | Not applicable  | Theirs, served                       | Theirs, missing                   |
+| [Open Graph and canonical URLs](#sitemap-json-ld-and-open-graph) | Stable                     | Served                | Not applicable  | Not applicable  | Theirs, served                       | Theirs, served                    |
+| [`RateLimit-Policy`](#ratelimit-policy)                          | Draft                      | Not applicable        | Served          | Served          | Not applicable                       | Not applicable                    |
+| [`Deprecation` and `Sunset`](#deprecation-and-sunset)            | Final (RFC 9745, RFC 8594) | Not applicable        | Missing         | Not applicable  | Not applicable                       | Not applicable                    |
 
 No host serves the MCP registry's `server.json`. We publish it to the registry, and that entry is missing ([#75](https://github.com/filecoin-project/agents/issues/75)). The row shows only where the ownership proof would go.
 
@@ -238,13 +238,13 @@ filecoin.io's sitemap lists 751 URLs. It has `Organization`, `WebSite`, `WebPage
 
 ## Specs that don't apply
 
-| Spec | Why it doesn't apply |
-| --- | --- |
-| [OAuth 2.0 protected resource metadata](https://www.rfc-editor.org/rfc/rfc9728) (RFC 9728), `/.well-known/oauth-protected-resource` | Nothing needs authentication. The REST API and the MCP server are public and read-only. The MCP authorization spec uses this file only for a server that needs a token |
-| [OAuth 2.0 authorization server metadata](https://www.rfc-editor.org/rfc/rfc8414) (RFC 8414), [OpenID Connect discovery](https://openid.net/specs/openid-connect-discovery-1_0.html) | We run no authorization server. The wallet owner approves the CLI's session key on chain, not through OAuth |
-| [A2A agent card](https://a2a-protocol.org/latest/specification/), `/.well-known/agent-card.json` | We have no A2A agent. An A2A agent would get its own AI Catalog entry |
-| [Web Bot Auth](https://datatracker.ietf.org/doc/draft-meunier-web-bot-auth-architecture/), `/.well-known/http-message-signatures-directory` | A bot signs its requests with it, so that sites can identify the bot. We run no crawler, and no agent of ours visits other sites |
-| OpenAI's plugin manifest, `/.well-known/ai-plugin.json` | OpenAI retired ChatGPT plugins. ChatGPT connects to MCP servers instead |
+| Spec                                                                                                                                                                                 | Why it doesn't apply                                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [OAuth 2.0 protected resource metadata](https://www.rfc-editor.org/rfc/rfc9728) (RFC 9728), `/.well-known/oauth-protected-resource`                                                  | Nothing needs authentication. The REST API and the MCP server are public and read-only. The MCP authorization spec uses this file only for a server that needs a token |
+| [OAuth 2.0 authorization server metadata](https://www.rfc-editor.org/rfc/rfc8414) (RFC 8414), [OpenID Connect discovery](https://openid.net/specs/openid-connect-discovery-1_0.html) | We run no authorization server. The wallet owner approves the CLI's session key on chain, not through OAuth                                                            |
+| [A2A agent card](https://a2a-protocol.org/latest/specification/), `/.well-known/agent-card.json`                                                                                     | We have no A2A agent. An A2A agent would get its own AI Catalog entry                                                                                                  |
+| [Web Bot Auth](https://datatracker.ietf.org/doc/draft-meunier-web-bot-auth-architecture/), `/.well-known/http-message-signatures-directory`                                          | A bot signs its requests with it, so that sites can identify the bot. We run no crawler, and no agent of ours visits other sites                                       |
+| OpenAI's plugin manifest, `/.well-known/ai-plugin.json`                                                                                                                              | OpenAI retired ChatGPT plugins. ChatGPT connects to MCP servers instead                                                                                                |
 
 ## What's missing
 
@@ -275,16 +275,16 @@ These pieces belong to other teams:
 
 Most of ora's findings match a gap in this document, or a spec that this document says doesn't apply:
 
-| ora checks | Where this document covers them |
-| --- | --- |
-| MCP server card, MCP server or manifest, MCP well-known discovery | [MCP server card](#mcp-server-card): the card fails its schema ([#120](https://github.com/filecoin-project/agents/issues/120)) |
-| ARD discovery, ARD entry validity | [AI Catalog](#ai-catalog): ARD needs a `displayName` that AI Catalog says to omit, and the file at `/.well-known/ard.json` ([#121](https://github.com/filecoin-project/agents/issues/121)) |
-| WebMCP support | [WebMCP](#webmcp): ora can't trace the `registerTool` call ([#122](https://github.com/filecoin-project/agents/issues/122)) |
-| Markdown URL fallback, Markdown frontmatter metadata | [Markdown versions of pages](#markdown-versions-of-pages) ([#123](https://github.com/filecoin-project/agents/issues/123), [#124](https://github.com/filecoin-project/agents/issues/124)) |
-| NPM or PyPI SDK package, CLI tool available | [`llms.txt`](#llmstxt-and-llms-fulltxt): ora doesn't match the packages to the site ([#125](https://github.com/filecoin-project/agents/issues/125)) |
-| JSON error responses, API schema complexity analysis | [API catalog](#api-catalog): ora probes guessed hosts, such as `api.poc.filecoin.cloud`, instead of `api.filecoin.io` ([#56](https://github.com/filecoin-project/agents/issues/56)) |
-| Organization schema, JSON-LD entity linking, trust anchor pages, pricing | [Sitemap, JSON-LD, and Open Graph](#sitemap-json-ld-and-open-graph) ([#62](https://github.com/filecoin-project/agents/issues/62)) |
-| OAuth 2.0, scoped permissions, OAuth protected resource metadata, agent auth discovery, `WWW-Authenticate`, Web Bot Auth, A2A agent card | [Specs that don't apply](#specs-that-dont-apply) |
+| ora checks                                                                                                                               | Where this document covers them                                                                                                                                                            |
+| ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| MCP server card, MCP server or manifest, MCP well-known discovery                                                                        | [MCP server card](#mcp-server-card): the card fails its schema ([#120](https://github.com/filecoin-project/agents/issues/120))                                                             |
+| ARD discovery, ARD entry validity                                                                                                        | [AI Catalog](#ai-catalog): ARD needs a `displayName` that AI Catalog says to omit, and the file at `/.well-known/ard.json` ([#121](https://github.com/filecoin-project/agents/issues/121)) |
+| WebMCP support                                                                                                                           | [WebMCP](#webmcp): ora can't trace the `registerTool` call ([#122](https://github.com/filecoin-project/agents/issues/122))                                                                 |
+| Markdown URL fallback, Markdown frontmatter metadata                                                                                     | [Markdown versions of pages](#markdown-versions-of-pages) ([#123](https://github.com/filecoin-project/agents/issues/123), [#124](https://github.com/filecoin-project/agents/issues/124))   |
+| NPM or PyPI SDK package, CLI tool available                                                                                              | [`llms.txt`](#llmstxt-and-llms-fulltxt): ora doesn't match the packages to the site ([#125](https://github.com/filecoin-project/agents/issues/125))                                        |
+| JSON error responses, API schema complexity analysis                                                                                     | [API catalog](#api-catalog): ora probes guessed hosts, such as `api.poc.filecoin.cloud`, instead of `api.filecoin.io` ([#56](https://github.com/filecoin-project/agents/issues/56))        |
+| Organization schema, JSON-LD entity linking, trust anchor pages, pricing                                                                 | [Sitemap, JSON-LD, and Open Graph](#sitemap-json-ld-and-open-graph) ([#62](https://github.com/filecoin-project/agents/issues/62))                                                          |
+| OAuth 2.0, scoped permissions, OAuth protected resource metadata, agent auth discovery, `WWW-Authenticate`, Web Bot Auth, A2A agent card | [Specs that don't apply](#specs-that-dont-apply)                                                                                                                                           |
 
 ora also checks specs that this document doesn't cover yet: [auth.md](https://github.com/workos/auth.md), the NLWeb `/ask` endpoint and its `schemamap:` line in `robots.txt`, AI Catalog trust manifests, listings on skills.sh and in the ChatGPT app directory, Markdown for bot user agents, a `llms.txt` file for each section, a sandbox, and agent configuration files in a public repository. Nobody has decided yet which of them apply.
 

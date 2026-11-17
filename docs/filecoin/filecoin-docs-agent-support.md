@@ -23,21 +23,21 @@ Recommended next steps:
 
 ## What works today
 
-| Feature | URL or behavior |
-| --- | --- |
-| [llms.txt](https://llmstxt.org) index | [`/llms.txt`](https://docs.filecoin.io/llms.txt), about 39 KB. It links 191 pages by their `.md` URLs |
-| Full text in one file | [`/llms-full.txt`](https://docs.filecoin.io/llms-full.txt), about 678 KB |
-| Markdown for each page | Add `.md` to a page URL, for example [`/getting-started/what-is-filecoin.md`](https://docs.filecoin.io/getting-started/what-is-filecoin.md). The home page is [`/welcome.md`](https://docs.filecoin.io/welcome.md) |
-| Content negotiation | `Accept: text/markdown` on a page URL returns the same Markdown as `.md`, with `Vary: Accept`. `Accept: text/html` returns HTML |
-| Markdown link in HTML | Each page's `<head>` has `<link rel="alternate" type="text/markdown">` |
-| A pointer at the top of each Markdown page | Each `.md` page starts with a note that links `llms.txt` and explains the `.md` convention |
-| Sitemaps | [`/sitemap.xml`](https://docs.filecoin.io/sitemap.xml), `/sitemap-pages.xml`, and [`/sitemap.md`](https://docs.filecoin.io/sitemap.md) |
-| `robots.txt` | Allows all crawlers, links the sitemap, and sends `Content-Signal: ai-train=yes, search=yes, ai-input=yes` |
-| MCP server | `https://docs.filecoin.io/~gitbook/mcp`, over Streamable HTTP. Its tools are `searchDocumentation`, `getPage`, and `sendFeedback`. filecoin-api's `search_docs` tool forwards to `searchDocumentation` |
-| MCP server card | `/~gitbook/mcp/server-card` and [`/.well-known/mcp/server-card.json`](https://docs.filecoin.io/.well-known/mcp/server-card.json), with `Access-Control-Allow-Origin: *` |
-| AI Catalog | [`/.well-known/ai-catalog.json`](https://docs.filecoin.io/.well-known/ai-catalog.json), with one entry that points to the server card |
-| [WebMCP](https://webmachinelearning.github.io/webmcp/) tools | If the browser has `document.modelContext`, GitBook's script connects to `/~gitbook/mcp` and registers that server's tools as WebMCP tools |
-| SEO metadata | Canonical URLs and Open Graph tags |
+| Feature                                                      | URL or behavior                                                                                                                                                                                                    |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [llms.txt](https://llmstxt.org) index                        | [`/llms.txt`](https://docs.filecoin.io/llms.txt), about 39 KB. It links 191 pages by their `.md` URLs                                                                                                              |
+| Full text in one file                                        | [`/llms-full.txt`](https://docs.filecoin.io/llms-full.txt), about 678 KB                                                                                                                                           |
+| Markdown for each page                                       | Add `.md` to a page URL, for example [`/getting-started/what-is-filecoin.md`](https://docs.filecoin.io/getting-started/what-is-filecoin.md). The home page is [`/welcome.md`](https://docs.filecoin.io/welcome.md) |
+| Content negotiation                                          | `Accept: text/markdown` on a page URL returns the same Markdown as `.md`, with `Vary: Accept`. `Accept: text/html` returns HTML                                                                                    |
+| Markdown link in HTML                                        | Each page's `<head>` has `<link rel="alternate" type="text/markdown">`                                                                                                                                             |
+| A pointer at the top of each Markdown page                   | Each `.md` page starts with a note that links `llms.txt` and explains the `.md` convention                                                                                                                         |
+| Sitemaps                                                     | [`/sitemap.xml`](https://docs.filecoin.io/sitemap.xml), `/sitemap-pages.xml`, and [`/sitemap.md`](https://docs.filecoin.io/sitemap.md)                                                                             |
+| `robots.txt`                                                 | Allows all crawlers, links the sitemap, and sends `Content-Signal: ai-train=yes, search=yes, ai-input=yes`                                                                                                         |
+| MCP server                                                   | `https://docs.filecoin.io/~gitbook/mcp`, over Streamable HTTP. Its tools are `searchDocumentation`, `getPage`, and `sendFeedback`. filecoin-api's `search_docs` tool forwards to `searchDocumentation`             |
+| MCP server card                                              | `/~gitbook/mcp/server-card` and [`/.well-known/mcp/server-card.json`](https://docs.filecoin.io/.well-known/mcp/server-card.json), with `Access-Control-Allow-Origin: *`                                            |
+| AI Catalog                                                   | [`/.well-known/ai-catalog.json`](https://docs.filecoin.io/.well-known/ai-catalog.json), with one entry that points to the server card                                                                              |
+| [WebMCP](https://webmachinelearning.github.io/webmcp/) tools | If the browser has `document.modelContext`, GitBook's script connects to `/~gitbook/mcp` and registers that server's tools as WebMCP tools                                                                         |
+| SEO metadata                                                 | Canonical URLs and Open Graph tags                                                                                                                                                                                 |
 
 `sendFeedback` lets agents report outdated or wrong content to the docs team. Check where those reports arrive in GitBook.
 
@@ -45,17 +45,17 @@ Recommended next steps:
 
 filecoin-app serves the files and behaviors in the first column. Its [README](../../apps/filecoin-app/README.md#website) has the details.
 
-| filecoin-app feature | docs.filecoin.io |
-| --- | --- |
-| `/.well-known/api-catalog` ([RFC 9727](https://www.rfc-editor.org/rfc/rfc9727)) | `404` |
-| `/.well-known/integrations.json` ([integrations.sh](https://integrations.sh/publishing/)) | `404` |
-| `/.well-known/mcp-server-card` | `404`. The card is at `/.well-known/mcp/server-card.json` and `/~gitbook/mcp/server-card` |
-| `/.well-known/agent-skills/index.json` ([agent skills discovery](https://github.com/cloudflare/agent-skills-discovery-rfc)) | `404` |
-| `Vary: Accept` on HTML responses | Missing |
-| A `Link` HTTP header to the Markdown version | Missing. The `<link>` tag in `<head>` covers clients that parse HTML |
-| `404` for a missing page in Markdown | `200`, with a "Page Not Found" body that lists suggested pages |
-| `406` when a client accepts neither HTML nor Markdown | `Accept: application/json` gets HTML with `200` |
-| JSON-LD | None |
+| filecoin-app feature                                                                                                        | docs.filecoin.io                                                                          |
+| --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `/.well-known/api-catalog` ([RFC 9727](https://www.rfc-editor.org/rfc/rfc9727))                                             | `404`                                                                                     |
+| `/.well-known/integrations.json` ([integrations.sh](https://integrations.sh/publishing/))                                   | `404`                                                                                     |
+| `/.well-known/mcp-server-card`                                                                                              | `404`. The card is at `/.well-known/mcp/server-card.json` and `/~gitbook/mcp/server-card` |
+| `/.well-known/agent-skills/index.json` ([agent skills discovery](https://github.com/cloudflare/agent-skills-discovery-rfc)) | `404`                                                                                     |
+| `Vary: Accept` on HTML responses                                                                                            | Missing                                                                                   |
+| A `Link` HTTP header to the Markdown version                                                                                | Missing. The `<link>` tag in `<head>` covers clients that parse HTML                      |
+| `404` for a missing page in Markdown                                                                                        | `200`, with a "Page Not Found" body that lists suggested pages                            |
+| `406` when a client accepts neither HTML nor Markdown                                                                       | `Accept: application/json` gets HTML with `200`                                           |
+| JSON-LD                                                                                                                     | None                                                                                      |
 
 The API catalog and `integrations.json` describe an API. They matter only if Filecoin wants to list an API from the docs domain, such as the Lotus JSON-RPC API.
 
@@ -69,12 +69,12 @@ The API catalog and `integrations.json` describe an API. They matter only if Fil
 
 **Site customization → Configuration → Page actions** has these options, per [GitBook's docs](https://gitbook.com/docs/manage-your-site/customization/extra-configuration.md):
 
-| Setting | Effect |
-| --- | --- |
-| Page actions | Shows the page menu. Turning it off also turns off `/~gitbook/mcp`, which then returns `404` |
-| Open in AI providers | Adds actions that open the page in ChatGPT or Claude |
-| Copy/View as Markdown | Adds actions that copy or open the page's Markdown |
-| Connect with MCP server | Shows the MCP URL in the menu. It doesn't turn the server on or off |
+| Setting                 | Effect                                                                                       |
+| ----------------------- | -------------------------------------------------------------------------------------------- |
+| Page actions            | Shows the page menu. Turning it off also turns off `/~gitbook/mcp`, which then returns `404` |
+| Open in AI providers    | Adds actions that open the page in ChatGPT or Claude                                         |
+| Copy/View as Markdown   | Adds actions that copy or open the page's Markdown                                           |
+| Connect with MCP server | Shows the MCP URL in the menu. It doesn't turn the server on or off                          |
 
 GitBook makes `.md` pages, `llms.txt`, `llms-full.txt`, content negotiation, sitemaps, and `robots.txt` [with no settings](https://gitbook.com/docs/getting-started/llm-ready-docs.md). It also runs the MCP server by default, but only while **Page actions** is on. Turning off **Page actions** to hide the menu also removes the MCP server, its WebMCP tools, and filecoin-api's `search_docs` tool.
 
