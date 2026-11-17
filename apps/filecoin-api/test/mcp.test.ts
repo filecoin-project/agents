@@ -116,6 +116,25 @@ describe('mcp', () => {
     )
   })
 
+  it('keeps its server card within the schema limits', async () => {
+    const { request } = testApp()
+    const card = (await (await request('/mcp/server-card')).json()) as {
+      name: string
+      title: string
+      version: string
+      description: string
+    }
+    // `ServerCard` in the extension's schema.json:
+    // https://github.com/modelcontextprotocol/experimental-ext-server-card/blob/main/schema.json
+    expect(card.name).toMatch(/^[a-zA-Z0-9.-]+\/[a-zA-Z0-9._-]+$/)
+    expect(card.name.length).toBeLessThanOrEqual(200)
+    expect(card.title.length).toBeGreaterThan(0)
+    expect(card.title.length).toBeLessThanOrEqual(100)
+    expect(card.description.length).toBeGreaterThan(0)
+    expect(card.description.length).toBeLessThanOrEqual(100)
+    expect(card.version.length).toBeLessThanOrEqual(255)
+  })
+
   it('serves the modern revision the card declares', async () => {
     const { request } = testApp()
     const res = await request('/mcp', modern('server/discover'))
