@@ -1,16 +1,9 @@
 import { unwrap } from '@filecoin-project/api-client'
 import { defineHandler } from 'clipact'
-import { apiClientFor, toPiece } from '../api.ts'
+import { apiClientFor } from '../api.ts'
 import { ls } from '../commands/ls.ts'
-import { resourceRefsByCopy } from '../state/resources.ts'
-import { getUrl } from '../storage/urls.ts'
 import { accountScope, appFor } from './context.ts'
-
-/** A piece metadata value when it is a non-empty string. */
-function text(metadata: Record<string, unknown>, key: string) {
-  const value = metadata[key]
-  return typeof value === 'string' && value !== '' ? value : undefined
-}
+import { storedPieces } from './pieces.ts'
 
 /**
  * List the payer's pieces across all its data sets from filecoin-api, newest
@@ -38,30 +31,9 @@ export default defineHandler(ls, async (ctx) => {
       },
     })
   )
-  const refs = resourceRefsByCopy(
-    app.db(),
-    scope,
-    page.data.map((piece) => piece.dataSetId)
-  )
   return ctx.ok({
     network: app.network,
-    pieces: page.data.map((piece) => {
-      const { pieceId, ...rest } = toPiece(piece)
-      const rootCid = text(rest.metadata, 'ipfsRootCID')
-      const name = text(rest.metadata, 'name')
-      const cid = rootCid ?? rest.pieceCid
-      const resourceRef = refs.get(`${piece.dataSetId}/${pieceId}`)
-      return {
-        dataSetId: piece.dataSetId,
-        pieceId,
-        ...(piece.providerId ? { providerId: piece.providerId } : {}),
-        ...rest,
-        ...(rootCid ? { rootCid } : {}),
-        ...(name ? { name } : {}),
-        ...(cid ? { url: getUrl(app.apiUrl, app.network, cid, true) } : {}),
-        ...(resourceRef ? { resourceRef } : {}),
-      }
-    }),
+    pieces: storedPieces(app, scope, page.data),
     ...(page.nextCursor ? { nextCursor: page.nextCursor } : {}),
   })
 })
