@@ -1,6 +1,9 @@
 packages:
   - "apps/*"
   - "packages/*"
+  # openapi-typescript and the TypeScript 5 it needs, in their own package so
+  # that its typescript peer resolves to 5.9.3 instead of the catalog's 7.
+  - "packages/filecoin-api-client/generator"
 
 # Keeps pnpm-lock.yaml a single YAML document. Otherwise pnpm 12 writes the
 # pinned pnpm in a leading document, and GitHub's dependency graph reads only
