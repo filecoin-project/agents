@@ -1,5 +1,5 @@
 import { z } from '@hono/zod-openapi'
-import { parsePieceCid, parseRetrievalCid } from '../cid.ts'
+import { parseIpfsRootCid, parsePieceCid, parseRetrievalCid } from '../cid.ts'
 import { NETWORK_NAMES } from '../networks.ts'
 import { isInt8 } from '../pagination.ts'
 
@@ -70,6 +70,25 @@ export const PieceCidInput = z
     type: 'string',
     example:
       'bafkzcibfq263oaytvzyzerkprzkwx5l3ek3dwyngge4sim2o3ahsk7shfendo7jvdm7a',
+  })
+
+/**
+ * IPFS root CID filter, normalized to the base32 CIDv1 string the indexer
+ * stores for `ipfsRootCID` metadata with {@link parseIpfsRootCid}.
+ */
+export const IpfsRootCidInput = z
+  .string()
+  .transform((value, ctx) => {
+    try {
+      return parseIpfsRootCid(value)
+    } catch (error) {
+      ctx.addIssue({ code: 'custom', message: (error as Error).message })
+      return z.NEVER
+    }
+  })
+  .openapi({
+    type: 'string',
+    example: 'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
   })
 
 /** Unsigned integer encoded as a decimal string (ids, uint256 amounts). */

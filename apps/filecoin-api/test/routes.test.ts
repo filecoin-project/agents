@@ -108,6 +108,18 @@ describe('rest routes', () => {
     expect(fake.queries[0]?.params[0]).toBe(rows.piece.cid)
   })
 
+  it('queries pieces by the base32 CIDv1 of an IPFS root CID', async () => {
+    const { request, fake } = testApp(() => [])
+    const res = await request(
+      '/calibration/pieces?ipfs_cid=QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG'
+    )
+    expect(res.status).toBe(200)
+    expect(fake.queries[0]?.text).toContain('p.ipfs_root_cid = $1')
+    expect(fake.queries[0]?.params[0]).toBe(
+      'bafybeie5nqv6kd3qnfjupgvz34woh3oksc3iau6abmyajn7qvtf6d2ho34'
+    )
+  })
+
   it('names legacy v1 PieceCIDs in the error', async () => {
     const { request } = testApp()
     const res = await request(
@@ -152,6 +164,8 @@ describe('rest routes', () => {
       '/calibration/pieces?cid=bafkreigh2akiscaildcqabsyg3dfr6chu3fgpregiymsck7e7aqa4s52zy',
       'invalid_request',
     ],
+    ['/calibration/pieces?ipfs_cid=notacid', 'invalid_request'],
+    [`/calibration/pieces?ipfs_cid=${rows.piece.cid}`, 'invalid_request'],
     ['/calibration/data-sets?owner=nope', 'invalid_request'],
     ['/calibration/providers?limit=500', 'invalid_request'],
     ['/calibration/providers/abc', 'invalid_request'],

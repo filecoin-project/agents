@@ -2081,8 +2081,8 @@
         "tags": [
           "Pieces"
         ],
-        "summary": "Find pieces by owner, PieceCID or provider",
-        "description": "Requires at least one of owner, cid or provider_id.",
+        "summary": "Find pieces by owner, PieceCID, IPFS root CID or provider",
+        "description": "Requires at least one of owner, cid, ipfs_cid or provider_id.",
         "parameters": [
           {
             "schema": {
@@ -2143,6 +2143,17 @@
             "required": false,
             "description": "PieceCID v2",
             "name": "cid",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
+              "description": "IPFS root CID in the ipfsRootCID piece metadata, any CID version or base"
+            },
+            "required": false,
+            "description": "IPFS root CID in the ipfsRootCID piece metadata, any CID version or base",
+            "name": "ipfs_cid",
             "in": "query"
           },
           {

@@ -28,7 +28,7 @@ Every data route is namespaced by network: `/calibration/...` or `/mainnet/...`.
 | `/{network}/data-sets/{dataSetId}` | none |
 | `/{network}/data-sets/{dataSetId}/pieces` | `removed` |
 | `/{network}/data-sets/{dataSetId}/pieces/{pieceId}` | none |
-| `/{network}/pieces` | `owner`, `cid` (a PieceCID v2; legacy v1 PieceCIDs and other strings return `400`), `provider_id`, `removed` (at least one of the first three is required) |
+| `/{network}/pieces` | `owner`, `cid` (a PieceCID v2; legacy v1 PieceCIDs and other strings return `400`), `ipfs_cid` (the `ipfsRootCID` piece metadata, in any CID version or base; PieceCIDs and other strings return `400`), `provider_id`, `removed` (at least one of the first four is required) |
 | `/{network}/rails` | `payer`, `payee`, `operator`, `token`, `state` (`active`, `terminated` or `finalized`) |
 | `/{network}/rails/{railId}` | none |
 | `/{network}/rails/{railId}/settlements` | none |
@@ -37,6 +37,7 @@ Every data route is namespaced by network: `/calibration/...` or `/mainnet/...`.
 
 Conventions:
 - **Owner** is the client address that pays for a data set (`data_sets.payer`).
+- **IPFS root CIDs** in `ipfs_cid` are normalized to base32 CIDv1, the form the indexer stores. The filter matches pieces in every data set, IPFS-indexed or not. `/get/{cid}` redirects a root CID only to a copy in an IPFS-indexed data set.
 - **Rails** are rebuilt from Filecoin Pay events. Session keys are rebuilt from SessionKeyRegistry `AuthorizationsUpdated` events, keeping the latest expiry for each permission.
 - **Big numbers** (ids, amounts, epochs) are returned as decimal strings.
 - **Pagination** uses `limit` (1–200, default 50) and an opaque `cursor`. Each response looks like `{ data, nextCursor }`.

@@ -169,7 +169,7 @@ const TOOLS: ToolDef[] = [
   defineTool(
     'list_pieces',
     'Find pieces',
-    'Find pieces across data sets by owner (paying client), PieceCID or provider. Requires at least one of owner, cid or provider_id.',
+    'Find pieces across data sets by owner (paying client), PieceCID, IPFS root CID (ipfsRootCID metadata) or provider. Requires at least one of owner, cid, ipfs_cid or provider_id.',
     input({ ...filters.pieces(bool), ...page }).refine(hasPieceSelector, {
       message: PIECE_SELECTOR_MESSAGE,
     }),

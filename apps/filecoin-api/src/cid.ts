@@ -46,6 +46,30 @@ export function parseRetrievalCid(value: string): RetrievalCid {
 }
 
 /**
+ * Parse an IPFS root CID and return its base32 CIDv1 string, the form in
+ * which the indexer stores the `ipfsRootCID` piece metadata, so CIDv0 and
+ * other bases of the same root match. Throws a `RangeError` for strings that
+ * are not CIDs and for PieceCIDs, which `ipfsRootCID` never holds.
+ *
+ * @see https://github.com/multiformats/cid#cidv0
+ */
+export function parseIpfsRootCid(value: string): string {
+  let cid: CID
+  try {
+    cid = CID.parse(value)
+  } catch {
+    throw new RangeError('Expected a CID')
+  }
+  if (
+    cid.code === LEGACY_PIECE_CODEC ||
+    cid.multihash.code === PIECE_MULTIHASH_CODE
+  ) {
+    throw new RangeError('Expected an IPFS root CID, not a PieceCID')
+  }
+  return cid.toV1().toString()
+}
+
+/**
  * Parse a PieceCID v2 given as a multibase string or `0x` hex bytes and
  * return its canonical base32 string, the form the indexer stores. Throws a
  * `RangeError` for legacy v1 PieceCIDs and for anything else.
