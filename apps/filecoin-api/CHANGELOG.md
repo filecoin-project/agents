@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.0](https://github.com/filecoin-project/agents/compare/filecoin-api-v0.6.0...filecoin-api-v0.7.0) (2026-11-17)
+
+
+### Features
+
+* **filecoin-api:** add MCP server icons and a service-desc link ([158b2e0](https://github.com/filecoin-project/agents/commit/158b2e074535b60259f17d93b2e5ec16d6f82e52))
+* **filecoin-api:** filter pieces by IPFS root CID ([09d720b](https://github.com/filecoin-project/agents/commit/09d720b544e39d56c42e3967e007a8aaeb8a6037))
+
+
+### Dependencies
+
+* **filecoin-api:** take zod from the catalog ([19e980a](https://github.com/filecoin-project/agents/commit/19e980a2d8e2a32f654060b825c767cde5f90ae7))
+* **filecoin-api:** update dependencies, vitest 5, and postgres 4 ([4db0646](https://github.com/filecoin-project/agents/commit/4db0646a66f4b2c553d3ab79095eec338c96fa2a))
+
 ## [0.6.0](https://github.com/filecoin-project/agents/compare/filecoin-api-v0.5.0...filecoin-api-v0.6.0) (2026-11-10)
 
 
