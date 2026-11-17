@@ -85,7 +85,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **synapse-core is enough.** The CLI and the app call synapse-core directly. Neither uses synapse-sdk.
 - **Content fits in one piece.** The CAR of a file or folder, or a file stored with `--raw`, must be between 127 and 68,182,605,824 bytes (63.5 GiB), synapse-core's `SIZE_CONSTANTS`. Larger content would need to be split across pieces.
 - **Browsers render CARs through a gateway and raw files from Curio.** Curio's `/ipfs` endpoint returns only blocks and CARs, so browser links to files and folders stored as CARs go to [inbrowser.link](https://inbrowser.link), a public gateway that runs in a service worker. Curio's `/piece` endpoint serves a file stored with `--raw` inline with a detected content type, so a browser renders it.
-- **filecoin-api serves most reads.** The CLI will read most data from filecoin-api. It will fall back to chain reads through synapse-core only where filecoin-api cannot serve a read. Today only `filecoin datasets` reads filecoin-api. Every other command reads the chain through synapse-core.
+- **filecoin-api serves most reads.** The CLI will read most data from filecoin-api. It will fall back to chain reads through synapse-core only where filecoin-api cannot serve a read. Today `filecoin ls` and `filecoin datasets` read filecoin-api. Every other command reads the chain through synapse-core.
 - **The indexer runs outside this repository.** filecoin-api reads the `ozone` schema that the [FilOzone indexer](https://github.com/FilOzone/indexer) writes to Postgres. It never writes to the database. The databases run in Helsinki, and filecoin-api runs in Frankfurt, next to Hyperdrive's connection pool ([placement](../../apps/filecoin-api/README.md#placement)).
 - **Calibration first.** The CLI defaults to calibration. Every part also supports mainnet, but the only recorded end-to-end run of the CLI was on calibration, on 2026-09-29.
 
@@ -96,8 +96,8 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **Flat commands.** `put`, `get`, `ls`, `inspect`, and `delete` handle both files and folders and pick the handling from the input. There are no separate command groups for files and folders.
 - **Plain-text session key.** `filecoin` stores the key in `config.json` with mode `0600`, not in an OS keychain.
 - **`logout` leaves the key valid on chain.** It deletes the key on this machine and returns the console's revoke link, but the owner must sign the revocation.
-- **Local view of files and folders.** `filecoin ls` lists only the resources in this machine's state database. It cannot see content stored from another machine, from a cloud sandbox that was reset, or from the app. `filecoin datasets ls` and `filecoin datasets inspect` list every data set and piece the wallet pays for, from filecoin-api, but as pieces, not as named files and folders. [Retrieve and verify](https://poc.filecoin.cloud/docs/retrieve#find-stored-content) shows how to find that content by wallet.
-- **Data set reads wait for the indexer.** `filecoin datasets` reads filecoin-api, so a data set or piece added in the last few minutes can be missing.
+- **Refs exist only on the machine that stored the content.** `filecoin ls` lists every piece the wallet pays for, from filecoin-api, so it also shows content stored from another machine, from a cloud sandbox that was reset, or from the app. Only pieces that this machine's state database has a copy of get a `resourceRef`. `inspect`, `delete`, and `get` take a ref only from local state, so content stored elsewhere is downloaded by its PieceCID or root CID and can't be deleted from this machine.
+- **Piece and data set reads wait for the indexer.** `filecoin ls` and `filecoin datasets` read filecoin-api, so a data set or piece added in the last few minutes can be missing.
 - **Piece removal stops at `removal_pending`.** Nothing tracks when the provider removes the piece.
 - **Every transfer hashes the whole content.** `put`, `operations resume`, and `get <PieceCID>` each compute the PieceCID of all of it, at about 6 seconds per GiB. `get` of a root CID computes the SHA-256 of each block instead.
 - **Shallow folder check.** `inspect --check` probes only the piece URL, not each file of a folder.
@@ -159,7 +159,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **Browser verification.** Add a WebMCP tool that checks a file against its PieceCID in the page, and let the upload page store folders.
 - **Two copies in the app.** Store two copies in the app's upload, as the CLI and synapse-sdk do.
 - **One copy again.** When providers replicate on their own, remove the CLI's second copy ([second copy](architecture.md#second-copy)).
-- **CLI reads.** Move most CLI reads to filecoin-api through `@filecoin-project/api-client`. Keep synapse-core chain reads as the fallback. `filecoin datasets ls` and `filecoin datasets inspect` are the first commands to read filecoin-api. `status` is next.
+- **CLI reads.** Move most CLI reads to filecoin-api through `@filecoin-project/api-client`. Keep synapse-core chain reads as the fallback. `filecoin datasets ls`, `filecoin datasets inspect`, and `filecoin ls` read filecoin-api. `status` is next.
 - **CLI keys.** Store the session key in the OS keychain.
 - **CLI cancellation.** Pass the abort signal to viem once its actions and `fallback` transport accept one. Then stop using synapse-core's `withSignal()` and `abortable()` ([#12](https://github.com/filecoin-project/agents/issues/12)).
 - **CLI state.** Track a removal until the provider deletes the piece. Check every file of a folder in `inspect --check`.

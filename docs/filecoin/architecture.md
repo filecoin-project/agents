@@ -193,7 +193,7 @@ Before the commit confirms, `put` reports early links as `link` progress, with `
 
 A root CID's browser URL carries no hint, because filecoin-api never looks it up. inbrowser.link finds the blocks through IPNI, and Curio advertises them shortly after it receives the commit, before the transaction confirms ([what Curio announces](retrieval.md#what-curio-announces-for-fwss)). `put` therefore reports a CAR's early link once the commit is sent.
 
-`<api>` is `https://api.filecoin.io` unless `FILECOIN_API_URL` sets another origin. `ls` and `inspect` rebuild the URLs from the resource, so they follow `FILECOIN_API_URL`.
+`<api>` is `https://api.filecoin.io` unless `FILECOIN_API_URL` sets another origin. `inspect` rebuilds the URLs from the resource, and `ls` builds the browser URL from the piece, so both follow `FILECOIN_API_URL`.
 
 ### Phases and checkpoints
 
@@ -367,13 +367,15 @@ When every copy is scheduled, mark the resource `removal_pending` and complete t
 
 If a transaction reverts or schedules no removal of the piece, synapse-core throws `TransactionNotAppliedError`. The resource stays `active` and the delete fails with `removal_reverted`. `filecoin` clears that copy's saved hash, so a resume signs a new removal for it and skips the copies already scheduled ([#2](https://github.com/filecoin-project/agents/issues/2)). A delete saved by `filecoin` 0.7.0 and earlier names its one copy in flat checkpoint fields, and a resume reads them.
 
-The provider removes the piece later, at a proving boundary. `ls` hides resources that are pending removal unless you pass `--all`.
+The provider removes the piece later, at a proving boundary. Until then, `ls` still lists the piece. After that, `ls` hides it unless you pass `--all`.
 
-## Data set reads
+## Piece and data set reads
 
-`filecoin datasets ls` and `filecoin datasets inspect <id>` read the wallet's data sets from filecoin-api through `@filecoin-project/api-client`, not from the chain. Like `ls`, they need credentials: a saved session, or both `FILECOIN_SESSION_KEY` and `FILECOIN_ROOT_ADDRESS`. They use only the wallet address and sign nothing, so the session key needs no scopes.
+`filecoin ls`, `filecoin datasets ls`, and `filecoin datasets inspect <id>` read the wallet's pieces and data sets from filecoin-api through `@filecoin-project/api-client`, not from the chain. They need credentials: a saved session, or both `FILECOIN_SESSION_KEY` and `FILECOIN_ROOT_ADDRESS`. They use only the wallet address and sign nothing, so the session key needs no scopes.
 
-- `datasets ls` calls `GET /{network}/data-sets` with `owner` set to the payer. It sends `deleted=false` unless you pass `--all`, and `provider_id` for `--provider`. The `--cursor` value is filecoin-api's own cursor, passed through unchanged.
+- `ls` calls `GET /{network}/pieces` with `owner` set to the payer, so it lists the pieces of every data set the wallet pays for, newest data set and piece first. It sends `removed=false` unless you pass `--all`, and `provider_id` for `--provider`. It reads `name` and `rootCid` from the `name` and `ipfsRootCID` piece metadata that `put` writes, and builds `url`, the browser URL, from the root CID or else the PieceCID. It adds a `resourceRef` to each piece that a managed resource has a copy at, matching the copy's `dataSetId` and `pieceId` in `state.db`. A resource with two copies shows up as two pieces.
+- `datasets ls` calls `GET /{network}/data-sets` with `owner` set to the payer. It sends `deleted=false` unless you pass `--all`, and `provider_id` for `--provider`.
+- In both list commands, the `--cursor` value is filecoin-api's own cursor, passed through unchanged.
 - `datasets inspect` calls `GET /{network}/data-sets/{id}` and `GET /{network}/data-sets/{id}/pieces` in parallel, then `GET /{network}/providers/{providerId}`. It sends `removed=false` unless you pass `--removed`. It adds a `resourceRef` to each piece that a managed resource has a copy at, matching the copy's `dataSetId` and `pieceId` in `state.db`. A data set that filecoin-api doesn't have, or that another wallet pays for, is `not_found`.
 
 The output keeps filecoin-api's fields and drops the ones it reports as `null`. A `pdpEndEpoch` of `0` means the service is not terminated, so the CLI omits it too.
