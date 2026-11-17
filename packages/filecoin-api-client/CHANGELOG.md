@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/filecoin-project/agents/compare/filecoin-api-client-v0.3.0...filecoin-api-client-v0.4.0) (2026-11-17)
+
+
+### Features
+
+* **filecoin-api-client:** add the ipfs_cid filter to listPieces ([9a8c980](https://github.com/filecoin-project/agents/commit/9a8c980b4bfa87fdc21fc0aae8a6747574662e01))
+
 ## [0.3.0](https://github.com/filecoin-project/agents/compare/filecoin-api-client-v0.2.0...filecoin-api-client-v0.3.0) (2026-11-10)
 
 
