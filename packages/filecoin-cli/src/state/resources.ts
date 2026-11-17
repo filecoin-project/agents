@@ -183,3 +183,37 @@ export function resourceRefsByPiece(
   }[]
   return new Map(rows.map((row) => [row.piece_id, row.ref]))
 }
+
+/**
+ * Refs of the resources in an account scope with a copy in any of
+ * `dataSetIds`, keyed by that copy's `<dataSetId>/<pieceId>`.
+ */
+export function resourceRefsByCopy(
+  db: DatabaseSync,
+  scope: AccountScope,
+  dataSetIds: string[]
+): Map<string, string> {
+  if (dataSetIds.length === 0) return new Map()
+  const rows = db
+    .prepare(
+      `SELECT r.ref AS ref,
+         json_extract(c.value, '$.dataSetId') AS data_set_id,
+         json_extract(c.value, '$.pieceId') AS piece_id
+       FROM resources r, json_each(r.copies) c
+       WHERE r.chain_id = ? AND r.payer = ?
+         AND json_extract(c.value, '$.dataSetId')
+           IN (SELECT value FROM json_each(?))`
+    )
+    .all(
+      scope.chainId,
+      scope.payer,
+      JSON.stringify([...new Set(dataSetIds)])
+    ) as {
+    ref: string
+    data_set_id: string
+    piece_id: string
+  }[]
+  return new Map(
+    rows.map((row) => [`${row.data_set_id}/${row.piece_id}`, row.ref])
+  )
+}

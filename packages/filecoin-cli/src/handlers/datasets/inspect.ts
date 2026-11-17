@@ -12,7 +12,7 @@ import { accountScope, appFor } from '../context.ts'
  * gets that resource's ref from local state. A data set that filecoin-api
  * does not have, or that another wallet pays for, is `not_found`.
  *
- * @see ../../../../../docs/filecoin/architecture.md#data-set-reads
+ * @see ../../../../../docs/filecoin/architecture.md#piece-and-data-set-reads
  */
 export default defineHandler(inspect, async (ctx) => {
   const app = await appFor(ctx)

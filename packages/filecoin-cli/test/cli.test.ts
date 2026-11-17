@@ -195,8 +195,8 @@ test('delete needs --yes when no human can confirm', async () => {
 
 test('environment credentials scope local reads without a network call', async () => {
   const env = { FILECOIN_SESSION_KEY: SESSION_KEY, FILECOIN_ROOT_ADDRESS: ROOT }
-  const { json, stderr } = await run(['ls', '--debug'], env)
-  assert.deepEqual(json, { data: { network: 'calibration', resources: [] } })
+  const { json, stderr } = await run(['operations', 'ls', '--debug'], env)
+  assert.deepEqual(json, { data: { network: 'calibration', operations: [] } })
   assert.ok(!stderr.includes(SESSION_KEY.slice(2)), 'secret leaked to stderr')
   const ops = await run(['operations', 'resume', 'op_missing'], env)
   assert.equal(code(ops.json), 'not_found')

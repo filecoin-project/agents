@@ -9,7 +9,7 @@ import { accountScope, appFor } from '../context.ts'
  * cursor is filecoin-api's, passed through unchanged. Without `--all`, data
  * sets deleted on chain are left out.
  *
- * @see ../../../../../docs/filecoin/architecture.md#data-set-reads
+ * @see ../../../../../docs/filecoin/architecture.md#piece-and-data-set-reads
  */
 export default defineHandler(ls, async (ctx) => {
   const app = await appFor(ctx)
