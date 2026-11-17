@@ -36,6 +36,7 @@ import {
   type CopyFailure,
   copyReport,
   planSecondaryCopy,
+  REQUESTED_COPIES,
   selectSecondary,
   storeSecondaryCopy,
 } from './secondary-copy.ts'
@@ -184,6 +185,8 @@ export async function startPut(
       kind: source.kind,
       format: source.format,
       providerId: options.providerId?.toString(),
+      // secondary-copy: remove to go back to one copy.
+      copies: REQUESTED_COPIES,
     },
   })
   return await runOperation(ctx, op.id)

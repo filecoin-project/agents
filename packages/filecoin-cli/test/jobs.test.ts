@@ -61,6 +61,10 @@ type FakeOptions = {
   failPulls?: number
   /** The commit wait with this 1-based index fails, as if it dropped. */
   failWaitAt?: number
+  /** First-copy providers chosen by each selection, in order; default 7. */
+  primaryIds?: bigint[]
+  /** The first quote reports the payer short of funds. */
+  unfundedOnce?: boolean
 }
 
 /**
@@ -93,10 +97,12 @@ function fakeBackend(options: FakeOptions = {}) {
   const backend: StorageBackend = {
     selectPlacement(opts) {
       calls.select.push(opts.metadata)
+      const id = options.primaryIds?.[calls.select.length - 1] ?? 7n
       return Promise.resolve({
-        providerId: 7n,
-        serviceURL: 'https://sp.example',
-        payee: '0x0000000000000000000000000000000000000007',
+        providerId: id,
+        serviceURL:
+          id === 7n ? 'https://sp.example' : `https://sp${id}.example`,
+        payee: `0x${id.toString(16).padStart(40, '0')}` as Hex,
         ...(options.existingDataSet
           ? { dataSetId: 42n, clientDataSetId: 9n }
           : {}),
@@ -127,8 +133,10 @@ function fakeBackend(options: FakeOptions = {}) {
     },
     quote: ({ placements }) => {
       calls.quotes.push(placements.map((placement) => placement.providerId))
+      const short = once.unfundedOnce ?? false
+      once.unfundedOnce = false
       return Promise.resolve({
-        ready: !(options.unfunded || options.unapproved),
+        ready: !(options.unfunded || options.unapproved || short),
         depositNeeded: options.unfunded ? 10n ** 18n : 0n,
         needsApproval: options.unapproved ?? false,
         ratePerMonth: 123n,
@@ -1145,3 +1153,49 @@ function onlyFailed(ctx: JobContext) {
   assert.equal(items.length, 1)
   return items[0] as NonNullable<(typeof items)[0]>
 }
+
+test('a resume never puts both copies on the provider it picks first', async () => {
+  // The funds check stops the first run after the second placement is
+  // saved; the resume then picks that provider for the first copy.
+  const { backend, calls } = fakeBackend({
+    primaryIds: [7n, 8n],
+    secondaryProviders: [8n, 7n],
+    unfundedOnce: true,
+  })
+  const ctx = await context(backend)
+  const path = await file(ctx, 'data.bin', 2048)
+  await assert.rejects(startPut(ctx, { path }), { code: 'insufficient_funds' })
+  const failed = onlyOperation(ctx)
+  assert.equal(failed.checkpoint.secondary?.placement?.providerId, '8')
+
+  const result = await runOperation(ctx, failed.id)
+  assert.deepEqual(
+    result.resource.copies.map((copy) => copy.providerId),
+    ['8', '7']
+  )
+  assert.deepEqual(calls.quotes, [
+    [7n, 8n],
+    [8n, 7n],
+  ])
+})
+
+test('a put saved by filecoin 0.7.0 resumes with one copy', async () => {
+  const { backend, calls } = fakeBackend({ secondaryProviders: [8n] })
+  const ctx = await context(backend)
+  const path = await file(ctx, 'data.bin', 2048)
+  const op = createOperation(ctx.db, {
+    action: 'put',
+    resourceRef: 'res_legacy',
+    chainId: ctx.chainId,
+    payer: ctx.payer,
+    input: { sourcePath: path, name: 'data.bin', kind: 'file', format: 'raw' },
+  })
+
+  const result = await runOperation(ctx, op.id)
+  assert.equal(result.resource.copies.length, 1)
+  assert.equal(result.requestedCopies, 1)
+  assert.equal(result.copyFailures, undefined)
+  assert.deepEqual(calls.quotes, [[7n]])
+  assert.equal(calls.pulls.length + calls.excluded.length, 0)
+  assert.equal(getOperation(ctx.db, op.id)?.checkpoint.secondary, undefined)
+})
