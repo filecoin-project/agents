@@ -111,10 +111,10 @@ export const copyFailure = z.object({
   error: z.string(),
 })
 
-/** Result of a put, a delete, or a resumed operation. */
-export const jobResult = {
+/** Result of a put, or of a resumed put. */
+export const putResult = {
   operationId: z.string(),
-  state: z.enum(['ready', 'removal_pending']),
+  state: z.literal('ready'),
   resource,
   urls,
   requestedCopies: z
@@ -130,6 +130,59 @@ export const jobResult = {
     .describe('Providers that failed to store a copy, including replaced ones'),
 }
 
+/** One stored copy a delete removes or skips. */
+export const removal = z.object({
+  dataSetId: z.string(),
+  pieceId: z.string(),
+  providerId: z.string(),
+  source: z
+    .string()
+    .optional()
+    .describe(
+      'Application that created the data set, from its source metadata'
+    ),
+  resourceRef: z
+    .string()
+    .optional()
+    .describe('Managed resource with this copy, from local state'),
+  state: z
+    .enum(['live', 'scheduled', 'already_scheduled', 'removed'])
+    .describe(
+      'live: a dry run found it stored; scheduled: this delete scheduled its removal; already_scheduled or removed: skipped, nothing signed'
+    ),
+  transactionHash: z.string().optional(),
+})
+
+/** Result of a delete, or of a resumed delete. */
+export const removeResult = {
+  operationId: z.string(),
+  state: z.literal('removal_pending'),
+  target: z
+    .string()
+    .describe('Resource ref, PieceCID, root CID, or <dataSetId>/<pieceId>'),
+  removals: z.array(removal),
+  resources: z
+    .array(resource)
+    .describe(
+      'Managed resources with a copy among the removals, as saved after the delete'
+    ),
+}
+
+/** Formats a delete's copies for humans, one line each. */
+export function formatRemovals(removals: z.input<typeof removal>[]): string[] {
+  return removals.map((r) =>
+    [
+      `${r.dataSetId}/${r.pieceId}`.padEnd(12),
+      `provider ${r.providerId}`,
+      r.source ?? '',
+      r.resourceRef ?? '',
+      r.state,
+    ]
+      .filter(Boolean)
+      .join('  ')
+  )
+}
+
 /** Execution state of an operation. */
 export const executionStatus = z.enum([
   'pending',
@@ -142,7 +195,14 @@ export const executionStatus = z.enum([
 export const operationSummary = z.object({
   id: z.string(),
   action: z.enum(['put', 'delete']),
-  resourceRef: z.string(),
+  resourceRef: z
+    .string()
+    .optional()
+    .describe('Absent for a delete whose pieces no managed resource holds'),
+  target: z
+    .string()
+    .optional()
+    .describe('What a delete named: a ref, PieceCID, root CID, or pair'),
   phase: z.string(),
   executionStatus,
   updatedAt: z.string(),

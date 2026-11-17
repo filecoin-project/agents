@@ -31,7 +31,7 @@ export const ls = defineCommand({
       : [
           ...data.operations.map(
             (op) =>
-              `${op.id}  ${op.action.padEnd(6)} ${op.executionStatus.padEnd(9)} ${op.phase.padEnd(10)} ${op.resourceRef}${op.error ? `  ${op.error}` : ''}`
+              `${op.id}  ${op.action.padEnd(6)} ${op.executionStatus.padEnd(9)} ${op.phase.padEnd(10)} ${op.target ?? op.resourceRef ?? ''}${op.error ? `  ${op.error}` : ''}`
           ),
           ...(data.nextCursor ? [`more: --cursor ${data.nextCursor}`] : []),
         ].join('\n'),

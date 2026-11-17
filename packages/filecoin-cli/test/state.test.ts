@@ -53,7 +53,7 @@ test('migrations are idempotent', async () => {
   const row = db.prepare('PRAGMA user_version').get() as {
     user_version: number
   }
-  assert.equal(row.user_version, 3)
+  assert.equal(row.user_version, 4)
   db.close()
 })
 
@@ -265,5 +265,35 @@ test('migration renames the artifact kind to folder', async () => {
     kind: 'folder',
     name: 'site',
   })
+  db.close()
+})
+
+test('migration keeps saved operations and allows one without a resource', async () => {
+  const dir = await tempDir()
+  const raw = new DatabaseSync(join(dir, 'state.db'))
+  raw.exec(`
+    CREATE TABLE resources (ref TEXT PRIMARY KEY, kind TEXT, name TEXT,
+      chain_id TEXT, payer TEXT, piece_cid TEXT, root_cid TEXT, size INTEGER,
+      copies TEXT, url TEXT, status TEXT, created_at TEXT);
+    CREATE TABLE operations (id TEXT PRIMARY KEY,
+      action TEXT NOT NULL CHECK (action IN ('put', 'delete')),
+      resource_ref TEXT NOT NULL, chain_id TEXT NOT NULL, payer TEXT NOT NULL,
+      execution_status TEXT NOT NULL, phase TEXT NOT NULL,
+      input TEXT NOT NULL DEFAULT '{}', checkpoint TEXT NOT NULL DEFAULT '{}',
+      pid INTEGER, error TEXT, created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL);
+    INSERT INTO operations VALUES ('op_old', 'delete', 'res_a', '314159',
+      '0xabc', 'failed', 'removing', '{}', '{}', NULL, NULL, 't', 't');
+    PRAGMA user_version = 3;
+  `)
+  raw.close()
+  const db = openDatabase(dir)
+  assert.equal(getOperation(db, 'op_old')?.resourceRef, 'res_a')
+  const op = createOperation(db, {
+    action: 'delete',
+    ...scope,
+    input: { target: '39723/0' },
+  })
+  assert.equal(getOperation(db, op.id)?.resourceRef, undefined)
   db.close()
 })

@@ -35,7 +35,17 @@ export type OperationInput = {
    * and their files are raw.
    */
   format?: StorageFormat
+  /**
+   * Provider of a put's first copy, or the only provider whose copies a
+   * delete removes.
+   */
   providerId?: string
+  /**
+   * What a delete names: a ref, PieceCID, root CID, or
+   * `<dataSetId>/<pieceId>`. Deletes saved by earlier versions of `filecoin`
+   * have none and name their resource in `resourceRef`.
+   */
+  target?: string
   // secondary-copy: remove this field to go back to one copy.
   /**
    * Copies a put asks for. Puts saved by `filecoin` 0.7.0 and earlier have
@@ -72,9 +82,22 @@ export type Removal = {
   serviceURL: string
   dataSetId: string
   pieceId: string
+  /**
+   * Managed resource with a copy at this piece. Deletes saved by earlier
+   * versions of `filecoin` have none: all their copies belong to the
+   * operation's resource.
+   */
+  resourceRef?: string
+  /** Application that created the data set, from its `source` metadata. */
+  source?: string
   transactionHash?: string
   /** Set once the transaction has scheduled the piece for removal. */
   scheduled?: boolean
+  /**
+   * Set when the chain shows the piece already scheduled for removal, or
+   * already removed, before this delete signs anything for it.
+   */
+  skipped?: 'already_scheduled' | 'removed'
 }
 
 /**
@@ -130,7 +153,8 @@ export type Checkpoint = {
 export type Operation = {
   id: string
   action: OperationAction
-  resourceRef: string
+  /** Absent for a delete whose pieces no managed resource holds. */
+  resourceRef?: string
   chainId: string
   payer: string
   executionStatus: ExecutionStatus
@@ -147,7 +171,7 @@ export type Operation = {
 type OperationRow = {
   id: string
   action: OperationAction
-  resource_ref: string
+  resource_ref: string | null
   chain_id: string
   payer: string
   execution_status: ExecutionStatus
@@ -165,7 +189,7 @@ function fromRow(row: OperationRow): Operation {
   return {
     id: row.id,
     action: row.action,
-    resourceRef: row.resource_ref,
+    ...(row.resource_ref == null ? {} : { resourceRef: row.resource_ref }),
     chainId: row.chain_id,
     payer: row.payer,
     executionStatus: row.execution_status,
@@ -182,7 +206,7 @@ function fromRow(row: OperationRow): Operation {
 /** Options for {@link createOperation}. */
 export type CreateOperationOptions = {
   action: OperationAction
-  resourceRef: string
+  resourceRef?: string | undefined
   chainId: string
   payer: string
   input: OperationInput
@@ -203,7 +227,7 @@ export function createOperation(
   ).run(
     id,
     options.action,
-    options.resourceRef,
+    options.resourceRef ?? null,
     options.chainId,
     options.payer,
     JSON.stringify(options.input),

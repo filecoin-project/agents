@@ -110,6 +110,15 @@ export interface StorageBackend extends SecondaryCopyBackend {
     commit: Commit
     transactionHash: Hex
   }): Promise<CommittedPiece>
+  /**
+   * Read a piece on chain before a delete signs its removal: the data set's
+   * payer, and whether the piece is live, already scheduled for removal, or
+   * gone. A data set that no longer exists reports `removed`.
+   */
+  pieceState(options: { dataSetId: bigint; pieceId: bigint }): Promise<{
+    payer?: string
+    state: 'live' | 'scheduled' | 'removed'
+  }>
   /** Sign and submit a piece removal. */
   schedulePieceRemoval(options: {
     serviceURL: string

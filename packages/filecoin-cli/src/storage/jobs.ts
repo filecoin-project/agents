@@ -29,7 +29,12 @@ import {
   type StorageFormat,
   updateOperation,
 } from '../state/operations.ts'
-import { getResource, type Resource, saveResource } from '../state/resources.ts'
+import {
+  type Copy,
+  getResource,
+  type Resource,
+  saveResource,
+} from '../state/resources.ts'
 import { type DfsCar, planDirectory, planFile } from './dfs-car.ts'
 import { listEntries } from './pack.ts'
 import {
@@ -99,10 +104,10 @@ export type JobContext = {
   onOperation?: (operation: Operation) => void
 }
 
-/** Outcome of a put or delete, shaped for command output. */
-export type JobResult = {
+/** Outcome of a put, shaped for command output. */
+export type PutResult = {
   operationId: string
-  state: 'ready' | 'removal_pending'
+  state: 'ready'
   resource: Resource
   urls: RetrievalUrls
   /**
@@ -113,6 +118,34 @@ export type JobResult = {
   /** Providers that failed to store a copy, including replaced ones. */
   copyFailures?: CopyFailure[]
 }
+
+/**
+ * A copy in a delete's result. `state` is `live` only in a plan that
+ * nothing has signed for yet.
+ */
+export type RemovalReport = {
+  dataSetId: string
+  pieceId: string
+  providerId: string
+  source?: string
+  resourceRef?: string
+  state: 'live' | 'scheduled' | 'already_scheduled' | 'removed'
+  transactionHash?: string
+}
+
+/** Outcome of a delete, shaped for command output. */
+export type RemoveResult = {
+  operationId: string
+  state: 'removal_pending'
+  /** The ref, PieceCID, root CID, or `<dataSetId>/<pieceId>` deleted. */
+  target: string
+  removals: RemovalReport[]
+  /** Managed resources with a copy among the removals, as saved after it. */
+  resources: Resource[]
+}
+
+/** Outcome of a put or delete. */
+export type JobResult = PutResult | RemoveResult
 
 /** Options for {@link startPut}. */
 export type StartPutOptions = {
@@ -172,7 +205,7 @@ function formatOf(input: Operation['input']): StorageFormat {
 export async function startPut(
   ctx: JobContext,
   options: StartPutOptions
-): Promise<JobResult> {
+): Promise<PutResult> {
   const source = await inspectSource(options)
   const op = createOperation(ctx.db, {
     action: 'put',
@@ -189,7 +222,11 @@ export async function startPut(
       copies: REQUESTED_COPIES,
     },
   })
-  return await runOperation(ctx, op.id)
+  const result = await runOperation(ctx, op.id)
+  if (result.state !== 'ready') {
+    throw new Error(`Operation ${op.id} is not a put.`)
+  }
+  return result
 }
 
 /** What a put would do, from {@link estimatePut}. */
@@ -313,40 +350,41 @@ export function savedOutcome(
   ctx: Pick<JobContext, 'db' | 'apiUrl'>,
   op: Operation
 ): JobResult {
-  const resource = getResource(ctx.db, op.resourceRef)
+  if (op.action === 'delete') return removeResult(ctx, op)
+  const resource = op.resourceRef && getResource(ctx.db, op.resourceRef)
   if (!resource) {
     throw notFound(`Resource ${op.resourceRef} of ${op.id} no longer exists.`)
   }
-  return jobResult(ctx, op, resource)
+  return putResult(ctx, op, resource)
 }
 
-/** Shape a finished operation and its resource for command output. */
-function jobResult(
+/** Shape a finished put and its resource for command output. */
+function putResult(
   ctx: Pick<JobContext, 'apiUrl'>,
   op: Operation,
   resource: Resource
-): JobResult {
+): PutResult {
   return {
     operationId: op.id,
-    state: op.action === 'put' ? 'ready' : 'removal_pending',
+    state: 'ready',
     resource,
     urls: resourceUrls(resource, ctx.apiUrl),
-    ...(op.action === 'put' ? copyReport(op) : {}),
+    ...copyReport(op),
   }
 }
 
 /**
- * Save the resource and mark the operation completed in one transaction, so
+ * Save the resources and mark the operation completed in one transaction, so
  * a stop at this point leaves a finished job, never a half-finished one.
  */
 function complete(
   ctx: JobContext,
   op: Operation,
-  resource: Resource,
+  resources: Resource | Resource[],
   checkpoint: Checkpoint = {}
 ): void {
   transaction(ctx.db, () => {
-    saveResource(ctx.db, resource)
+    for (const resource of [resources].flat()) saveResource(ctx.db, resource)
     updateOperation(ctx.db, op.id, {
       executionStatus: 'completed',
       phase: 'done',
@@ -427,7 +465,7 @@ function save(
  * step saves its result first, so a resumed job skips completed work and
  * never sends a second commit for the same content.
  */
-async function runPut(ctx: JobContext, op: Operation): Promise<JobResult> {
+async function runPut(ctx: JobContext, op: Operation): Promise<PutResult> {
   const { input } = op
   const kind = input.kind ?? 'file'
   const format = formatOf(input)
@@ -566,6 +604,7 @@ async function runPut(ctx: JobContext, op: Operation): Promise<JobResult> {
     rootCid: op.checkpoint.rootCid,
   })
 
+  if (!op.resourceRef) throw new Error(`Put ${op.id} has no resource ref.`)
   const resource: Resource = {
     ref: op.resourceRef,
     kind,
@@ -856,58 +895,120 @@ function placementOf(checkpoint: Checkpoint): Placement | undefined {
   }
 }
 
+/** A stored copy a delete may remove, from local state or filecoin-api. */
+export type RemovalCandidate = Copy & {
+  /** Managed resource with this copy, from local state. */
+  resourceRef?: string | undefined
+  /** Application that created the data set, from its `source` metadata. */
+  source?: string | undefined
+}
+
+/** Options for {@link planRemoval} and {@link startRemove}. */
+export type RemoveOptions = {
+  /** The ref, PieceCID, root CID, or `<dataSetId>/<pieceId>` to delete. */
+  target: string
+  /** The provider the copies were narrowed to with `--provider`. */
+  providerId?: string | undefined
+  /** The copies the target names. */
+  copies: RemovalCandidate[]
+}
+
 /**
- * Save a new delete operation for a managed resource, then run it.
+ * Check each copy on chain before anything is signed, because filecoin-api
+ * lags the chain. Every data set must be paid for by the payer. A copy that
+ * the chain shows already scheduled for removal, or removed, is kept as
+ * skipped. When no live copy is left, the delete is `invalid_input`.
+ *
+ * @see ../../../../docs/filecoin/architecture.md#the-delete-flow
  */
-export async function startRemove(
-  ctx: JobContext,
-  ref: string
-): Promise<JobResult> {
-  const resource = getResource(ctx.db, ref, ctx)
-  if (!resource) {
-    throw notFound(`No managed resource ${ref} for this account.`, {
-      by: 'agent',
-      command: 'filecoin ls',
-      description: "List the wallet's stored pieces and their refs",
-    })
-  }
-  if (resource.status !== 'active') {
-    throw invalidInput(`${ref} is already pending removal.`, 'ref')
-  }
-  if (resource.copies.length === 0) {
-    throw new Error(`Resource ${ref} has no stored copies.`)
-  }
-  const op = createOperation(ctx.db, {
-    action: 'delete',
-    resourceRef: ref,
-    chainId: ctx.chainId,
-    payer: ctx.payer,
-    input: {},
-    checkpoint: {
-      removals: resource.copies.map((copy) => ({
+export async function planRemoval(
+  ctx: Pick<JobContext, 'backend' | 'payer'>,
+  options: RemoveOptions
+): Promise<Removal[]> {
+  const removals = await Promise.all(
+    options.copies.map(async (copy): Promise<Removal> => {
+      const { payer, state } = await ctx.backend.pieceState({
+        dataSetId: BigInt(copy.dataSetId),
+        pieceId: BigInt(copy.pieceId),
+      })
+      if (payer && payer.toLowerCase() !== ctx.payer.toLowerCase()) {
+        throw invalidInput(
+          `Data set ${copy.dataSetId} is paid for by ${payer}, not ${ctx.payer}.`,
+          'target'
+        )
+      }
+      const removal: Removal = {
         providerId: copy.providerId,
         serviceURL: copy.serviceURL,
         dataSetId: copy.dataSetId,
         pieceId: copy.pieceId,
-      })),
-    },
-  })
-  return await runOperation(ctx, op.id)
+        ...(copy.resourceRef ? { resourceRef: copy.resourceRef } : {}),
+        ...(copy.source ? { source: copy.source } : {}),
+      }
+      return state === 'live' ? removal : { ...removal, skipped: skipOf(state) }
+    })
+  )
+  if (removals.every((removal) => removal.skipped)) {
+    throw invalidInput(
+      `Every copy of ${options.target} is already scheduled for removal or removed.`,
+      'target'
+    )
+  }
+  return removals
+}
+
+/** Why a copy that is not live is skipped. */
+function skipOf(state: 'scheduled' | 'removed'): Removal['skipped'] {
+  return state === 'scheduled' ? 'already_scheduled' : 'removed'
 }
 
 /**
- * The copies a delete removes. A delete saved by `filecoin` 0.7.0 and
- * earlier names its one copy, and its transaction, in flat checkpoint
- * fields.
+ * Check the copies on chain, save a new delete operation with them, then run
+ * it. The operation names a resource only when every copy with one belongs
+ * to the same resource.
+ */
+export async function startRemove(
+  ctx: JobContext,
+  options: RemoveOptions
+): Promise<RemoveResult> {
+  const removals = await planRemoval(ctx, options)
+  const refs = new Set(removals.flatMap((removal) => removal.resourceRef ?? []))
+  const [ref] = refs
+  const op = createOperation(ctx.db, {
+    action: 'delete',
+    resourceRef: refs.size === 1 ? ref : undefined,
+    chainId: ctx.chainId,
+    payer: ctx.payer,
+    input: {
+      target: options.target,
+      ...(options.providerId ? { providerId: options.providerId } : {}),
+    },
+    checkpoint: { removals },
+  })
+  const result = await runOperation(ctx, op.id)
+  if (result.state !== 'removal_pending') {
+    throw new Error(`Operation ${op.id} is not a delete.`)
+  }
+  return result
+}
+
+/**
+ * The copies a delete removes. A delete saved before deletes took targets
+ * other than refs removes copies of its one resource, so each copy gets the
+ * operation's ref. A delete saved by `filecoin` 0.7.0 and earlier names its
+ * one copy, and its transaction, in flat checkpoint fields.
  */
 function removalsOf(op: Operation): Removal[] {
   const { removals, providerId, serviceURL, dataSetId, pieceId } = op.checkpoint
-  if (removals) return removals
+  const ref = op.input.target === undefined ? op.resourceRef : undefined
+  const owned = (removal: Removal): Removal =>
+    ref && !removal.resourceRef ? { ...removal, resourceRef: ref } : removal
+  if (removals) return removals.map(owned)
   if (!(serviceURL && dataSetId && pieceId)) {
     throw new Error(`Operation ${op.id} is missing its removal target.`)
   }
   return [
-    {
+    owned({
       providerId: providerId ?? '',
       serviceURL,
       dataSetId,
@@ -915,29 +1016,93 @@ function removalsOf(op: Operation): Removal[] {
       ...(op.checkpoint.transactionHash
         ? { transactionHash: op.checkpoint.transactionHash }
         : {}),
-    },
+    }),
   ]
 }
 
-/**
- * Schedule removal of each copy of the resource's piece and wait for each
- * transaction. The providers delete the data at their next proving
- * boundary, so the result is `removal_pending`. A reverted transaction
- * leaves the resource active; a resume skips the copies already scheduled.
- */
-async function runRemove(ctx: JobContext, op: Operation): Promise<JobResult> {
-  const resource = getResource(ctx.db, op.resourceRef)
-  if (!resource) throw notFound(`Resource ${op.resourceRef} no longer exists.`)
+/** Shape a saved removal for command output. */
+export function reportRemoval(removal: Removal): RemovalReport {
+  return {
+    dataSetId: removal.dataSetId,
+    pieceId: removal.pieceId,
+    providerId: removal.providerId,
+    ...(removal.source ? { source: removal.source } : {}),
+    ...(removal.resourceRef ? { resourceRef: removal.resourceRef } : {}),
+    state: removal.skipped ?? (removal.scheduled ? 'scheduled' : 'live'),
+    ...(removal.transactionHash
+      ? { transactionHash: removal.transactionHash }
+      : {}),
+  }
+}
+
+/** Shape a finished delete for command output, with its resources as saved. */
+function removeResult(
+  ctx: Pick<JobContext, 'db'>,
+  op: Operation
+): RemoveResult {
   const removals = removalsOf(op)
+  const refs = new Set(removals.flatMap((removal) => removal.resourceRef ?? []))
+  return {
+    operationId: op.id,
+    state: 'removal_pending',
+    target: op.input.target ?? op.resourceRef ?? '',
+    removals: removals.map(reportRemoval),
+    resources: [...refs].flatMap((ref) => getResource(ctx.db, ref) ?? []),
+  }
+}
+
+/**
+ * The managed resources with a copy among finished removals, updated. A
+ * resource with no copy left becomes `removal_pending` and keeps its copies;
+ * one with copies left stays `active` with only those.
+ */
+function afterRemoval(ctx: JobContext, removals: Removal[]): Resource[] {
+  const gone = new Set(
+    removals.map((removal) => `${removal.dataSetId}/${removal.pieceId}`)
+  )
+  const refs = new Set(removals.flatMap((removal) => removal.resourceRef ?? []))
+  return [...refs].flatMap((ref) => {
+    const resource = getResource(ctx.db, ref)
+    if (!resource) return []
+    const left = resource.copies.filter(
+      (copy) => !gone.has(`${copy.dataSetId}/${copy.pieceId}`)
+    )
+    return left.length === 0
+      ? { ...resource, status: 'removal_pending' as const }
+      : { ...resource, copies: left }
+  })
+}
+
+/**
+ * Schedule removal of each copy and wait for each transaction. The providers
+ * delete the data at their next proving boundary, so the result is
+ * `removal_pending`. A reverted transaction leaves the resources as they
+ * were; a resume skips the copies already scheduled, and checks the chain
+ * again before it signs for the others.
+ */
+async function runRemove(
+  ctx: JobContext,
+  op: Operation
+): Promise<RemoveResult> {
+  const removals = removalsOf(op)
+  const resumed = op.phase !== 'queued'
   const saveRemovals = () => {
     op = save(ctx, op, { removals, transactionHash: undefined })
   }
   op = save(ctx, op, {}, 'removing')
   for (const [index, removal] of removals.entries()) {
-    if (removal.scheduled) continue
+    if (removal.scheduled || removal.skipped) continue
     const dataSetId = BigInt(removal.dataSetId)
     const pieceId = BigInt(removal.pieceId)
     if (!removal.transactionHash) {
+      if (resumed) {
+        const { state } = await ctx.backend.pieceState({ dataSetId, pieceId })
+        if (state !== 'live') {
+          removals[index] = { ...removal, skipped: skipOf(state) }
+          saveRemovals()
+          continue
+        }
+      }
       ctx.progress?.({
         phase: 'removing',
         message: `Scheduling removal of piece ${pieceId} from data set ${dataSetId}`,
@@ -973,7 +1138,6 @@ async function runRemove(ctx: JobContext, op: Operation): Promise<JobResult> {
     removals[index] = { ...removal, transactionHash: hash, scheduled: true }
     saveRemovals()
   }
-  const updated: Resource = { ...resource, status: 'removal_pending' }
-  complete(ctx, op, updated)
-  return jobResult(ctx, op, updated)
+  complete(ctx, op, afterRemoval(ctx, removals), { removals })
+  return removeResult(ctx, getOperation(ctx.db, op.id) as Operation)
 }

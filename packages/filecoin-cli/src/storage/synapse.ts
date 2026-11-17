@@ -7,7 +7,10 @@ import {
   TransactionNotAppliedError,
 } from '@filoz/synapse-core/errors'
 import * as Pay from '@filoz/synapse-core/pay'
-import { getDataSetLeafCounts } from '@filoz/synapse-core/pdp-verifier'
+import {
+  getDataSetLeafCounts,
+  getScheduledRemovals,
+} from '@filoz/synapse-core/pdp-verifier'
 import * as Piece from '@filoz/synapse-core/piece'
 import * as SP from '@filoz/synapse-core/sp'
 import { calculateUploadCosts } from '@filoz/synapse-core/utils'
@@ -236,6 +239,27 @@ export function createSynapseBackend(
           })
         }
         throw error
+      }
+    },
+
+    async pieceState({ dataSetId, pieceId }) {
+      const dataSet = await WarmStorage.getDataSet(client, { dataSetId })
+      if (!dataSet) return { state: 'removed' }
+      const [live, scheduled] = await Promise.all([
+        readContract(client, {
+          ...app.chain.contracts.pdp,
+          functionName: 'pieceLive',
+          args: [dataSetId, pieceId],
+        }),
+        getScheduledRemovals(client, { dataSetId }),
+      ])
+      return {
+        payer: dataSet.payer,
+        state: live
+          ? scheduled.includes(pieceId)
+            ? 'scheduled'
+            : 'live'
+          : 'removed',
       }
     },
 

@@ -1,7 +1,13 @@
 import { defineCommand } from 'clipact'
 import * as z from 'zod'
 import { JOB_ERRORS } from '../../errors.ts'
-import { account, accountEnv, jobResult } from '../shared.ts'
+import {
+  account,
+  accountEnv,
+  formatRemovals,
+  putResult,
+  removeResult,
+} from '../shared.ts'
 
 /**
  * `filecoin operations resume <id>`: continue an unfinished put or delete with its
@@ -19,12 +25,18 @@ export const resume = defineCommand({
   positionals: ['id'],
   env: accountEnv,
   secrets: ['sessionKey'],
-  output: z.object(jobResult),
+  output: z.discriminatedUnion('state', [
+    z.object(putResult),
+    z.object(removeResult),
+  ]),
   errors: JOB_ERRORS,
   idempotent: true,
   human: (data) =>
     data.state === 'ready'
       ? `Stored ${data.resource.name} (${data.resource.ref})\n${data.urls.browser}`
-      : `Removal of ${data.resource.ref} (${data.resource.name}) scheduled.`,
+      : [
+          `Removal of ${data.target} scheduled:`,
+          ...formatRemovals(data.removals),
+        ].join('\n'),
   handler: () => import('../../handlers/operations/resume.ts'),
 })

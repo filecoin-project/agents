@@ -17,7 +17,8 @@ export default defineHandler(ls, async (ctx) => {
     operations: page.items.map((op) => ({
       id: op.id,
       action: op.action,
-      resourceRef: op.resourceRef,
+      ...(op.resourceRef ? { resourceRef: op.resourceRef } : {}),
+      ...(op.input.target ? { target: op.input.target } : {}),
       phase: op.phase,
       executionStatus: op.executionStatus,
       updatedAt: op.updatedAt,

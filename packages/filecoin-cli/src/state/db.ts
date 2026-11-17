@@ -100,6 +100,31 @@ const MIGRATIONS = [
   UPDATE operations SET input = json_set(input, '$.kind', 'folder')
     WHERE json_extract(input, '$.kind') = 'artifact';
   `,
+  // Let an operation have no resource: a delete of a PieceCID, root CID, or
+  // `<dataSetId>/<pieceId>` can remove pieces no managed resource holds.
+  // SQLite cannot drop NOT NULL in place, so the table is rebuilt.
+  `
+  CREATE TABLE operations_next (
+    id TEXT PRIMARY KEY,
+    action TEXT NOT NULL CHECK (action IN ('put', 'delete')),
+    resource_ref TEXT,
+    chain_id TEXT NOT NULL,
+    payer TEXT NOT NULL,
+    execution_status TEXT NOT NULL,
+    phase TEXT NOT NULL,
+    input TEXT NOT NULL DEFAULT '{}',
+    checkpoint TEXT NOT NULL DEFAULT '{}',
+    pid INTEGER,
+    error TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+  INSERT INTO operations_next SELECT * FROM operations;
+  DROP TABLE operations;
+  ALTER TABLE operations_next RENAME TO operations;
+  CREATE INDEX operations_scope ON operations (chain_id, payer, updated_at);
+  CREATE INDEX operations_status ON operations (execution_status, updated_at);
+  `,
 ]
 
 /**
