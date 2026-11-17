@@ -4,6 +4,23 @@
   "files": {
     "includes": ["!!**/.agents", "!!**/test/snapshots"]
   },
+  "linter": {
+    "rules": {
+      "style": {
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "zod": {
+                "importNames": ["z"],
+                "message": "Use `import * as z from 'zod'`. A named `z` import makes bundlers keep all of zod, including its locales."
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   "markdown": {
     "formatter": {
       "enabled": false
