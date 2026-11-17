@@ -1,22 +1,29 @@
 import { createReadStream } from 'node:fs'
 import {
+  DataSetNotFoundError,
   NoEndorsedProviderError,
   PDPProviderUnavailableError,
+  ServiceAlreadyTerminatedError,
   TransactionNotAppliedError,
 } from '@filoz/synapse-core/errors'
+import * as Pay from '@filoz/synapse-core/pay'
+import { getDataSetLeafCounts } from '@filoz/synapse-core/pdp-verifier'
 import * as Piece from '@filoz/synapse-core/piece'
 import * as SP from '@filoz/synapse-core/sp'
+import { calculateUploadCosts } from '@filoz/synapse-core/utils'
 import * as WarmStorage from '@filoz/synapse-core/warm-storage'
 import { CliError } from 'clipact'
-import { readContract } from 'viem/actions'
+import type { Address, Chain, Client, Transport } from 'viem'
+import { getBlockNumber, readContract } from 'viem/actions'
 import type { App } from '../app.ts'
 import { buildFundingUrl, targetBalance } from '../auth/login.ts'
 import type { SessionKey } from '../auth/session.ts'
 import { ErrorCodes, notFound } from '../errors.ts'
-import type { StorageBackend } from './types.ts'
+import { createSecondaryCopyBackend } from './secondary-copy.ts'
+import type { Placement, StorageBackend } from './types.ts'
 
 /**
- * Create the synapse-core storage backend: one copy on one Curio provider,
+ * Create the synapse-core storage backend for copies on Curio providers,
  * signed by the session key and paid for by its root wallet. Chain reads are
  * cancelled by `app.transport`, and provider calls and receipt waits take
  * `app.signal`.
@@ -33,6 +40,9 @@ export function createSynapseBackend(
   const signal = app.signal
 
   return {
+    // secondary-copy: remove this line to go back to one copy.
+    ...createSecondaryCopyBackend(app, sessionKey),
+
     async selectPlacement({ metadata, providerId }) {
       let location: WarmStorage.ResolvedLocation | undefined
       if (providerId == null) {
@@ -89,13 +99,11 @@ export function createSynapseBackend(
       }
     },
 
-    async quote({ size, placement }) {
-      const costs = await WarmStorage.getUploadCosts(client, {
-        clientAddress: payer,
-        pieceSizes: [BigInt(size)],
-        ...(placement.dataSetId == null
-          ? { isNewDataSet: true }
-          : { dataSetId: placement.dataSetId }),
+    async quote({ size, placements }) {
+      const costs = await uploadCosts(client, {
+        payer,
+        size: BigInt(size),
+        placements,
       })
       return {
         ready: costs.ready,
@@ -260,6 +268,81 @@ export function createSynapseBackend(
       }
     },
   }
+}
+
+/**
+ * Costs of one piece of `size` bytes in each placement's data set, priced
+ * together against the payer's account. synapse-core's `getUploadCosts`
+ * prices one data set; this follows synapse-sdk's
+ * `calculateMultiContextCosts`, which prices several at once so their
+ * deposits are not counted against the same funds twice.
+ *
+ * @see https://github.com/FilOzone/synapse-sdk/blob/master/packages/synapse-sdk/src/storage/manager.ts
+ * @see https://github.com/FilOzone/synapse-sdk/blob/master/packages/synapse-core/src/warm-storage/get-upload-costs.ts
+ */
+async function uploadCosts(
+  client: Client<Transport, Chain>,
+  options: { payer: Address; size: bigint; placements: readonly Placement[] }
+) {
+  const { payer, size, placements } = options
+  const dataSetIds = placements.flatMap((placement) =>
+    placement.dataSetId == null ? [] : [placement.dataSetId]
+  )
+  const [account, priceList, currentEpoch, leafCounts, dataSets] =
+    await Promise.all([
+      Pay.accounts(client, { address: payer }),
+      WarmStorage.getPriceList(client),
+      getBlockNumber(client, { cacheTime: 0 }),
+      getDataSetLeafCounts(client, { dataSetIds }),
+      WarmStorage.getDataSetsById(client, { dataSetIds }),
+    ])
+  const approved = await Pay.isFwssMaxApproved(client, {
+    clientAddress: payer,
+    requiredMaxLockupPeriod: priceList.lockups.defaultLockupPeriod,
+  })
+  const accountParams = {
+    funds: account.funds,
+    lockupCurrent: account.lockupCurrent,
+    lockupRate: account.lockupRate,
+    lockupLastSettledAt: account.lockupLastSettledAt,
+    currentEpoch,
+  }
+  const debt = Pay.calculateAccountDebt(accountParams)
+  const { availableFunds, runwayInEpochs } =
+    Pay.resolveAccountState(accountParams)
+  const contexts = placements.map((placement) => {
+    const { dataSetId } = placement
+    if (dataSetId == null) {
+      return { pieceSizes: [size], withCDN: false, dataSet: null }
+    }
+    const dataSet = dataSets.get(dataSetId)
+    if (!dataSet) throw new DataSetNotFoundError(dataSetId)
+    if (dataSet.pdpEndEpoch !== 0n) {
+      throw new ServiceAlreadyTerminatedError(dataSet.pdpEndEpoch)
+    }
+    return {
+      pieceSizes: [size],
+      withCDN: false,
+      dataSet: {
+        leafCount: leafCounts.get(dataSetId) ?? 0n,
+        lifecycleReserveBalance: dataSet.lifecycleReserveBalance,
+        pendingOneTimePayments: dataSet.pendingOneTimePayments,
+        pdpEndEpoch: dataSet.pdpEndEpoch,
+      },
+    }
+  })
+  const costs = calculateUploadCosts({
+    contexts,
+    priceList,
+    account: {
+      currentLockupRate: account.lockupRate,
+      debt,
+      availableFunds,
+      runwayInEpochs,
+      fwssMaxApproved: approved,
+    },
+  })
+  return { ...costs, account: { availableFunds, debt, runwayInEpochs } }
 }
 
 /** First piece ID of a confirmed commit. */

@@ -18,8 +18,9 @@ type Authorization =
 
 /**
  * Store a file or directory as a UnixFS CAR, or with `--raw` a file as a raw
- * piece, with one copy on one provider. With `--dry-run`, report what would be stored, where, and
- * at what cost, without signing, uploading, or creating anything.
+ * piece, with two copies on two providers. With `--dry-run`, report what
+ * would be stored, where, and at what cost, without signing, uploading, or
+ * creating anything.
  */
 export default defineHandler(put, async (ctx) => {
   const { input } = ctx
@@ -49,7 +50,7 @@ export default defineHandler(put, async (ctx) => {
       else throw error
     }
     const estimate = await estimatePut({ ...options, backend })
-    const { placement, quote } = estimate
+    const { placement, secondaryPlacement, quote } = estimate
     return ctx.ok({
       dryRun: true,
       estimate: {
@@ -69,6 +70,18 @@ export default defineHandler(put, async (ctx) => {
                 ...(placement.dataSetId == null
                   ? {}
                   : { dataSetId: placement.dataSetId.toString() }),
+              },
+            }
+          : {}),
+        // secondary-copy: remove to go back to one copy.
+        ...(secondaryPlacement
+          ? {
+              secondaryProvider: {
+                id: secondaryPlacement.providerId.toString(),
+                serviceURL: secondaryPlacement.serviceURL,
+                ...(secondaryPlacement.dataSetId == null
+                  ? {}
+                  : { dataSetId: secondaryPlacement.dataSetId.toString() }),
               },
             }
           : {}),

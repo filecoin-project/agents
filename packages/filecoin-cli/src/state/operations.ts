@@ -2,6 +2,7 @@ import type { DatabaseSync } from 'node:sqlite'
 import type { Commit } from '@filoz/synapse-core/sp'
 import { CliError } from 'clipact'
 import { ErrorCodes, notFound } from '../errors.ts'
+import type { SecondaryCheckpoint } from '../storage/secondary-copy.ts'
 import { decodeCursor, type Page, toPage } from './cursor.ts'
 import { createId } from './ids.ts'
 import type { AccountScope } from './resources.ts'
@@ -18,6 +19,7 @@ export type Phase =
   | 'packing'
   | 'storing'
   | 'committing'
+  | 'copying'
   | 'removing'
   | 'done'
 
@@ -55,6 +57,20 @@ export type LegacyCommit = {
 }
 
 /**
+ * One copy a delete removes, with its removal transaction once the
+ * provider accepts it.
+ */
+export type Removal = {
+  providerId: string
+  serviceURL: string
+  dataSetId: string
+  pieceId: string
+  transactionHash?: string
+  /** Set once the transaction has scheduled the piece for removal. */
+  scheduled?: boolean
+}
+
+/**
  * Progress saved as an operation advances. Values that are bigints on chain
  * are decimal strings. Each field is written before the step that depends on
  * it, so a resumed job never repeats a confirmed mutation.
@@ -81,9 +97,21 @@ export type Checkpoint = {
    * 0.11.0 waits on chain instead, so it is no longer read.
    */
   statusUrl?: string
-  /** Commit or removal transaction, saved once the provider accepts it. */
+  /**
+   * Commit transaction, saved once the provider accepts it. A delete saved
+   * by `filecoin` 0.7.0 and earlier keeps its removal transaction here.
+   */
   transactionHash?: string
   pieceId?: string
+  /**
+   * Copies a delete removes. A delete saved by `filecoin` 0.7.0 and earlier
+   * has none: its one copy is in `providerId`, `serviceURL`, `dataSetId`,
+   * and `pieceId`.
+   */
+  removals?: Removal[]
+  // secondary-copy: remove this field to go back to one copy.
+  /** Progress of a put's second copy. */
+  secondary?: SecondaryCheckpoint
 }
 
 /**

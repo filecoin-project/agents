@@ -1,7 +1,14 @@
 import { defineCommand } from 'clipact'
 import * as z from 'zod'
 import { JOB_ERRORS } from '../errors.ts'
-import { account, accountEnv, formatBytes, resource, urls } from './shared.ts'
+import {
+  account,
+  accountEnv,
+  copyFailure,
+  formatBytes,
+  resource,
+  urls,
+} from './shared.ts'
 
 /** What `put --dry-run` reports instead of storing anything. */
 const estimate = z.object({
@@ -28,14 +35,22 @@ const estimate = z.object({
       dataSetId: z.string().optional().describe('Existing data set to add to'),
     })
     .optional(),
+  secondaryProvider: z
+    .object({
+      id: z.string(),
+      serviceURL: z.string(),
+      dataSetId: z.string().optional().describe('Existing data set to add to'),
+    })
+    .optional()
+    .describe('Provider of the second copy; absent when none answers'),
   cost: z
     .object({
       token: z.literal('USDFC'),
       ready: z.boolean().describe('The payer can cover it now'),
       depositNeeded: z.string(),
       needsApproval: z.boolean(),
-      ratePerMonth: z.string(),
-      lockup: z.string(),
+      ratePerMonth: z.string().describe('Every copy together'),
+      lockup: z.string().describe('Every copy together'),
       fundingUrl: z.string().optional(),
     })
     .optional(),
@@ -44,13 +59,13 @@ const estimate = z.object({
 
 /**
  * `filecoin put <path>`: store a file or directory as a UnixFS CAR served
- * at `/ipfs/<rootCid>`, or with `--raw` a file as its exact bytes, with one
- * copy.
+ * at `/ipfs/<rootCid>`, or with `--raw` a file as its exact bytes, with two
+ * copies on two providers.
  */
 export const put = defineCommand({
   name: 'put',
   description:
-    'Store a file or directory as an IPFS-indexed UnixFS CAR with one copy',
+    'Store a file or directory as an IPFS-indexed UnixFS CAR with two copies',
   examples: [
     'filecoin put ./report.pdf',
     'filecoin put ./report.pdf --raw',
@@ -68,7 +83,7 @@ export const put = defineCommand({
       .string()
       .regex(/^\d+$/, 'Expected a decimal provider ID')
       .optional()
-      .describe('Storage provider ID (default: automatic)'),
+      .describe('Storage provider ID of the first copy (default: automatic)'),
     raw: z
       .boolean()
       .default(false)
@@ -86,6 +101,17 @@ export const put = defineCommand({
     state: z.literal('ready').optional(),
     resource: resource.optional(),
     urls: urls.optional(),
+    requestedCopies: z
+      .number()
+      .int()
+      .optional()
+      .describe('Copies asked for; fewer resource.copies means some failed'),
+    copyFailures: z
+      .array(copyFailure)
+      .optional()
+      .describe(
+        'Providers that failed to store a copy, including replaced ones'
+      ),
     estimate: estimate.optional().describe('Set when dryRun is true'),
   }),
   errors: JOB_ERRORS,
@@ -100,6 +126,10 @@ export const put = defineCommand({
       ]
       if (e.provider)
         lines.push(`provider: ${e.provider.id} (${e.provider.serviceURL})`)
+      if (e.secondaryProvider)
+        lines.push(
+          `second copy: ${e.secondaryProvider.id} (${e.secondaryProvider.serviceURL})`
+        )
       if (e.cost) {
         lines.push(
           `cost: ${e.cost.ratePerMonth} USDFC/month, lockup ${e.cost.lockup} USDFC, ${e.cost.ready ? 'funded' : `deposit ${e.cost.depositNeeded} USDFC first`}`
@@ -107,8 +137,17 @@ export const put = defineCommand({
       }
       return lines.join('\n')
     }
+    const stored = data.resource?.copies.length ?? 0
+    const requested = data.requestedCopies ?? stored
     return [
       `Stored ${data.resource?.name} (${data.resource?.ref})`,
+      `copies: ${stored} of ${requested}`,
+      ...(stored < requested
+        ? (data.copyFailures ?? []).map(
+            (f) =>
+              `  failed${f.providerId ? ` on provider ${f.providerId}` : ''}: ${f.error}`
+          )
+        : []),
       ...(data.resource?.rootCid ? [`rootCid: ${data.resource.rootCid}`] : []),
       data.urls?.browser,
     ].join('\n')
