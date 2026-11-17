@@ -1,5 +1,5 @@
 import { isAddress } from 'viem'
-import { z } from 'zod'
+import * as z from 'zod'
 import { ID_RE } from '@/lib/search'
 
 /** Lowercase 0x address search param. */

@@ -1,7 +1,7 @@
 import { useQueries } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { SearchXIcon } from 'lucide-react'
-import { z } from 'zod'
+import * as z from 'zod'
 import { EmptyState } from '@/components/empty-state'
 import { HeroSearch } from '@/components/hero-search'
 import { PageHeader } from '@/components/page-header'

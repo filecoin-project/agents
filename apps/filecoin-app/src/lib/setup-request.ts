@@ -6,7 +6,7 @@ import {
   TerminateServicePermission,
 } from '@filoz/synapse-core/session-key'
 import { type Address, isAddress } from 'viem'
-import { z } from 'zod'
+import * as z from 'zod'
 import { NETWORKS, type Network } from './networks.ts'
 
 /**

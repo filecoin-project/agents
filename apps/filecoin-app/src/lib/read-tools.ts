@@ -1,6 +1,6 @@
 import { tryFrom as tryPieceCid } from '@filoz/synapse-core/piece'
 import { formatUnits, isAddress } from 'viem'
-import { z } from 'zod'
+import * as z from 'zod'
 import type { DataSet, PieceWithDataSet, SessionKey } from './api/client.ts'
 import { formatEpochs } from './format.ts'
 import { NETWORKS, type Network } from './networks.ts'

@@ -1,6 +1,6 @@
 import { useDataSets } from '@filoz/synapse-react'
 import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
+import * as z from 'zod'
 import { CreateDataSetDialog } from '@/components/create-data-set-dialog'
 import { useDashboard } from '@/components/dashboard-context'
 import { EmptyState } from '@/components/empty-state'

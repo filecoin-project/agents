@@ -1,7 +1,7 @@
 import { getAccountSummary } from '@filoz/synapse-core/pay'
 import { getUploadCosts } from '@filoz/synapse-core/warm-storage'
 import { useConfig, useConnection } from 'wagmi'
-import type { z } from 'zod'
+import type * as z from 'zod'
 import { env } from '@/config/env'
 import { useExplorerNetwork } from '@/hooks/use-explorer-network'
 import { useWebMcpTool } from '@/hooks/use-webmcp-tool'
