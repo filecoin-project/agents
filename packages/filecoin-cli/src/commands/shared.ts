@@ -69,6 +69,34 @@ export const resource = z.object({
   createdAt: z.string(),
 })
 
+/**
+ * One piece the wallet pays for, from filecoin-api. `name` and `rootCid` come
+ * from the piece metadata that `put` writes; `resourceRef` from local state.
+ */
+export const storedPiece = z.object({
+  dataSetId: z.string(),
+  pieceId: z.string(),
+  providerId: z.string().optional(),
+  pieceCid: z.string().optional(),
+  rootCid: z
+    .string()
+    .optional()
+    .describe('IPFS root CID, from the ipfsRootCID piece metadata'),
+  name: z.string().optional().describe('From the name piece metadata'),
+  rawSize: z.string().optional().describe('Bytes before padding'),
+  metadata: z.record(z.string(), z.unknown()),
+  removed: z.boolean(),
+  addedAtBlock: z.string().optional(),
+  url: z
+    .string()
+    .optional()
+    .describe('filecoin-api link a browser renders; absent without a CID'),
+  resourceRef: z
+    .string()
+    .optional()
+    .describe('Managed resource stored as this piece, from local state'),
+})
+
 /** filecoin-api retrieval URLs, which redirect to a provider or a gateway. */
 export const urls = z.object({
   piece: z.string().describe('Exact stored bytes'),

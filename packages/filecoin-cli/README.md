@@ -60,6 +60,7 @@ filecoin put ./site --dry-run      # size, provider, cost, and authorization; st
 filecoin get res_… --output ./copy # extracts a CAR from /ipfs, checking each block
 filecoin ls                        # add --all to include removed pieces
 filecoin inspect res_… --check     # sends a HEAD request to the piece URL
+filecoin inspect 39723/0           # a piece from ls, or a PieceCID or root CID
 filecoin delete res_… --yes        # schedules removal
 ```
 
@@ -101,7 +102,7 @@ filecoin datasets ls --provider 9    # only data sets with storage provider 9
 filecoin datasets inspect 39723      # the data set, its provider, and a page of its pieces
 ```
 
-`filecoin ls` and `filecoin datasets` read filecoin-api, so they show every piece and data set the wallet pays for, whichever machine or tool stored it. `ls` lists the pieces across all data sets, with the `name` and `rootCid` that `put` saves in the piece metadata, and `--provider <id>` keeps one provider's. `ls` and `datasets inspect` give each piece the `resourceRef` of the managed resource stored as that piece, when this machine has one. A resource stored as two copies is two pieces. Without a ref, download a piece with `filecoin get <rootCid>` or `filecoin get <pieceCid>`. Add `--removed` to `datasets inspect` to include removed pieces.
+`filecoin ls` and `filecoin datasets` read filecoin-api, so they show every piece and data set the wallet pays for, whichever machine or tool stored it. `ls` lists the pieces across all data sets, with the `name` and `rootCid` that `put` saves in the piece metadata, and `--provider <id>` keeps one provider's. `ls` and `datasets inspect` give each piece the `resourceRef` of the managed resource stored as that piece, when this machine has one. A resource stored as two copies is two pieces. Without a ref, download a piece with `filecoin get <rootCid>` or `filecoin get <pieceCid>`, and inspect it with `filecoin inspect <dataSetId>/<pieceId>`, its PieceCID, or its root CID. `inspect` shows the managed resource when this machine has one, and the wallet's pieces filecoin-api has for the target, removed ones included. A new put has no pieces for a few minutes, until the indexer adds them. Add `--removed` to `datasets inspect` to include removed pieces.
 
 filecoin-api learns about new data sets and pieces from its indexer, so one added in the last few minutes can be missing. When filecoin-api limits the request rate, the result is a retryable `rate_limited` error. When it fails or can't be reached, the result is a retryable `service_unavailable`.
 
