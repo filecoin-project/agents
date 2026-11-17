@@ -27,10 +27,10 @@ import {
 import { createSynapseBackend } from '../storage/synapse.ts'
 import { accountScope, appFor, findResource, jobContext } from './context.ts'
 import {
+  allPiecesByCid,
   ambiguousRoot,
   parseTarget,
   pieceById,
-  piecesByCid,
   type Target,
 } from './targets.ts'
 
@@ -122,13 +122,15 @@ async function indexedCopies(
  * The copies a PieceCID, root CID, or `<dataSetId>/<pieceId>` names: the
  * payer's pieces filecoin-api has for it that it doesn't show as removed,
  * and the copies of managed resources in local state that match it. Local
- * state covers a put newer than filecoin-api's index.
+ * state covers a put newer than filecoin-api's index. With `provider`, only
+ * that provider's copies are kept, before any other provider is looked up.
  */
 async function targetCopies(
   app: App,
   scope: AccountScope,
   input: string,
-  target: Exclude<Target, { kind: 'ref' }>
+  target: Exclude<Target, { kind: 'ref' }>,
+  provider: string | undefined
 ): Promise<RemovalCandidate[]> {
   const db = app.db()
   let found: PieceWithDataSet[]
@@ -143,10 +145,10 @@ async function targetCopies(
     local = ref ? [getResource(db, ref, scope) ?? []].flat() : []
     matches = (copy) => keyOf(copy) === keyOf(target)
   } else if (target.kind === 'pieceCid') {
-    found = await piecesByCid(app, scope, { cid: target.pieceCid })
+    found = await allPiecesByCid(app, scope, { cid: target.pieceCid })
     local = findResourcesByCid(db, scope, target.pieceCid)
   } else {
-    found = await piecesByCid(app, scope, { ipfs_cid: target.rootCid })
+    found = await allPiecesByCid(app, scope, { ipfs_cid: target.rootCid })
     local = findResourcesByCid(db, scope, target.rootCid)
     const pieceCids = new Set([
       ...found.flatMap((piece) => piece.cid ?? []),
@@ -170,10 +172,18 @@ async function targetCopies(
   const stored = found.filter(
     (piece) => !piece.removed && !copies.has(keyOf(piece))
   )
-  for (const copy of await indexedCopies(app, stored)) {
-    copies.set(keyOf(copy), copy)
+  const onProvider = (copy: { providerId?: string | null }) =>
+    !provider || copy.providerId === provider
+  const kept = [...copies.values()].filter(onProvider)
+  const keptStored = stored.filter(onProvider)
+  if (
+    kept.length + keptStored.length === 0 &&
+    copies.size + stored.length > 0
+  ) {
+    throw notOnProvider(input, provider as string)
   }
-  if (copies.size > 0) return [...copies.values()]
+  kept.push(...(await indexedCopies(app, keptStored)))
+  if (kept.length > 0) return kept
   if (found.length > 0) {
     throw invalidInput(`Every copy of ${input} is already removed.`, 'target')
   }
@@ -185,6 +195,15 @@ async function targetCopies(
       description: "List the wallet's stored pieces",
     }
   )
+}
+
+/** A `not_found` for a target with no copy on `provider`. */
+function notOnProvider(input: string, provider: string) {
+  return notFound(`No copy of ${input} is on provider ${provider}.`, {
+    by: 'agent',
+    command: `filecoin delete ${input} --dry-run`,
+    description: 'List the copies and their providers',
+  })
 }
 
 /**
@@ -210,17 +229,11 @@ async function copiesOf(
       source: APPLICATION_SOURCE,
     }))
   } else {
-    copies = await targetCopies(app, accountScope(app), input, target)
+    return await targetCopies(app, accountScope(app), input, target, provider)
   }
   if (!provider) return copies
   const kept = copies.filter((copy) => copy.providerId === provider)
-  if (kept.length === 0) {
-    throw notFound(`No copy of ${input} is on provider ${provider}.`, {
-      by: 'agent',
-      command: `filecoin delete ${input} --dry-run`,
-      description: 'List the copies and their providers',
-    })
-  }
+  if (kept.length === 0) throw notOnProvider(input, provider)
   return kept
 }
 

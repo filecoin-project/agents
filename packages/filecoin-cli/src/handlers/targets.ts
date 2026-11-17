@@ -65,6 +65,38 @@ export async function piecesByCid(
 }
 
 /**
+ * Every page of {@link piecesByCid}, following filecoin-api's cursor. A
+ * delete uses it so that no copy past the first page stays stored.
+ */
+export async function allPiecesByCid(
+  app: App,
+  scope: AccountScope,
+  filter: { cid: string } | { ipfs_cid: string }
+): Promise<PieceWithDataSet[]> {
+  const api = apiClientFor(app)
+  const pieces: PieceWithDataSet[] = []
+  let cursor: string | undefined
+  do {
+    const page = unwrap(
+      await api.GET('/{network}/pieces', {
+        params: {
+          path: { network: app.network },
+          query: {
+            owner: scope.payer,
+            limit: PIECE_LIMIT,
+            ...filter,
+            ...(cursor ? { cursor } : {}),
+          },
+        },
+      })
+    )
+    pieces.push(...page.data)
+    cursor = page.nextCursor ?? undefined
+  } while (cursor)
+  return pieces
+}
+
+/**
  * One piece by data set and piece ID, with its data set's owner and provider.
  * The single-piece route has neither, so the data set is read in parallel.
  * Returns `undefined` when filecoin-api has no such piece, or another wallet
