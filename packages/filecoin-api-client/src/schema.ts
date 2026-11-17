@@ -134,8 +134,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Find pieces by owner, PieceCID or provider
-         * @description Requires at least one of owner, cid or provider_id.
+         * Find pieces by owner, PieceCID, IPFS root CID or provider
+         * @description Requires at least one of owner, cid, ipfs_cid or provider_id.
          */
         get: operations["listPieces"];
         put?: never;
@@ -1170,6 +1170,8 @@ export interface operations {
                 owner?: string;
                 /** @description PieceCID v2 */
                 cid?: string;
+                /** @description IPFS root CID in the ipfsRootCID piece metadata, any CID version or base */
+                ipfs_cid?: string;
                 /** @description Storage provider id */
                 provider_id?: string;
                 /** @description Removed pieces */
