@@ -454,3 +454,57 @@ test('delete confirms by target kind before reading anything', async () => {
   assert.match(any, /data sets other tools created/)
   assert.match(any, /--dry-run/)
 })
+
+test('delete <pieceCid> reads every page of pieces', async () => {
+  const pieceCid = pieceCidOf('paged')
+  const seen = mockApi([])
+  server.use(
+    http.get(`${API}/calibration/pieces`, ({ request }) => {
+      const url = new URL(request.url)
+      seen.push(`${url.pathname}${url.search}`)
+      const first = url.searchParams.get('cursor') !== 'page-2'
+      return HttpResponse.json({
+        data: [apiPiece(first ? '260' : '261', '0', { cid: pieceCid })],
+        nextCursor: first ? 'page-2' : null,
+      })
+    })
+  )
+  mockChain()
+
+  const json = await run(['delete', pieceCid, '--dry-run'])
+  assert.deepEqual(
+    seen.filter((path) => path.includes('/pieces')),
+    [
+      `/calibration/pieces?owner=${ROOT}&limit=200&cid=${pieceCid}`,
+      `/calibration/pieces?owner=${ROOT}&limit=200&cid=${pieceCid}&cursor=page-2`,
+    ]
+  )
+  assert.deepEqual(
+    (json.data as { removals: { dataSetId: string }[] }).removals.map(
+      (removal) => removal.dataSetId
+    ),
+    ['260', '261']
+  )
+})
+
+test('delete --provider looks up only that provider', async () => {
+  const pieceCid = pieceCidOf('two-providers')
+  // No handler answers /providers/13, so a lookup of it fails the test.
+  const seen = mockApi([
+    apiPiece('270', '0', { cid: pieceCid }),
+    apiPiece('271', '0', { cid: pieceCid, providerId: '13' }),
+  ])
+  mockChain()
+
+  const json = await run(['delete', pieceCid, '--provider', '9', '--dry-run'])
+  assert.deepEqual(
+    (json.data as { removals: { dataSetId: string }[] }).removals.map(
+      (removal) => removal.dataSetId
+    ),
+    ['270']
+  )
+  assert.ok(!seen.some((path) => path.includes('/providers/13')))
+
+  const none = await run(['delete', pieceCid, '--provider', '5', '--dry-run'])
+  assert.equal(code(none), 'not_found')
+})
