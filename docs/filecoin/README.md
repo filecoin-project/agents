@@ -8,7 +8,7 @@ The table lists the four parts, the agent skill, and the agent plugin.
 
 | Part | What it does | Code | Where it runs |
 | --- | --- | --- | --- |
-| CLI | `filecoin` stores a file or folder as one copy on one Curio provider and returns retrieval URLs. It resumes an interrupted put or delete without paying twice. | [`packages/filecoin-cli`](../../packages/filecoin-cli/README.md) | Locally or in a cloud sandbox, from npm as `filecoin`, or after a build from source |
+| CLI | `filecoin` stores a file or folder as two copies on two Curio providers and returns retrieval URLs. It resumes an interrupted put or delete without paying twice. | [`packages/filecoin-cli`](../../packages/filecoin-cli/README.md) | Locally or in a cloud sandbox, from npm as `filecoin`, or after a build from source |
 | Agent skill | Teaches an agent to use `filecoin` | [`plugins/filecoin/skills/filecoin/SKILL.md`](../../plugins/filecoin/skills/filecoin/SKILL.md) | In the agent, after installing the plugin, or after `npx skills add https://poc.filecoin.cloud`, `npx skills add filecoin-project/agents`, or `filecoin skills install`. The site serves it at https://poc.filecoin.cloud/.well-known/agent-skills/index.json |
 | REST API | Serves read-only data on providers, data sets, pieces, Filecoin Pay rails, and session keys. `/get/{cid}` redirects to where a CID can be retrieved. | [`apps/filecoin-api`](../../apps/filecoin-api/README.md) | https://api.filecoin.io, with a reference at [`/docs`](https://api.filecoin.io/docs) |
 | MCP server | Offers one read-only tool for each REST API data route, and `search_docs`, which searches docs.filecoin.io through GitBook's MCP server, over stateless Streamable HTTP for protocol versions `2025-03-26` to `2026-07-28` | [`apps/filecoin-api/src/mcp`](../../apps/filecoin-api/src/mcp/server.ts) | `POST https://mcp.filecoin.io`, also at `https://api.filecoin.io/mcp` |
@@ -128,7 +128,7 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 
 ### Project
 
-- **One copy, for simplicity.** synapse-sdk stores two copies by default. The CLI and the app's upload store one copy on one provider to keep the prototype simple.
+- **Two copies in the CLI, kept apart.** synapse-sdk stores two copies by default, and so does `put`: the second provider pulls the piece from the first. Client-side copies may go away once providers replicate on their own, so `storage/secondary-copy.ts` holds that code, and removing it returns `put` to one copy ([second copy](architecture.md#second-copy)). A put whose second copy fails still completes, with one copy. The app's upload stores one copy.
 - **Hosts.** The REST API and the app deploy to FilOz's Cloudflare account. [Deployments and domains](deployments.md) lists their hostnames and how each one reaches its Worker. The `filecoin.cloud` hostnames stay because `filecoin` 0.5.0 and the plugin 0.2.0 call `api.filecoin.cloud`. `filecoin` 0.5.1 and later, and the plugin 0.3.0 and later, use `api.filecoin.io` and `mcp.filecoin.io`. The earlier deployments at `fil-api.hugomrdias.dev` and `fil-app.hugomrdias.dev`, in a personal Cloudflare account, still run but no longer get deploys, so CLIs and plugins released before the move keep working.
 - **npm is the only channel.** release-please versions the CLI, the API client, the apps, and the plugin, and the Release workflow publishes `filecoin` and `@filecoin-project/api-client` to npm ([release](../../.github/CONTRIBUTING.md#release)). `clipact` and `@hugomrdias/vite-plugin-agent-skills` moved to [hugomrdias/agents](https://github.com/hugomrdias/agents), which releases them, and `filecoin` installs them from npm. The apps stay private.
 - **The skill does not bundle the CLI.** It runs `filecoin` from the PATH, or `npx -y filecoin`. The bundle is 1.3 MB of JavaScript in 42 files. It would turn the skill into an archive whose digest changes on every CLI build, be copied into every skills directory, and be harder to review than text. It would still need Node.js 24 and network access to the RPC and providers, so it would run nowhere that `npx` can't.
@@ -142,7 +142,6 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 
 ## Open questions
 
-- With two copies, how does a put report a partial result when only one copy succeeds?
 - For browser links, should we rely on inbrowser.link, run our own gateway with an origin per publication, or wait for Beam to serve IPFS content?
 - Should the remote MCP server get upload and delete tools? If so, what authentication and upload transport does it use? Or should a local MCP server wrap the CLI instead?
 - What do we need before we recommend mainnet to agents? Candidates are spending limits and keychain storage.
@@ -158,7 +157,8 @@ Each fact has one owner, and the others link to it. The skill owns the agent's w
 - **MCP catalogs.** Publish the MCP server to the [MCP registry](https://registry.modelcontextprotocol.io) as `io.filecoin/mcp`, the server card's name, from the release workflow ([#75](https://github.com/filecoin-project/agents/issues/75)). After filecoin-app deploys its API catalog `item` and `/.well-known/integrations.json`, map poc.filecoin.cloud on [integrations.sh](https://integrations.sh), which feeds `npx add-mcp find` ([#10](https://github.com/filecoin-project/agents/issues/10)).
 - **`get` from `/piece`.** `put` writes CARs root first in DFS order with each block once, which `downloadDag` reads. Let `get <ref>` fall back to `/piece/<pieceCid>` for these CARs, so it works before Curio indexes a new CAR. `downloadDag` must then accept the content type that `/piece` returns.
 - **Browser verification.** Add a WebMCP tool that checks a file against its PieceCID in the page, and let the upload page store folders.
-- **Two copies.** Store two copies by default in the CLI and the app's upload, as synapse-sdk does.
+- **Two copies in the app.** Store two copies in the app's upload, as the CLI and synapse-sdk do.
+- **One copy again.** When providers replicate on their own, remove the CLI's second copy ([second copy](architecture.md#second-copy)).
 - **CLI reads.** Move most CLI reads to filecoin-api through `@filecoin-project/api-client`. Keep synapse-core chain reads as the fallback. `filecoin datasets ls` and `filecoin datasets inspect` are the first commands to read filecoin-api. `status` is next.
 - **CLI keys.** Store the session key in the OS keychain.
 - **CLI cancellation.** Pass the abort signal to viem once its actions and `fallback` transport accept one. Then stop using synapse-core's `withSignal()` and `abortable()` ([#12](https://github.com/filecoin-project/agents/issues/12)).

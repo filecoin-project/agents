@@ -7,7 +7,7 @@ This document describes how the `filecoin` prototype in [`packages/filecoin-cli`
 `filecoin` stores one file or folder on Filecoin and returns filecoin-api retrieval URLs. They redirect to the provider or to a browser gateway.
 
 - **One command for files and folders.** `filecoin put <path>` packs a file or a folder into a UnixFS CAR in an IPFS-indexed data set. `--raw` stores a file as its exact bytes instead.
-- **One copy.** Each upload has one copy on one provider.
+- **Two copies.** Each upload has two copies on two providers, as in synapse-sdk. The second provider pulls the piece from the first, so the machine uploads it once. [Second copy](#second-copy) describes the flow and how to remove it.
 - **synapse-core for the chain and providers.** The CLI calls [synapse-core](https://github.com/FilOzone/synapse-sdk/tree/master/packages/synapse-core) directly and does not use synapse-sdk. Only `datasets` reads filecoin-api instead, through `@filecoin-project/api-client`.
 - **Delegated signing.** A session key signs uploads and removals. The wallet owner approves the key in the [Filecoin Pay console](https://pay.filecoin.cloud/console), and the owner's wallet pays for storage.
 - **Recoverable operations.** `filecoin` saves each `put` and `delete` as an operation in SQLite before it changes anything outside the machine. `filecoin operations resume` never commits an interrupted operation twice.
@@ -67,6 +67,7 @@ packages/filecoin-cli/
     ├── storage/
     │   ├── types.ts      StorageBackend interface, which tests replace with a fake
     │   ├── synapse.ts    StorageBackend built on synapse-core
+    │   ├── secondary-copy.ts  the second copy of a put: pull, commit, resume, removal steps
     │   ├── jobs.ts       put and delete jobs, signed commits, resume, dry-run estimate
     │   ├── dfs-car.ts    file or folder → DFS-ordered UnixFS CAR stream, in two passes
     │   ├── pack.ts       file walk, importer candidates, block hash check
@@ -204,7 +205,8 @@ stateDiagram-v2
   queued --> storing: raw file, pieceCid saved
   storing --> storing: placement, then pieceCid and stored
   storing --> committing: sign commit, save it, send it
-  committing --> done: confirmed, resource saved
+  committing --> copying: first copy confirmed
+  copying --> done: second copy confirmed or given up, resource saved
 ```
 
 The phase is separate from the operation's execution status, which is `pending`, `running`, `failed`, or `completed`. A failure sets the status to `failed` and keeps the phase, so `filecoin operations resume` continues from that phase.
@@ -217,18 +219,35 @@ The phase is separate from the operation's execution status, which is `pending`,
    - `--provider` calls `resolveProviderLocations({ providerIds: [id] })`, which reads only that provider from the registry and prefers its data set with matching metadata. At the same time, the CLI reads `isProviderApproved` from the FWSS view contract, because `resolveProviderLocations` does not check approval. The provider must be approved for Warm Storage, but it need not be endorsed. If it is not approved or has no active PDP product, the result is `not_found`. The CLI does not ping it.
    - Without `--provider`, the CLI calls `selectReachableProviders({ requireEndorsedPrimary: true })`. It ranks the endorsed providers, preferring one with an existing data set with matching metadata, pings them all at once, and takes the highest-ranked one that answers. If none answers, the result is `service_unavailable`.
    - Both return the matching data set's `clientDataSetId`, so the CLI does not read the data set.
-   - `getUploadCosts` then checks the funding, with the matched `dataSetId` or as a new data set. It also returns the account's available funds and debt, which set the funding link's target `balance`. If the account is short, the result is `insufficient_funds` with the console funding link as a `by: "user"` step.
+   - The CLI then picks the [second copy](#second-copy)'s provider and saves it under `secondary`.
+   - The CLI then checks the funding for both copies together. synapse-core's `getUploadCosts` prices one data set, so `synapse.ts` passes both data sets to `calculateUploadCosts` with the account's funds read once, as synapse-sdk's `calculateMultiContextCosts` does. Pricing each copy alone would count the same funds twice. It also returns the account's available funds and debt, which set the funding link's target `balance`. If the account is short, the result is `insufficient_funds` with the console funding link as a `by: "user"` step.
 4. **Upload.**
    - For a raw file, call `SP.hasPiece` first. It returns `false` only when the provider answers 404. Any other failure stops the put, which a resume retries. If the provider does not have the piece yet, pass a file stream to `SP.uploadPieceStreaming` with `waitForParked: true`. It streams the file without holding the piece in memory, then polls `findPiece` until the provider has parked the piece. Save `stored`, and report the early links as `link` progress.
    - For a CAR, write the CAR in the second pass, in first-seen DFS order with each block once, and pass the stream to `SP.uploadPieceStreaming` without a `pieceCid`. synapse-core hashes the body with `Piece.transformStream` as it sends it, then finalizes the upload with the PieceCID it computed. Save `pieceCid` and `stored` together. The PieceCID is unknown before the upload, so `put` cannot ask `SP.hasPiece` first, and a CAR the provider already holds is uploaded again.
 5. **Sign.** Call `SP.prepareAddPieces`, or `SP.prepareCreateDataSetAndAddPieces` for a new data set, with `payee = provider.payee` and `payer = rootAddress`. synapse-core chooses a random add-pieces `nonce`, and a `clientDataSetId` for a new data set. It returns the signed commit as JSON-safe data: the IDs, the pieces, and the signed `extraData`. Save the commit before sending it.
 6. **Send.** Pass the saved commit to `SP.submitCommit`. Curio submits the transaction and pays gas. Save `transactionHash`. For a folder, report the early links as `link` progress. Then report the transaction hash as `committing` progress while waiting for confirmation, so the user can look it up. clipact repeats that line with the elapsed time. A delete reports its removal transaction hash the same way.
-7. **Confirm.** Call `SP.waitForCreateDataSetAddPieces` or `SP.waitForAddPieces` with the transaction hash and the commit's `extraData` and piece count. Both wait for the receipt on chain and read `dataSetId` and the piece IDs from its FWSS events. If the receipt wait times out, they read the same IDs from `clientNonces` instead. In one SQLite transaction, save the resource and mark the operation completed. Then try to delete the operation's staging directory, which only `filecoin` 0.7.0 and earlier wrote. A failure to delete it does not fail the put.
+7. **Confirm.** Call `SP.waitForCreateDataSetAddPieces` or `SP.waitForAddPieces` with the transaction hash and the commit's `extraData` and piece count. Both wait for the receipt on chain and read `dataSetId` and the piece IDs from its FWSS events. If the receipt wait times out, they read the same IDs from `clientNonces` instead.
+8. **Copy.** Store the [second copy](#second-copy). In one SQLite transaction, save the resource with every confirmed copy and mark the operation completed. Then try to delete the operation's staging directory, which only `filecoin` 0.7.0 and earlier wrote. A failure to delete it does not fail the put.
 
 `filecoin` sets two synapse-core arguments explicitly:
 
 - **`payer`** must be the root address. Without it, the signed payload uses the session key's address as the payer.
 - **`payee`** must be `provider.payee`, because FWSS checks the signature against the payee in the registry. synapse-sdk passes `serviceProvider`, which works only when the two addresses are the same.
+
+### Second copy
+
+synapse-sdk 3.0 stores two copies by default, and `put` follows its flow. `storage/secondary-copy.ts` holds everything specific to the second copy, because client-side copies may go away once providers replicate on their own:
+
+1. **Place.** During step 3, call `selectReachableProviders({ count: 1, excludeProviderIds })` without `requireEndorsedPrimary`, so any approved provider that answers can hold the copy. It prefers an existing data set with matching metadata. `--provider` names only the first copy's provider.
+2. **Sign.** After the first copy confirms, sign a commit for the second provider's data set with the same `signCommit` as the first copy, and save it.
+3. **Pull.** Call `SP.waitForPullPieces` with the commit's signed `extraData` and the first copy's `/piece/<pieceCid>` URL as the source. Curio's `/pdp/piece/pull` fetches the piece, checks the signature, and parks the piece. Nothing goes on chain. Save `pulled`.
+4. **Send and confirm.** Send the commit with `SP.submitCommit`, save `transactionHash`, and wait for it as in steps 6 and 7.
+
+A failure before step 4 sends anything moves the copy to another provider, up to three providers in all. The checkpoint records each failed provider in `secondary.failures`, and the next try excludes it. When no provider is left, the put completes with one copy. synapse-sdk also treats a failed secondary as partial success. It tries up to five providers, but each try here can wait for a whole pull. A `commit_rejected` used no nonce, so it also counts as a failed try. Any other failure after the commit is sent fails the operation. A resume then asks FWSS whether the commit landed, the same way as for the first copy, so a copy the payer pays for is never dropped from `copies`.
+
+The result reports a partial put. `requestedCopies` is the number of copies the put asked for, 2. When `resource.copies` has fewer, `copyFailures` lists each provider that failed and its error. `copyFailures` also lists a provider that failed before another one took the copy. `operations resume` reports both fields for a completed put. Puts saved by `filecoin` 0.7.0 and earlier report `requestedCopies: 1`.
+
+To return to one copy, delete `secondary-copy.ts` and the code marked `secondary-copy` in `jobs.ts`, `synapse.ts`, `types.ts`, `operations.ts`, and `handlers/put.ts`. The multi-copy quote, `requestedCopies`, `copyFailures`, and the delete of every copy work for one copy too, so they can stay.
 
 ### CAR packing
 
@@ -280,6 +299,7 @@ A failure marks the operation `failed` and becomes an error with a `filecoin ope
 - **The piece is already uploaded.** When `stored` is set, the resume skips the upload and goes to the commit. It does not read the source, so a CAR put whose upload finished resumes even after the source is gone. A raw file resume also skips the upload when the provider already has the piece.
 - **The upload of a CAR did not finish.** The resume builds the DAG again and checks that the root CID equals the saved `rootCid`. A mismatch fails with `source_changed`. The resume then writes and uploads the CAR again. The DFS bytes are deterministic, so the PieceCID matches the earlier attempt's. A `pieceCid` saved without `stored` comes from a staged CAR of `filecoin` 0.7.0 or earlier, whose bytes differ, so the resume replaces it with the PieceCID of the new upload.
 - **The source changed.** A raw file resume recomputes the PieceCID from the file. A mismatch fails with `source_changed`, so `filecoin` never stores different bytes. A CAR put checks its source twice: the root CID on resume, and each raw leaf against its CID as the second pass reads it. Bytes appended to a file after the first pass are not in the CAR, which still matches the saved root CID.
+- **The second copy was interrupted.** The resume runs the first copy's steps, which find its commit on chain and send nothing, then continues the second copy from `secondary`. A saved second commit is checked with `findCommit` first, as for the first copy. A saved `pulled` skips the pull.
 - **`staging_missing`.** `put` no longer returns it, because it stages no CAR. The code stays in the error registry for agents that branch on it.
 
 The lock is a compare-and-swap `UPDATE` on `(execution_status, pid)`. If an operation is `running` but its process is gone, because `process.kill(pid, 0)` fails, another process can take it over. If a live process holds the lock, the result is `operation_running`. The process also tracks its own locks in memory, so `filecoin` refuses a second call for the same operation in the same process. `filecoin` also takes over a `running` row whose PID the system has since reused ([#3](https://github.com/filecoin-project/agents/issues/3)).
@@ -288,11 +308,11 @@ The lock is a compare-and-swap `UPDATE` on `(execution_status, pid)`. If an oper
 
 ### Dry run
 
-`put --dry-run` stores nothing and signs nothing. It lists the input files and runs the first pass of [CAR packing](#car-packing) to measure the CAR and compute its `rootCid`. It writes nothing to disk and reads no file twice. When a session key is available, it also selects the provider and prices the upload with `getUploadCosts`. The result reports these fields:
+`put --dry-run` stores nothing and signs nothing. It lists the input files and runs the first pass of [CAR packing](#car-packing) to measure the CAR and compute its `rootCid`. It writes nothing to disk and reads no file twice. When a session key is available, it also selects both providers and prices both copies together. The result reports these fields:
 
 - `authorization`: `ready`, `login_required`, `login_pending`, or `scopes_missing`.
-- The provider and any existing data set.
-- The monthly rate, the lockup, and any deposit needed.
+- The provider and any existing data set, and the same for the second copy in `secondaryProvider`. `secondaryProvider` is absent when no other provider answers.
+- The monthly rate, the lockup, and any deposit needed, for both copies.
 - A timestamp.
 
 ### Cancellation
@@ -336,14 +356,15 @@ The previous path computed the PieceCID, at about 6 seconds per GiB. The streami
 
 ## The delete flow
 
-`delete <ref>` needs confirmation. clipact asks a human at a terminal. Everyone else, including agents, gets `confirmation_required` until they pass `--yes`. `delete` then creates an operation with the stored copy as its target and runs these steps:
+`delete <ref>` needs confirmation. clipact asks a human at a terminal. Everyone else, including agents, gets `confirmation_required` until they pass `--yes`. `delete` then creates an operation that saves every stored copy in `removals` and runs these steps for each copy in turn:
 
 1. Read `clientDataSetId` from the data set and call `SP.schedulePieceDeletions`.
 2. Save the transaction hash.
-3. Call `SP.waitForDeletePieces`, which waits for the receipt and checks that its `PiecesScheduledForRemoval` event names the piece. It skips Filecoin's null rounds while it waits.
-4. In one transaction, mark the resource `removal_pending` and complete the operation.
+3. Call `SP.waitForDeletePieces`, which waits for the receipt and checks that its `PiecesScheduledForRemoval` event names the piece. It skips Filecoin's null rounds while it waits. Save `scheduled`.
 
-If the transaction reverts or schedules no removal of the piece, synapse-core throws `TransactionNotAppliedError`. The resource stays `active` and the delete fails with `removal_reverted`. `filecoin` clears the saved hash, so a resume signs a new removal ([#2](https://github.com/filecoin-project/agents/issues/2)).
+When every copy is scheduled, mark the resource `removal_pending` and complete the operation in one transaction.
+
+If a transaction reverts or schedules no removal of the piece, synapse-core throws `TransactionNotAppliedError`. The resource stays `active` and the delete fails with `removal_reverted`. `filecoin` clears that copy's saved hash, so a resume signs a new removal for it and skips the copies already scheduled ([#2](https://github.com/filecoin-project/agents/issues/2)). A delete saved by `filecoin` 0.7.0 and earlier names its one copy in flat checkpoint fields, and a resume reads them.
 
 The provider removes the piece later, at a proving boundary. `ls` hides resources that are pending removal unless you pass `--all`.
 
