@@ -2,13 +2,18 @@ name: CI
 
 on:
   pull_request:
+  # Pull requests can restore caches saved on main, so each push to main
+  # saves a fresh Turborepo cache for them.
+  push:
+    branches: [main]
 
 permissions:
   contents: read
 
+# On main, let every run finish so that each commit saves its cache.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
@@ -26,11 +31,13 @@ jobs:
         with:
           require-lockfile: true
 
+      # actions/cache never overwrites an existing key, so each commit saves
+      # under its own key and later runs restore the newest one by prefix.
       - name: Cache Turborepo
         uses: actions/cache@v6
         with:
           path: .turbo
-          key: turbo-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'turbo.json') }}
+          key: turbo-${{ runner.os }}-${{ github.workflow }}-${{ github.sha }}
           restore-keys: |
             turbo-${{ runner.os }}-
 

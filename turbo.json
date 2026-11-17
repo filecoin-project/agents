@@ -7,6 +7,7 @@
     "env": ["NODE_ENV"],
     "passThroughEnv": ["CI"],
     "inputs": ["tsconfig.json", "biome.json"],
+    "cacheMaxAge": "7d",
     "ui": "tui"
   },
   "tasks": {
