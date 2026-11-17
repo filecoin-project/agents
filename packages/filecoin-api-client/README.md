@@ -21,13 +21,13 @@ const { data: providers, nextCursor } = unwrap(
 )
 ```
 
-| Export | Contents |
-| --- | --- |
-| `createApiClient(options)` | An openapi-fetch client. `baseUrl` defaults to `DEFAULT_API_URL`, `https://api.filecoin.io`. |
-| `unwrap(result)` | Returns a result's data, or throws an `ApiError` with filecoin-api's error `code` and `message` |
-| `ApiError` | `status`, `code`, and `ApiError.isNotFound(error)` |
-| `Provider`, `DataSet`, `Piece`, and other schema types | Shortcuts into `components['schemas']` |
-| `paths`, `components`, `operations` | The generated types, from `src/schema.ts` |
+| Export                                                 | Contents                                                                                        |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `createApiClient(options)`                             | An openapi-fetch client. `baseUrl` defaults to `DEFAULT_API_URL`, `https://api.filecoin.io`.    |
+| `unwrap(result)`                                       | Returns a result's data, or throws an `ApiError` with filecoin-api's error `code` and `message` |
+| `ApiError`                                             | `status`, `code`, and `ApiError.isNotFound(error)`                                              |
+| `Provider`, `DataSet`, `Piece`, and other schema types | Shortcuts into `components['schemas']`                                                          |
+| `paths`, `components`, `operations`                    | The generated types, from `src/schema.ts`                                                       |
 
 ## How the types stay current
 

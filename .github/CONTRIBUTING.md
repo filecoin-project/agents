@@ -41,14 +41,14 @@ Pull requests merge by rebase or squash, never by merge commit. Prefer **Rebase 
 
 release-please reads these messages to pick each release's version and write its changelog. The type decides both:
 
-| Type | Changelog section | Triggers a release |
-| --- | --- | --- |
-| `feat` | Features | Yes, a minor version below 1.0.0 |
-| `fix` | Bug Fixes | Yes, a patch version |
-| `perf` | Performance Improvements | Yes, a patch version |
-| `revert` | Reverts | Yes, a patch version |
-| `deps` | Dependencies | Yes, a patch version |
-| `docs`, `style`, `chore`, `refactor`, `test`, `build`, `ci` | Hidden | No |
+| Type                                                        | Changelog section        | Triggers a release               |
+| ----------------------------------------------------------- | ------------------------ | -------------------------------- |
+| `feat`                                                      | Features                 | Yes, a minor version below 1.0.0 |
+| `fix`                                                       | Bug Fixes                | Yes, a patch version             |
+| `perf`                                                      | Performance Improvements | Yes, a patch version             |
+| `revert`                                                    | Reverts                  | Yes, a patch version             |
+| `deps`                                                      | Dependencies             | Yes, a patch version             |
+| `docs`, `style`, `chore`, `refactor`, `test`, `build`, `ci` | Hidden                   | No                               |
 
 - **Breaking changes.** Add `!` after the type or scope, such as `feat(filecoin-cli)!: rename the put command`, and describe the change and the migration in a `BREAKING CHANGE:` footer. The footer text goes into the changelog. Below 1.0.0, a breaking change bumps the minor version. A breaking change triggers a release even with a hidden type.
 - **One component per commit.** Keep each commit to the files of one component, and scope it with that component: `filecoin-cli`, `filecoin-api-client`, `filecoin-api`, `filecoin-app`, or `filecoin-plugin`. [`release-please-config.json`](release-please-config.json) maps each directory to its component. Split a change that spans components into one commit for each. A commit that touches only root files takes no scope. The scope only labels the changelog entry. release-please decides which components a commit releases from the files it changes, not from its scope.
@@ -67,13 +67,13 @@ release-please reads these messages to pick each release's version and write its
 
 [release-please](https://github.com/googleapis/release-please) versions each component from the Conventional Commits on `main`. [`release-please-config.json`](release-please-config.json) lists the components, and [`release-please-manifest.json`](release-please-manifest.json) holds their current versions:
 
-| Component | Directory | Tag | Released to |
-| --- | --- | --- | --- |
-| `filecoin-cli` | `packages/filecoin-cli` | `filecoin-cli-v<version>` | npm as `filecoin`, and a GitHub release |
+| Component             | Directory                      | Tag                              | Released to                                                 |
+| --------------------- | ------------------------------ | -------------------------------- | ----------------------------------------------------------- |
+| `filecoin-cli`        | `packages/filecoin-cli`        | `filecoin-cli-v<version>`        | npm as `filecoin`, and a GitHub release                     |
 | `filecoin-api-client` | `packages/filecoin-api-client` | `filecoin-api-client-v<version>` | npm as `@filecoin-project/api-client`, and a GitHub release |
-| `filecoin-api` | `apps/filecoin-api` | `filecoin-api-v<version>` | A GitHub release |
-| `filecoin-app` | `apps/filecoin-app` | `filecoin-app-v<version>` | A GitHub release |
-| `filecoin-plugin` | `plugins/filecoin` | `filecoin-plugin-v<version>` | A GitHub release, and the marketplaces serve it from `main` |
+| `filecoin-api`        | `apps/filecoin-api`            | `filecoin-api-v<version>`        | A GitHub release                                            |
+| `filecoin-app`        | `apps/filecoin-app`            | `filecoin-app-v<version>`        | A GitHub release                                            |
+| `filecoin-plugin`     | `plugins/filecoin`             | `filecoin-plugin-v<version>`     | A GitHub release, and the marketplaces serve it from `main` |
 
 ### How a release happens
 

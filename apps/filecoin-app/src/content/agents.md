@@ -2,12 +2,12 @@
 
 Pick the way in that matches what your agent can do. In every case, a person owns the wallet and approves what the agent may do, and the agent never holds the wallet key.
 
-| Agent | What it can do | Way in |
-| --- | --- | --- |
-| Local agent, such as Claude Code, Codex, or Cursor | Run a shell, keep files, and open pages for you | [Plugin, or CLI and agent skill](#local-agents) |
-| Cloud agent, such as a coding agent in a hosted sandbox | Run a shell, but its files are gone when the session ends | [CLI with a key from secrets](#cloud-agents) |
-| Browser agent | Read and use web pages in the browser that holds your wallet | [filecoin-app's WebMCP tools](#browser-agents) |
-| Chat app with connectors, such as Claude or ChatGPT | Call remote tools | [MCP server](#mcp-server), read-only |
+| Agent                                                   | What it can do                                               | Way in                                          |
+| ------------------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------- |
+| Local agent, such as Claude Code, Codex, or Cursor      | Run a shell, keep files, and open pages for you              | [Plugin, or CLI and agent skill](#local-agents) |
+| Cloud agent, such as a coding agent in a hosted sandbox | Run a shell, but its files are gone when the session ends    | [CLI with a key from secrets](#cloud-agents)    |
+| Browser agent                                           | Read and use web pages in the browser that holds your wallet | [filecoin-app's WebMCP tools](#browser-agents)  |
+| Chat app with connectors, such as Claude or ChatGPT     | Call remote tools                                            | [MCP server](#mcp-server), read-only            |
 
 [Retrieve and verify](/docs/retrieve) compares what each way can store, retrieve, and check.
 
@@ -99,16 +99,16 @@ When the account needs funds or the Warm Storage approval, `filecoin status` and
 
 This site describes itself to agents:
 
-| Path | Contents |
-| --- | --- |
-| [`/llms.txt`](/llms.txt) | An index of these docs in Markdown, from [llmstxt.org](https://llmstxt.org) |
-| [`/llms-full.txt`](/llms-full.txt) | Every docs page in one Markdown file |
-| [`/.well-known/api-catalog`](/.well-known/api-catalog) | Links to filecoin-api's OpenAPI document, reference, and MCP server, as an [RFC 9727](https://www.rfc-editor.org/rfc/rfc9727) API catalog |
-| [`/.well-known/integrations.json`](/.well-known/integrations.json) | The REST API, the MCP server, and the CLI, with what each needs to authenticate, for [integrations.sh](https://integrations.sh) |
-| [`/.well-known/ai-catalog.json`](/.well-known/ai-catalog.json) | The MCP server card's location, as an [AI Catalog](https://ai-catalog.io) |
-| [`/.well-known/mcp/server-card.json`](/.well-known/mcp/server-card.json) | Redirects to the MCP server card, as does `/.well-known/mcp-server-card` |
-| [`/.well-known/agent-skills/index.json`](/.well-known/agent-skills/index.json) | The agent skills index, with the `filecoin` skill |
-| [`/sitemap.xml`](/sitemap.xml) | Every page, also linked from `/robots.txt` |
+| Path                                                                           | Contents                                                                                                                                  |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| [`/llms.txt`](/llms.txt)                                                       | An index of these docs in Markdown, from [llmstxt.org](https://llmstxt.org)                                                               |
+| [`/llms-full.txt`](/llms-full.txt)                                             | Every docs page in one Markdown file                                                                                                      |
+| [`/.well-known/api-catalog`](/.well-known/api-catalog)                         | Links to filecoin-api's OpenAPI document, reference, and MCP server, as an [RFC 9727](https://www.rfc-editor.org/rfc/rfc9727) API catalog |
+| [`/.well-known/integrations.json`](/.well-known/integrations.json)             | The REST API, the MCP server, and the CLI, with what each needs to authenticate, for [integrations.sh](https://integrations.sh)           |
+| [`/.well-known/ai-catalog.json`](/.well-known/ai-catalog.json)                 | The MCP server card's location, as an [AI Catalog](https://ai-catalog.io)                                                                 |
+| [`/.well-known/mcp/server-card.json`](/.well-known/mcp/server-card.json)       | Redirects to the MCP server card, as does `/.well-known/mcp-server-card`                                                                  |
+| [`/.well-known/agent-skills/index.json`](/.well-known/agent-skills/index.json) | The agent skills index, with the `filecoin` skill                                                                                         |
+| [`/sitemap.xml`](/sitemap.xml)                                                 | Every page, also linked from `/robots.txt`                                                                                                |
 
 Every docs page also has a Markdown version. Add `.md` to the path, such as [`/docs/cli.md`](/docs/cli.md), or send `Accept: text/markdown`:
 

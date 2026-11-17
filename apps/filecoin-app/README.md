@@ -9,6 +9,7 @@ A React app for Filecoin, built with [TanStack Start](https://tanstack.com/start
 - **Setup page** (`/dashboard/setup`): reviews a request from a [setup link](#setup-links) or an agent to authorize a session key, approve Warm Storage and fund Filecoin Pay, with each step's status read from the chain.
 
 Built with:
+
 - [TanStack Start](https://tanstack.com/start) on [Cloudflare Workers](https://developers.cloudflare.com/workers/framework-guides/web-apps/tanstack-start/)
 - [TanStack Router](https://tanstack.com/router), [Query](https://tanstack.com/query), [Table](https://tanstack.com/table) and [Form](https://tanstack.com/form)
 - [shadcn/ui](https://ui.shadcn.com) (preset `beEhf1ou`: Base UI, luma style, Inter, lucide) recoloured with the Filecoin brand ramp (`#0090FF` is `brand-700`), with the [command menu](https://ui.shadcn.com/docs/components/base/command) (`⌘K` or `/` from any page) and the [sidebar](https://ui.shadcn.com/blocks/sidebar) for the dashboard
@@ -17,18 +18,18 @@ Built with:
 
 ## Layout
 
-| Path | Contents |
-| --- | --- |
-| `src/routes` | File-based routes. `__root.tsx` is the HTML document, `$network/*` is the explorer, and `dashboard/*` is the wallet dashboard |
-| `src/router.tsx` | Router factory. Start creates a router and a query client for each request |
-| `src/start.ts` | Request middleware that adds the security and WebMCP origin-trial headers, and serves site pages as Markdown |
-| `src/content` | Markdown for the website's pages |
-| `src/lib/site` | Page list, Markdown rendering, content negotiation, and the agent discovery files |
-| `src/lib/api` | The filecoin-api client from [`@filecoin-project/api-client`](../../packages/filecoin-api-client/README.md), set to `env.filApiFetchUrl`, and query factories |
-| `src/hooks-synapse` | Hooks missing from `@filoz/synapse-react`, kept here until they move upstream. See [its README](src/hooks-synapse/README.md) |
-| `src/components/ui` | shadcn components |
-| `public/_headers` | Headers for static assets, which skip the Worker: immutable caching for `/assets/*`, and CORS and content types for the agent skills |
-| `test` | Node test runner tests for the pure `src/lib` modules |
+| Path                | Contents                                                                                                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/routes`        | File-based routes. `__root.tsx` is the HTML document, `$network/*` is the explorer, and `dashboard/*` is the wallet dashboard                                 |
+| `src/router.tsx`    | Router factory. Start creates a router and a query client for each request                                                                                    |
+| `src/start.ts`      | Request middleware that adds the security and WebMCP origin-trial headers, and serves site pages as Markdown                                                  |
+| `src/content`       | Markdown for the website's pages                                                                                                                              |
+| `src/lib/site`      | Page list, Markdown rendering, content negotiation, and the agent discovery files                                                                             |
+| `src/lib/api`       | The filecoin-api client from [`@filecoin-project/api-client`](../../packages/filecoin-api-client/README.md), set to `env.filApiFetchUrl`, and query factories |
+| `src/hooks-synapse` | Hooks missing from `@filoz/synapse-react`, kept here until they move upstream. See [its README](src/hooks-synapse/README.md)                                  |
+| `src/components/ui` | shadcn components                                                                                                                                             |
+| `public/_headers`   | Headers for static assets, which skip the Worker: immutable caching for `/assets/*`, and CORS and content types for the agent skills                          |
+| `test`              | Node test runner tests for the pure `src/lib` modules                                                                                                         |
 
 ## Development
 
@@ -41,6 +42,7 @@ The dev server runs the app in workerd through the [Cloudflare Vite plugin](http
 The app advertises `https://api.filecoin.io`, but its API client calls `https://api.filecoin.cloud` by default, because the explorer's server renders run on the `filecoin.cloud` zone ([Same-zone fetches](../../docs/filecoin/deployments.md#same-zone-fetches)). Set `VITE_FILECOIN_API_URL` to point both elsewhere, for example a local `wrangler dev` of filecoin-api (see `.env.example`). `VITE_FILECOIN_MCP_URL` sets the MCP server URL that the site advertises, and defaults to `https://mcp.filecoin.io`, or to the API URL plus `/mcp` when only `VITE_FILECOIN_API_URL` is set. `VITE_SITE_URL` sets the site origin used in canonical and Open Graph URLs, and defaults to `https://poc.filecoin.cloud`.
 
 Scripts:
+
 - `pnpm test`: `node --test` over `test/**/*.test.ts`
 - `pnpm typecheck` and `pnpm lint`
 
@@ -76,17 +78,17 @@ Site pages set a canonical URL and Open Graph tags, and the root route adds the 
 
 Server routes serve the files that agents use to discover the site:
 
-| Path | Contents |
-| --- | --- |
-| `/llms.txt`, `/llms-full.txt` | An [llms.txt](https://llmstxt.org) index of the site with a short summary and the way in for each kind of agent, and every page in one file. Its Optional section links the OpenAPI document, filecoin-api's MCP server card, the AI Catalog, the `filecoin` CLI and `@filecoin-project/api-client` on npm, and the agent skill |
-| `/.well-known/api-catalog` | An [RFC 9727](https://www.rfc-editor.org/rfc/rfc9727) linkset to filecoin-api's OpenAPI document, reference, and health check, with its MCP server as an `item`. `HEAD` returns the `api-catalog` link relation |
-| `/.well-known/integrations.json` | The [integrations.sh](https://integrations.sh/publishing/) owner declaration: filecoin-api's REST API and MCP server, which need no credentials, and the `filecoin` CLI with its session key |
-| `/.well-known/ai-catalog.json` | An [AI Catalog](https://ai-catalog.io) that lists filecoin-api's MCP server card at `<MCP URL>/server-card`, as `urn:air:filecoin.io:mcp:mcp`. The [server card discovery](https://github.com/modelcontextprotocol/experimental-ext-server-card/blob/main/docs/discovery.md#ai-catalog) of [SEP-2127](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/seps/2127-mcp-server-cards.md) reads it |
-| `/.well-known/mcp/server-card.json`, `/.well-known/mcp-server-card` | A `308` redirect to filecoin-api's MCP server card at `<MCP URL>/server-card`. Older SEP-2127 drafts used these paths, and scanners still check them |
-| `/.well-known/agent-skills/index.json` | The [agent skills discovery](https://github.com/cloudflare/agent-skills-discovery-rfc) index of the [filecoin plugin](../../plugins/filecoin/README.md)'s `skills/` directory |
-| `/.well-known/agent-skills/<name>/SKILL.md`, `/.well-known/agent-skills/<name>.tar.gz` | Each skill: a lone `SKILL.md`, or an archive of a skill with more files |
-| `/sitemap.xml` | The site pages and each network's explorer |
-| `/robots.txt` | Allows every crawler and links the sitemap |
+| Path                                                                                   | Contents                                                                                                                                                                                                                                                                                                                                                                                                             |
+| -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/llms.txt`, `/llms-full.txt`                                                          | An [llms.txt](https://llmstxt.org) index of the site with a short summary and the way in for each kind of agent, and every page in one file. Its Optional section links the OpenAPI document, filecoin-api's MCP server card, the AI Catalog, the `filecoin` CLI and `@filecoin-project/api-client` on npm, and the agent skill                                                                                      |
+| `/.well-known/api-catalog`                                                             | An [RFC 9727](https://www.rfc-editor.org/rfc/rfc9727) linkset to filecoin-api's OpenAPI document, reference, and health check, with its MCP server as an `item`. `HEAD` returns the `api-catalog` link relation                                                                                                                                                                                                      |
+| `/.well-known/integrations.json`                                                       | The [integrations.sh](https://integrations.sh/publishing/) owner declaration: filecoin-api's REST API and MCP server, which need no credentials, and the `filecoin` CLI with its session key                                                                                                                                                                                                                         |
+| `/.well-known/ai-catalog.json`                                                         | An [AI Catalog](https://ai-catalog.io) that lists filecoin-api's MCP server card at `<MCP URL>/server-card`, as `urn:air:filecoin.io:mcp:mcp`. The [server card discovery](https://github.com/modelcontextprotocol/experimental-ext-server-card/blob/main/docs/discovery.md#ai-catalog) of [SEP-2127](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/seps/2127-mcp-server-cards.md) reads it |
+| `/.well-known/mcp/server-card.json`, `/.well-known/mcp-server-card`                    | A `308` redirect to filecoin-api's MCP server card at `<MCP URL>/server-card`. Older SEP-2127 drafts used these paths, and scanners still check them                                                                                                                                                                                                                                                                 |
+| `/.well-known/agent-skills/index.json`                                                 | The [agent skills discovery](https://github.com/cloudflare/agent-skills-discovery-rfc) index of the [filecoin plugin](../../plugins/filecoin/README.md)'s `skills/` directory                                                                                                                                                                                                                                        |
+| `/.well-known/agent-skills/<name>/SKILL.md`, `/.well-known/agent-skills/<name>.tar.gz` | Each skill: a lone `SKILL.md`, or an archive of a skill with more files                                                                                                                                                                                                                                                                                                                                              |
+| `/sitemap.xml`                                                                         | The site pages and each network's explorer                                                                                                                                                                                                                                                                                                                                                                           |
+| `/robots.txt`                                                                          | Allows every crawler and links the sitemap                                                                                                                                                                                                                                                                                                                                                                           |
 
 [`@hugomrdias/vite-plugin-agent-skills`](https://github.com/hugomrdias/agents/blob/main/packages/vite-plugin-agent-skills/README.md) writes the agent skills files into the client build at build time, so Workers static assets serves them and `public/_headers` sets their headers. The dev server serves them from memory. The API URLs in these files come from `VITE_FILECOIN_API_URL`.
 
@@ -102,17 +104,17 @@ When every step is done, the page says to go back to the tool. Reloading the lin
 
 The params follow the [Filecoin Pay console's `/console/setup` contract](https://github.com/FilOzone/filecoin-pay-explorer/blob/main/apps/explorer/src/utils/setupLink.ts), the same one the `filecoin` CLI's links use ([architecture](../../docs/filecoin/architecture.md#login)), so a link works on both pages:
 
-| Param | Meaning |
-| --- | --- |
-| `network` | `mainnet` or `calibration`. Required unless the link is bare. The page asks to switch the wallet when it is on the other network |
-| `authorize` or `signer` | Session key address to authorize, all lowercase or EIP-55 checksummed. The private key stays with the tool that made it; the app never sees it |
-| `scopes` | Comma-separated scope IDs: `createDataSet`, `addPieces`, `schedulePieceRemovals`, `terminateService`. Required with a session key; unknown IDs are dropped |
-| `name` | Suggested session key name, recorded on chain as the authorization's `origin`. Cut to 64 characters. Default: `filecoin-app` |
-| `days` | Suggested days until the authorization expires, capped at 365. Default: 30 |
-| `deposit` | USDFC to add on top of what Filecoin Pay holds. Without `balance`, the step is done once this tab sees that much go in. The amount the tab opened with is kept in `sessionStorage` for an hour, so a reload keeps it |
-| `balance` | USDFC the account needs available in Filecoin Pay. The funds step checks this target, debt included, rounded up to the cent |
-| `operator` | `fwss`. With `approval` and no `deposit` or `balance`, the link asks only for the Warm Storage approval |
-| `approval` | `unlimited`: Warm Storage counts as approved only without spending limits, as tools built on synapse-core need |
+| Param                   | Meaning                                                                                                                                                                                                              |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `network`               | `mainnet` or `calibration`. Required unless the link is bare. The page asks to switch the wallet when it is on the other network                                                                                     |
+| `authorize` or `signer` | Session key address to authorize, all lowercase or EIP-55 checksummed. The private key stays with the tool that made it; the app never sees it                                                                       |
+| `scopes`                | Comma-separated scope IDs: `createDataSet`, `addPieces`, `schedulePieceRemovals`, `terminateService`. Required with a session key; unknown IDs are dropped                                                           |
+| `name`                  | Suggested session key name, recorded on chain as the authorization's `origin`. Cut to 64 characters. Default: `filecoin-app`                                                                                         |
+| `days`                  | Suggested days until the authorization expires, capped at 365. Default: 30                                                                                                                                           |
+| `deposit`               | USDFC to add on top of what Filecoin Pay holds. Without `balance`, the step is done once this tab sees that much go in. The amount the tab opened with is kept in `sessionStorage` for an hour, so a reload keeps it |
+| `balance`               | USDFC the account needs available in Filecoin Pay. The funds step checks this target, debt included, rounded up to the cent                                                                                          |
+| `operator`              | `fwss`. With `approval` and no `deposit` or `balance`, the link asks only for the Warm Storage approval                                                                                                              |
+| `approval`              | `unlimited`: Warm Storage counts as approved only without spending limits, as tools built on synapse-core need                                                                                                       |
 
 A value the page cannot read, such as a misspelled address, a missing network or a zero deposit, refuses the whole link: the page shows why and offers nothing. Only `name` and `days` fall back to their defaults. `src/lib/setup-request.ts` holds the parsing, and `src/lib/setup-status.ts` decides what each step offers.
 
@@ -120,15 +122,15 @@ A value the page cannot read, such as a misspelled address, a missing network or
 
 The app registers [WebMCP](https://webmachinelearning.github.io/webmcp/) tools, so a browser agent can prepare the same request without building a URL, and read the account and its storage:
 
-| Tool | Where | What it does |
-| --- | --- | --- |
-| `prepare_setup_request` | Every page | Validates a request with the params above and opens the prefilled setup page. It takes `signer`, `scopes` as an array, `days` as a number, and `unlimitedApproval` as a boolean. `network` defaults to the wallet's, and `scopes` to the first three. It never signs anything |
-| `get_setup_status` | `/dashboard/setup` | Read-only. Reports whether a wallet is connected and on the requested network, and why a link cannot be used. Once the steps show, also reports which requested scopes are authorized and until when, the Warm Storage approval state, the Pay balance and what it still lacks, and whether setup is complete |
-| `get_account_summary` | Every page | Read-only. Reports a wallet's Filecoin Pay funds, monthly spend and runway, the Warm Storage approval, and whether it can pay for a new upload. When it cannot, it returns a setup link with `approval=unlimited` and, when it needs funds, the `deposit` and the `balance` it leaves available |
-| `list_data_sets` | Every page | Read-only. Lists a wallet's data sets |
-| `list_pieces` | Every page | Read-only. Lists a data set's pieces, each with a retrieval URL |
-| `lookup_piece` | Every page | Read-only. Finds the data sets that hold a PieceCID v2 |
-| `list_session_keys` | Every page | Read-only. Lists the session keys a wallet authorized, with each permission's expiry and on-chain name |
+| Tool                    | Where              | What it does                                                                                                                                                                                                                                                                                                  |
+| ----------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prepare_setup_request` | Every page         | Validates a request with the params above and opens the prefilled setup page. It takes `signer`, `scopes` as an array, `days` as a number, and `unlimitedApproval` as a boolean. `network` defaults to the wallet's, and `scopes` to the first three. It never signs anything                                 |
+| `get_setup_status`      | `/dashboard/setup` | Read-only. Reports whether a wallet is connected and on the requested network, and why a link cannot be used. Once the steps show, also reports which requested scopes are authorized and until when, the Warm Storage approval state, the Pay balance and what it still lacks, and whether setup is complete |
+| `get_account_summary`   | Every page         | Read-only. Reports a wallet's Filecoin Pay funds, monthly spend and runway, the Warm Storage approval, and whether it can pay for a new upload. When it cannot, it returns a setup link with `approval=unlimited` and, when it needs funds, the `deposit` and the `balance` it leaves available               |
+| `list_data_sets`        | Every page         | Read-only. Lists a wallet's data sets                                                                                                                                                                                                                                                                         |
+| `list_pieces`           | Every page         | Read-only. Lists a data set's pieces, each with a retrieval URL                                                                                                                                                                                                                                               |
+| `lookup_piece`          | Every page         | Read-only. Finds the data sets that hold a PieceCID v2                                                                                                                                                                                                                                                        |
+| `list_session_keys`     | Every page         | Read-only. Lists the session keys a wallet authorized, with each permission's expiry and on-chain name                                                                                                                                                                                                        |
 
 The read-only tools default to the connected wallet and to the network in the page URL, else the wallet's network. Their input schemas come from the zod schemas in `src/lib/read-tools.ts`, which also parse each call. Bad input and failed reads return `{ ok: false, errors }` instead of throwing. Lists take `limit` (up to 100) and the previous page's `nextCursor`.
 
@@ -140,10 +142,10 @@ The ChatGPT desktop app's built-in browser calls WebMCP tools "site tools", and 
 
 The app deploys as a Worker (`wrangler.jsonc`) at https://poc.filecoin.cloud. The Worker renders pages, and Cloudflare serves the client build from `dist/client` as static assets. `public/_headers` sets the cache headers for those assets. [`.github/workflows/filecoin-app.yml`](../../.github/workflows/filecoin-app.yml) mirrors filecoin-api's workflow:
 
-| Trigger | Result |
-| --- | --- |
-| Push to `main` | Runs typecheck, tests, lint and build, then `wrangler deploy` and probes a server-rendered page |
+| Trigger                        | Result                                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------------------- |
+| Push to `main`                 | Runs typecheck, tests, lint and build, then `wrangler deploy` and probes a server-rendered page   |
 | Pull request opened or updated | Builds, creates a `wrangler preview --name pr-<number>`, probes it and comments the URL on the PR |
-| Pull request closed | `wrangler preview delete` |
+| Pull request closed            | `wrangler preview delete`                                                                         |
 
 The production deploy uses its own `fil-app-production` GitHub environment. The workflow uses the same `CLOUDFLARE_API_TOKEN` repository secret as filecoin-api, and `wrangler.jsonc` pins the same FilOz account ([setup](../filecoin-api/README.md#setup)).

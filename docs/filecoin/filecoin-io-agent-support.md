@@ -25,40 +25,40 @@ Do these two things on filecoin.io first:
 
 ## Is Agentic scores
 
-| | www.filecoin.io | poc.filecoin.cloud |
-| --- | --- | --- |
-| Score | 83, "Ready with a few material gaps" | 88, "Strong technical baseline" |
-| Essential checks | 61.7 of 80 points | 70 of 80 points |
-| Recommended checks | 15.8 of 20 points | 14.1 of 20 points |
-| Bonus | +5 points | +4.1 points |
-| Report | [is-agentic.com/scan/filecoin.io](https://is-agentic.com/scan/filecoin.io) | [is-agentic.com/scan/poc.filecoin.cloud](https://is-agentic.com/scan/poc.filecoin.cloud) |
+|                    | www.filecoin.io                                                            | poc.filecoin.cloud                                                                       |
+| ------------------ | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Score              | 83, "Ready with a few material gaps"                                       | 88, "Strong technical baseline"                                                          |
+| Essential checks   | 61.7 of 80 points                                                          | 70 of 80 points                                                                          |
+| Recommended checks | 15.8 of 20 points                                                          | 14.1 of 20 points                                                                        |
+| Bonus              | +5 points                                                                  | +4.1 points                                                                              |
+| Report             | [is-agentic.com/scan/filecoin.io](https://is-agentic.com/scan/filecoin.io) | [is-agentic.com/scan/poc.filecoin.cloud](https://is-agentic.com/scan/poc.filecoin.cloud) |
 
 The scans ran at 13:30 and 13:33 UTC. Is Agentic infers a site type and scores the checks that apply to it. It inferred App for both sites. The table shows points, because the report API and the report page count the passed checks differently. A new scan can change the score.
 
 ## The two sites side by side
 
-| Feature | www.filecoin.io | poc.filecoin.cloud |
-| --- | --- | --- |
-| `/llms.txt`, `/llms-full.txt` | `404` | `200`, about 2.6 KB and 33 KB |
-| Markdown at `.md` URLs | `404` | `200`, `text/markdown` |
-| `Accept: text/markdown` | Returns HTML | Returns Markdown |
-| `Vary: Accept` | Missing. `Vary` lists only the Next.js router headers | Present |
-| `Link` header to the Markdown version | Missing. The `Link` header lists only the language versions | `</index.md>; rel="alternate"; type="text/markdown"` |
-| `<link rel="alternate" type="text/markdown">` | Missing | Present |
-| Missing page | HTML `404` | HTML `404`, or a Markdown `404` that links to `llms.txt` and the sitemap |
-| `Accept: application/json` | HTML `200` | Markdown `406` |
-| `/.well-known/api-catalog` ([RFC 9727](https://www.rfc-editor.org/rfc/rfc9727)) | `404` | `200` |
-| `/.well-known/integrations.json` ([integrations.sh](https://integrations.sh/publishing/)) | `404` | `200` |
-| `/.well-known/mcp/server-card.json`, `/.well-known/mcp-server-card` | `404` | `200` |
-| `/.well-known/agent-skills/index.json` ([agent skills discovery](https://github.com/cloudflare/agent-skills-discovery-rfc)) | `404` | `200` |
-| `/.well-known/ai-catalog.json` | `404` | `404` |
-| JSON-LD | Organization, WebSite, WebPage, BreadcrumbList | SoftwareApplication |
-| Canonical URL and Open Graph tags | Present | Present |
-| `sitemap.xml` | 751 URLs, each with `lastmod` | 9 URLs |
-| `robots.txt` | Allows all crawlers, links the sitemap | Allows all crawlers, links the sitemap |
-| Home page HTML | About 896 KB for about 6 KB of text | About 26 KB for about 2 KB of text |
-| About, Contact, Privacy, and Pricing pages | Present | Missing |
-| [WebMCP](https://webmachinelearning.github.io/webmcp/) tools | None | Registered by the app's script bundle |
+| Feature                                                                                                                     | www.filecoin.io                                             | poc.filecoin.cloud                                                       |
+| --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `/llms.txt`, `/llms-full.txt`                                                                                               | `404`                                                       | `200`, about 2.6 KB and 33 KB                                            |
+| Markdown at `.md` URLs                                                                                                      | `404`                                                       | `200`, `text/markdown`                                                   |
+| `Accept: text/markdown`                                                                                                     | Returns HTML                                                | Returns Markdown                                                         |
+| `Vary: Accept`                                                                                                              | Missing. `Vary` lists only the Next.js router headers       | Present                                                                  |
+| `Link` header to the Markdown version                                                                                       | Missing. The `Link` header lists only the language versions | `</index.md>; rel="alternate"; type="text/markdown"`                     |
+| `<link rel="alternate" type="text/markdown">`                                                                               | Missing                                                     | Present                                                                  |
+| Missing page                                                                                                                | HTML `404`                                                  | HTML `404`, or a Markdown `404` that links to `llms.txt` and the sitemap |
+| `Accept: application/json`                                                                                                  | HTML `200`                                                  | Markdown `406`                                                           |
+| `/.well-known/api-catalog` ([RFC 9727](https://www.rfc-editor.org/rfc/rfc9727))                                             | `404`                                                       | `200`                                                                    |
+| `/.well-known/integrations.json` ([integrations.sh](https://integrations.sh/publishing/))                                   | `404`                                                       | `200`                                                                    |
+| `/.well-known/mcp/server-card.json`, `/.well-known/mcp-server-card`                                                         | `404`                                                       | `200`                                                                    |
+| `/.well-known/agent-skills/index.json` ([agent skills discovery](https://github.com/cloudflare/agent-skills-discovery-rfc)) | `404`                                                       | `200`                                                                    |
+| `/.well-known/ai-catalog.json`                                                                                              | `404`                                                       | `404`                                                                    |
+| JSON-LD                                                                                                                     | Organization, WebSite, WebPage, BreadcrumbList              | SoftwareApplication                                                      |
+| Canonical URL and Open Graph tags                                                                                           | Present                                                     | Present                                                                  |
+| `sitemap.xml`                                                                                                               | 751 URLs, each with `lastmod`                               | 9 URLs                                                                   |
+| `robots.txt`                                                                                                                | Allows all crawlers, links the sitemap                      | Allows all crawlers, links the sitemap                                   |
+| Home page HTML                                                                                                              | About 896 KB for about 6 KB of text                         | About 26 KB for about 2 KB of text                                       |
+| About, Contact, Privacy, and Pricing pages                                                                                  | Present                                                     | Missing                                                                  |
+| [WebMCP](https://webmachinelearning.github.io/webmcp/) tools                                                                | None                                                        | Registered by the app's script bundle                                    |
 
 ## Problems to fix on filecoin.io
 
@@ -71,12 +71,12 @@ The scans ran at 13:30 and 13:33 UTC. Is Agentic infers a site type and scores t
 ## Things to add to filecoin.io
 
 - **`/llms.txt`.** Add an [llms.txt](https://llmstxt.org) index with a short summary of Filecoin and a section that tells agents when to use it. Link each way in:
-	- the docs, through [docs.filecoin.io/llms.txt](https://docs.filecoin.io/llms.txt)
-	- the OpenAPI document at `https://api.filecoin.io/openapi.json`
-	- the MCP server at `https://mcp.filecoin.io` and the docs MCP server
-	- the agent skill
+  - the docs, through [docs.filecoin.io/llms.txt](https://docs.filecoin.io/llms.txt)
+  - the OpenAPI document at `https://api.filecoin.io/openapi.json`
+  - the MCP server at `https://mcp.filecoin.io` and the docs MCP server
+  - the agent skill
 
-	Is Agentic found no file that tells agents when to use Filecoin. poc.filecoin.cloud's [`llms.txt`](https://poc.filecoin.cloud/llms.txt) shows the format in about 2.6 KB, with one bullet for each kind of agent.
+  Is Agentic found no file that tells agents when to use Filecoin. poc.filecoin.cloud's [`llms.txt`](https://poc.filecoin.cloud/llms.txt) shows the format in about 2.6 KB, with one bullet for each kind of agent.
 - **Markdown versions of pages.** Serve each content page at `<path>.md`. Link it from the page's `<head>` with `<link rel="alternate" type="text/markdown">`, and send the same link in a `Link` header. Add `/llms-full.txt` if the content is small enough to read as one file.
 - **`/.well-known/api-catalog`.** Serve an RFC 9727 linkset to `https://api.filecoin.io/openapi.json`, its reference, and its health check, like [poc.filecoin.cloud's API catalog](https://poc.filecoin.cloud/.well-known/api-catalog). Serve it as `application/linkset+json`, and answer `HEAD` with the `api-catalog` link relation.
 - **An AI Catalog that lists the MCP server card.** filecoin-api serves the card at `https://mcp.filecoin.io/server-card`, the location [SEP-2127](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/seps/2127-mcp-server-cards.md) reserves. filecoin.io needs no copy of it. Serve an [AI Catalog](https://github.com/Agent-Card/ai-catalog) at `/.well-known/ai-catalog.json`, as `application/ai-catalog+json`, with one entry: `"identifier": "urn:air:filecoin.io:mcp:mcp"`, `"type": "application/mcp-server-card+json"`, and `"url": "https://mcp.filecoin.io/server-card"`. Is Agentic found the MCP server, but gave half credit for discovery, because no file on filecoin.io lists it.

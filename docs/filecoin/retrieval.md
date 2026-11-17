@@ -8,32 +8,32 @@ This page describes the route's parameters, responses, lookup order, and cache, 
 
 `GET /get/{cid}?network=mainnet&browser=false` redirects with a `302` to a server that has the content. The route never proxies the bytes.
 
-| Parameter | Meaning |
-| --- | --- |
-| `cid` | A PieceCID v2 or any IPFS CID, such as a folder root or a file or block inside it |
-| `network` | `mainnet` or `calibration`. Default: `mainnet`. It picks the indexer database, and the registry providers that the route ranks IPNI answers against |
-| `browser` | `true` sends IPFS content to inbrowser.link, as the next table shows |
-| `provider` | A provider ID to redirect to when the indexer has no copy (see [the hint](#the-hint-comes-after-the-indexer-and-before-cidcontact)) |
-| Any other | Forwarded to the target, such as `format=car` |
+| Parameter  | Meaning                                                                                                                                             |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cid`      | A PieceCID v2 or any IPFS CID, such as a folder root or a file or block inside it                                                                   |
+| `network`  | `mainnet` or `calibration`. Default: `mainnet`. It picks the indexer database, and the registry providers that the route ranks IPNI answers against |
+| `browser`  | `true` sends IPFS content to inbrowser.link, as the next table shows                                                                                |
+| `provider` | A provider ID to redirect to when the indexer has no copy (see [the hint](#the-hint-comes-after-the-indexer-and-before-cidcontact))                 |
+| Any other  | Forwarded to the target, such as `format=car`                                                                                                       |
 
 The CID's codec and multihash decide where the redirect goes:
 
-| CID | `browser` | Redirect |
-| --- | --- | --- |
-| PieceCID v2 (`bafkzcib…`) | `false` or absent | `{serviceUrl}/piece/{cid}` on a provider that stores the piece |
-| PieceCID v2 (`bafkzcib…`) | `true` | `https://inbrowser.link/ipfs/{root}` when the chosen copy has `ipfsRootCID` metadata in an IPFS-indexed data set, otherwise `{serviceUrl}/piece/{cid}` |
-| Other CID (IPFS content) | `false` or absent | `{serviceUrl}/ipfs/{cid}` on a provider whose piece has a matching `ipfsRootCID`, or on a provider that IPNI lists for the CID |
-| Other CID (IPFS content) | `true` | `https://inbrowser.link/ipfs/{cid}`, without a lookup |
+| CID                       | `browser`         | Redirect                                                                                                                                               |
+| ------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| PieceCID v2 (`bafkzcib…`) | `false` or absent | `{serviceUrl}/piece/{cid}` on a provider that stores the piece                                                                                         |
+| PieceCID v2 (`bafkzcib…`) | `true`            | `https://inbrowser.link/ipfs/{root}` when the chosen copy has `ipfsRootCID` metadata in an IPFS-indexed data set, otherwise `{serviceUrl}/piece/{cid}` |
+| Other CID (IPFS content)  | `false` or absent | `{serviceUrl}/ipfs/{cid}` on a provider whose piece has a matching `ipfsRootCID`, or on a provider that IPNI lists for the CID                         |
+| Other CID (IPFS content)  | `true`            | `https://inbrowser.link/ipfs/{cid}`, without a lookup                                                                                                  |
 
 The route answers with these statuses:
 
-| Status | Code | When |
-| --- | --- | --- |
-| `302` | | A source has the CID |
-| `400` | `invalid_request` | The input is not a CID, or it is a legacy v1 PieceCID (`baga…`) |
-| `404` | `not_found` | No source has the CID |
-| `429` | `rate_limited` | The client IP sent more than 120 requests in a minute |
-| `502` | `ipni_unavailable` | The indexer has no copy, no hint applies, and IPNI fails or times out |
+| Status | Code               | When                                                                  |
+| ------ | ------------------ | --------------------------------------------------------------------- |
+| `302`  |                    | A source has the CID                                                  |
+| `400`  | `invalid_request`  | The input is not a CID, or it is a legacy v1 PieceCID (`baga…`)       |
+| `404`  | `not_found`        | No source has the CID                                                 |
+| `429`  | `rate_limited`     | The client IP sent more than 120 requests in a minute                 |
+| `502`  | `ipni_unavailable` | The indexer has no copy, no hint applies, and IPNI fails or times out |
 
 A redirect has these headers:
 
@@ -95,11 +95,11 @@ IPNI closes the first three gaps for IPFS CIDs. A network without a database bin
 
 Content providers publish signed advertisements to IPNI. Each advertisement lists multihashes, a context ID that groups them, metadata that names the retrieval protocol, and the provider's peer ID and addresses. cid.contact ingests them and answers lookups:
 
-| Endpoint | Returns |
-| --- | --- |
-| `GET /cid/{cid}`, `GET /multihash/{mh}` | `MultihashResults` with each provider's `ContextID`, `Metadata`, peer ID, and multiaddrs. `Accept: application/x-ndjson` streams one provider per line. |
-| `GET /routing/v1/providers/{cid}` | The same providers in the [delegated routing](https://specs.ipfs.tech/routing/http-routing-v1/) format, with protocol names such as `transport-ipfs-gateway-http` instead of raw metadata. `Accept: application/x-ndjson` streams one provider per line. |
-| `GET /providers` | Every provider's peer ID, addresses, and last advertisement time |
+| Endpoint                                | Returns                                                                                                                                                                                                                                                  |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /cid/{cid}`, `GET /multihash/{mh}` | `MultihashResults` with each provider's `ContextID`, `Metadata`, peer ID, and multiaddrs. `Accept: application/x-ndjson` streams one provider per line.                                                                                                  |
+| `GET /routing/v1/providers/{cid}`       | The same providers in the [delegated routing](https://specs.ipfs.tech/routing/http-routing-v1/) format, with protocol names such as `transport-ipfs-gateway-http` instead of raw metadata. `Accept: application/x-ndjson` streams one provider per line. |
+| `GET /providers`                        | Every provider's peer ID, addresses, and last advertisement time                                                                                                                                                                                         |
 
 The metadata starts with a multicodec that names the transport. `0x0920` is `transport-ipfs-gateway-http`, a trustless gateway that serves `/ipfs/{cid}`. `0x0930` is `transport-filecoin-piece-http`, which serves `/piece/{cid}` ([FRC-0066](https://github.com/filecoin-project/FIPs/blob/master/FRCs/frc-0066.md)).
 
@@ -123,10 +123,10 @@ Curio serves `/ipfs/{cid}` with [frisbii](https://github.com/ipld/frisbii) v0.10
 
 That order is the reverse of the stored piece. `filecoin put` packs with `ipfs-unixfs-importer`, which writes each block before its parent, so the root comes last. On 2026-11-16 we fetched the `docs` folder from the [calibration run](architecture.md#calibration-run-on-2026-09-29) from provider 9 (`calib.ezpdpz.net`), with root `bafybeifpcriegmv2dsl36wvstwng3xcqwxsgfrq6wvszqeid5blb6coifi`:
 
-| Request | First block | Links in order | Blocks |
-| --- | --- | --- | --- |
-| `/ipfs/{root}`, with no parameters, with `order=dfs&dups=y`, and with `order=unk` | the root | 2 of 2 parent first | 3 |
-| `/piece/bafkzcibezhjacc4c5tqq7zdnvvgghf4i6epou7ajl5ubu5utixzhsucjki47cazleu` | a child | 2 of 2 child first | 4 |
+| Request                                                                           | First block | Links in order      | Blocks |
+| --------------------------------------------------------------------------------- | ----------- | ------------------- | ------ |
+| `/ipfs/{root}`, with no parameters, with `order=dfs&dups=y`, and with `order=unk` | the root    | 2 of 2 parent first | 3      |
+| `/piece/bafkzcibezhjacc4c5tqq7zdnvvgghf4i6epou7ajl5ubu5utixzhsucjki47cazleu`      | a child     | 2 of 2 child first  | 4      |
 
 Every block matched its CID. The piece has one more block, an empty-directory block that nothing links to. The prototype CLI used in that run still wrote it, and packing has skipped it since the CLI's first commit in this repository on 2026-10-03 ([folder packing](architecture.md#folder-packing)). The depth-first walk never reaches it.
 
@@ -147,11 +147,11 @@ We found no public source for it. Redirecting `/get` misses to it would add a ho
 
 Each row compares cid.contact with `/get`, before the route used IPNI, on the same CIDs:
 
-| CIDs | cid.contact | `/get` with the indexer only |
-| --- | --- | --- |
-| 4 PieceCIDs, with and without an IPFS root | 0 found | 4 found |
-| 78 IPFS roots, one from each of the newest IPFS-indexed data sets | 73 found | 76 found |
-| 4 child blocks inside one indexed root | 4 found | 0 found |
+| CIDs                                                              | cid.contact | `/get` with the indexer only |
+| ----------------------------------------------------------------- | ----------- | ---------------------------- |
+| 4 PieceCIDs, with and without an IPFS root                        | 0 found     | 4 found                      |
+| 78 IPFS roots, one from each of the newest IPFS-indexed data sets | 73 found    | 76 found                     |
+| 4 child blocks inside one indexed root                            | 4 found     | 0 found                      |
 
 - **Five roots are missing from cid.contact.** Two return `404` from `/get` too, most likely because their providers removed the pieces. The other three are one 418 MB `ipfs2fil` root stored on providers 1, 5, and 32. It was added at block 6531147, about 21 hours before the check, and none of the three providers had it in cid.contact. We did not find out why.
 - **Lookups are fast.** cid.contact answered in 350 to 490 ms on a cold lookup and 50 to 90 ms on a repeat, because a CDN caches its answers. A cached `/get` answered in about 120 ms.
@@ -202,9 +202,9 @@ The lookup times out after 2 seconds. It reads the NDJSON body line by line and 
 
 A provider is usable if it has the transport for the CID's kind and an https address:
 
-| CID kind | Protocol | Redirect |
-| --- | --- | --- |
-| IPFS | `transport-ipfs-gateway-http` | `https://{host}[:{port}]/ipfs/{cid}` |
+| CID kind    | Protocol                        | Redirect                              |
+| ----------- | ------------------------------- | ------------------------------------- |
+| IPFS        | `transport-ipfs-gateway-http`   | `https://{host}[:{port}]/ipfs/{cid}`  |
 | PieceCID v2 | `transport-filecoin-piece-http` | `https://{host}[:{port}]/piece/{cid}` |
 
 [`httpsOrigin`](../../apps/filecoin-api/src/ipni.ts) accepts multiaddrs of the form `/dns/{host}/tcp/{port}/https`, `/dns4/…`, `/dns6/…`, and the same forms ending in `/tls/http` or `/tls/sni/{name}/http`. It skips `/ip4` and `/ip6` addresses, plain `http`, and libp2p-only providers. A certificate rarely matches an IP address, and a browser blocks an https page from loading plain http.

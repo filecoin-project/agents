@@ -21,11 +21,13 @@ This is the recommended and primary method for all security vulnerability report
 ### Alternative Reporting Methods
 
 For security-related questions or if you cannot use Immunefi:
+
 - Email: [security@fil.org](mailto:security@fil.org) (use PGP encryption for sensitive information)
 
 ### What NOT to Do
 
 Please **DO NOT**:
+
 - File a public issue on GitHub for security vulnerabilities
 - Discuss the vulnerability in public places like Slack, Twitter/X, or other social media
 - Disclose the vulnerability publicly before receiving permission from our security team
@@ -54,6 +56,7 @@ Rewards are based on the severity and impact of the vulnerability:
 - **Low**: Determined based on impact and likelihood
 
 All rewards are paid in USD/USDC by the Filecoin Foundation and are scaled based on:
+
 - Ease of exploitation
 - Impact of the bug
 - Likelihood of the vulnerability
@@ -64,8 +67,9 @@ All rewards are paid in USD/USDC by the Filecoin Foundation and are scaled based
 ### In Scope
 
 The bug bounty program covers vulnerabilities in (non-exhaustive):
-- Lotus, 
-- builtin-actors 
+
+- Lotus,
+- builtin-actors
 - FVM
 - F3
 
@@ -86,6 +90,7 @@ For the complete and up-to-date list of in-scope assets and impacts, please refe
 We encourage good-faith security research and ask that you follow these guidelines:
 
 **DO:**
+
 - Comply with all applicable laws
 - Report any vulnerability you've discovered promptly
 - Follow responsible disclosure practices
@@ -95,6 +100,7 @@ We encourage good-faith security research and ask that you follow these guidelin
 - Interact only with test accounts you own or have explicit permission to use
 
 **DO NOT:**
+
 - Conduct Denial of Service (DoS) attacks or active exploits against the Filecoin network, miners, or nodes
 - Engage in social engineering or phishing of Filecoin project contributors or community members
 - Attempt physical or electronic access to offices or data centers
@@ -122,6 +128,7 @@ If at any time you have concerns or are uncertain whether your security research
 Filecoin Foundation follows a **Coordinated Disclosure Policy** to honor security researcher contributions while protecting the network and its participants.
 
 **When You Can Publish:** Researchers can publish information about their bug reports after:
+
 1. The bug has been fixed
 2. The researcher has been paid
 3. Network participants have had time to upgrade to the patched version
@@ -145,6 +152,7 @@ When you report a vulnerability, here's what happens:
 6. **Resolution** → Patch is released and bounty is processed
 
 **Community Notifications:**
+
 - **High/Critical**: Community notified 24 hours before patch release
 - **Medium**: May result in a minor release
 - **Low**: Addressed in next regular release

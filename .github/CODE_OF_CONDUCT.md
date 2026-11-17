@@ -147,6 +147,7 @@ This is a living document and may be updated from time to time. Please refer
 to the git history for this document to view the changes.
 
 ## Credit and License
+
 This Code of Conduct is based on the
 [npm Code of Conduct](https://www.npmjs.com/policies/conduct).
 

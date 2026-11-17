@@ -18,17 +18,17 @@ Browser agents send the wallet owner to `/dashboard/setup`, through a link or th
 
 The parameters follow the [Filecoin Pay console](https://pay.filecoin.cloud/console)'s setup links, which the `filecoin` CLI sends, so the same link works on both:
 
-| Parameter | Meaning |
-| --- | --- |
-| `network` | `mainnet` or `calibration`. Required. The page asks to switch the wallet when it is on the other network |
-| `authorize` or `signer` | Session key address to approve. The private key stays with the tool that made it |
-| `scopes` | Comma-separated permissions: `createDataSet`, `addPieces`, `schedulePieceRemovals`, `terminateService`. Required with a session key. You can drop a permission but not add one |
-| `name` | Suggested session key name, up to 64 characters, recorded on chain. Default: `filecoin-app` |
-| `days` | Suggested days until the approval expires, up to 365. Default: 30 |
-| `deposit` | USDFC to add to Filecoin Pay, as a decimal amount |
-| `balance` | USDFC the account needs available in Filecoin Pay |
-| `operator` | `fwss`. Without `deposit` or `balance`, the link asks only for the Warm Storage approval |
-| `approval` | `unlimited`: Warm Storage counts as approved only without spending limits. If yours has limits, the page shows them and offers to remove them |
+| Parameter               | Meaning                                                                                                                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `network`               | `mainnet` or `calibration`. Required. The page asks to switch the wallet when it is on the other network                                                                       |
+| `authorize` or `signer` | Session key address to approve. The private key stays with the tool that made it                                                                                               |
+| `scopes`                | Comma-separated permissions: `createDataSet`, `addPieces`, `schedulePieceRemovals`, `terminateService`. Required with a session key. You can drop a permission but not add one |
+| `name`                  | Suggested session key name, up to 64 characters, recorded on chain. Default: `filecoin-app`                                                                                    |
+| `days`                  | Suggested days until the approval expires, up to 365. Default: 30                                                                                                              |
+| `deposit`               | USDFC to add to Filecoin Pay, as a decimal amount                                                                                                                              |
+| `balance`               | USDFC the account needs available in Filecoin Pay                                                                                                                              |
+| `operator`              | `fwss`. Without `deposit` or `balance`, the link asks only for the Warm Storage approval                                                                                       |
+| `approval`              | `unlimited`: Warm Storage counts as approved only without spending limits. If yours has limits, the page shows them and offers to remove them                                  |
 
 A value the page cannot read refuses the whole link, and the page says why. Ask the tool for a new link.
 
@@ -36,14 +36,14 @@ A value the page cannot read refuses the whole link, and the page says why. Ask 
 
 filecoin-app registers [WebMCP](https://webmachinelearning.github.io/webmcp/) tools, so a browser agent can prepare a setup request and read the account and its storage:
 
-| Tool | Where | What it does |
-| --- | --- | --- |
-| `prepare_setup_request` | Every page | Checks a request with the parameters above and opens the prefilled setup page. It never signs anything |
-| `get_setup_status` | `/dashboard/setup` | Reports whether a wallet is connected and on the right network, and the status of each step |
-| `get_account_summary` | Every page | Reports a wallet's Filecoin Pay funds, monthly spend, runway, and Warm Storage approval |
-| `list_data_sets` | Every page | Lists a wallet's data sets |
-| `list_pieces` | Every page | Lists a data set's pieces, each with a retrieval link |
-| `lookup_piece` | Every page | Finds the data sets that hold a PieceCID v2 |
-| `list_session_keys` | Every page | Lists the session keys a wallet approved |
+| Tool                    | Where              | What it does                                                                                           |
+| ----------------------- | ------------------ | ------------------------------------------------------------------------------------------------------ |
+| `prepare_setup_request` | Every page         | Checks a request with the parameters above and opens the prefilled setup page. It never signs anything |
+| `get_setup_status`      | `/dashboard/setup` | Reports whether a wallet is connected and on the right network, and the status of each step            |
+| `get_account_summary`   | Every page         | Reports a wallet's Filecoin Pay funds, monthly spend, runway, and Warm Storage approval                |
+| `list_data_sets`        | Every page         | Lists a wallet's data sets                                                                             |
+| `list_pieces`           | Every page         | Lists a data set's pieces, each with a retrieval link                                                  |
+| `lookup_piece`          | Every page         | Finds the data sets that hold a PieceCID v2                                                            |
+| `list_session_keys`     | Every page         | Lists the session keys a wallet approved                                                               |
 
 The read tools default to the connected wallet and the network in the page address. WebMCP is an early preview. It works in Chrome 149 and later on poc.filecoin.cloud, and in the ChatGPT desktop app's browser, where the tools are called site tools. Other browsers ignore the tools, and agents use setup links instead.
