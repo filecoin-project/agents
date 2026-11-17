@@ -85,8 +85,9 @@ export function mcpServerCard(mcpUrl: string, version: string) {
     name: MCP_SERVER_NAME,
     title: MCP_SERVER_TITLE,
     version,
+    // The card schema caps `description` and `title` at 100 characters.
     description:
-      'Read-only Filecoin data: storage providers, data sets, pieces, Filecoin Pay rails, and session keys on mainnet and calibration, and a search of the Filecoin docs.',
+      'Read-only Filecoin data: storage providers, data sets, pieces, payment rails, and a docs search.',
     icons: MCP_SERVER_ICONS,
     websiteUrl: 'https://poc.filecoin.cloud/docs/api',
     repository: {
