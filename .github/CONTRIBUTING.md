@@ -107,7 +107,9 @@ Leave a release pull request open to batch more changes into that release. Each 
 
 - **Choose a version.** Add a `Release-As: <version>` footer to a commit that touches the component, such as `chore(filecoin-cli): release 1.0.0` with the footer `Release-As: 1.0.0`.
 
-- **Rerun a failed publish.** Rerun the Release workflow. `pnpm publish` skips versions already on npm, so a rerun is safe.
+- **Rerun a failed publish.** Rerun the failed jobs of the Release workflow run. `pnpm publish` skips versions already on npm, so a rerun is safe. A rerun checks out the same commit, so it fails again if that commit is broken, such as a `package.json` that doesn't match `pnpm-lock.yaml`.
+
+- **Publish a release from main.** If a rerun can't fix a failed publish, fix the problem on `main`. Then open the [Release workflow](https://github.com/filecoin-project/agents/actions/workflows/release.yml), click **Run workflow** on `main`, and pick the package directory. The run skips release-please and publishes that package's version on `main` with provenance. Run it only while the version on `main` is the release that failed, because the npm version then includes every change on `main` since the tag. The publish job skips runs from any other branch.
 
 ### Add a component
 
