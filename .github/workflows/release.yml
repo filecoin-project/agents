@@ -3,6 +3,17 @@ name: Release
 on:
   push:
     branches: [main]
+  # Publishes a package from main without a new release, for a release whose
+  # publish failed at a commit that a rerun can't fix.
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Package directory to publish from main
+        required: true
+        type: choice
+        options:
+          - packages/filecoin-cli
+          - packages/filecoin-api-client
 
 permissions:
   contents: read
@@ -14,6 +25,7 @@ concurrency:
 jobs:
   release-please:
     name: Release Please
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -39,7 +51,13 @@ jobs:
   publish:
     name: Publish to npm
     needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    # A manual run skips release-please, so the job also runs when its need was
+    # skipped. It publishes only from main.
+    if: >-
+      !cancelled() && (
+        needs.release-please.outputs.releases_created == 'true' ||
+        (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:
@@ -68,8 +86,14 @@ jobs:
       # GitHub release, and skips versions already on npm, so a rerun is safe.
       - name: Publish released packages
         env:
+          EVENT_NAME: ${{ github.event_name }}
+          PACKAGE: ${{ inputs.package }}
           PATHS_RELEASED: ${{ needs.release-please.outputs.paths_released }}
         run: |
           set -euo pipefail
-          mapfile -t filters < <(jq -r '.[] | "--filter=./" + .' <<< "$PATHS_RELEASED")
+          if [[ "$EVENT_NAME" == workflow_dispatch ]]; then
+            filters=("--filter=./$PACKAGE")
+          else
+            mapfile -t filters < <(jq -r '.[] | "--filter=./" + .' <<< "$PATHS_RELEASED")
+          fi
           pnpm -r "${filters[@]}" publish --provenance --no-git-checks
