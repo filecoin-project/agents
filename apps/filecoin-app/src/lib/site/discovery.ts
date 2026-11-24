@@ -127,7 +127,7 @@ export function integrationsJson(
         label: 'filecoin session key',
         generateUrl: `${siteUrl}/dashboard/session-keys`,
         setup: [
-          'Run `filecoin login`. It makes a session key on the machine and returns a filecoin-app approval link, which the wallet owner opens to approve the key with their wallet. The CLI finds the approval on chain.',
+          'Run `filecoin login`. It makes a session key on the machine and returns a Filecoin Pay console approval link, which the wallet owner opens to approve the key with their wallet. The CLI finds the approval on chain.',
           'For CI or a cloud agent, generate, authorize, and export a key on the filecoin-app session keys page instead, and set `FILECOIN_SESSION_KEY` and `FILECOIN_ROOT_ADDRESS`.',
           'The key signs storage requests. It cannot move funds, and it expires.',
         ].join('\n\n'),
