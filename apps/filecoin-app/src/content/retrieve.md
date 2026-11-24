@@ -35,7 +35,7 @@ Use `filecoin get` when the content must be intact. When you hand over a link th
 `filecoin ls` lists every piece the wallet pays for, from filecoin-api, whichever machine stored it. A piece gets a `resourceRef` only on the machine that stored it, because refs live in a local database. A new machine, or a cloud sandbox that was reset, has none. Other tools find the same pieces by wallet:
 
 - In a browser, the dashboard's data sets page, or the WebMCP tools `list_data_sets` and `list_pieces`.
-- Over MCP, `list_pieces` with the wallet as `owner`. Over HTTP, `GET /{network}/pieces?owner=<wallet>` on filecoin-api.
+- Over MCP, `list_pieces` with the wallet as `owner`. Over HTTP, `GET /v1/{network}/pieces?owner=<wallet>` on filecoin-api.
 
 Each piece comes with a retrieval link. `filecoin get <PieceCID>` downloads and checks one, and `filecoin get <root CID>` extracts a file or folder stored as a CAR. Neither needs a login: for content outside local state, `filecoin` finds the provider through filecoin-api.
 

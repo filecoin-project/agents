@@ -8,7 +8,7 @@ To call the API from TypeScript, install [`@filecoin-project/api-client`](https:
 
 ## Routes
 
-`GET /openapi.json` lists every route and its filters, and `POST /mcp` is the MCP server, which also has its own host, `https://mcp.filecoin.io`. `GET /health` reports the latest indexed block per network, and [`GET /get/{cid}`](#retrieval) redirects to where content can be retrieved. Every data route starts with the network, `/calibration/...` or `/mainnet/...`, and reads one of: indexer status, storage providers, data sets and their pieces, pieces by owner or PieceCID, Filecoin Pay rails and their settlements, and session keys and their history.
+`GET /openapi.json` lists every route and its filters, and `POST /mcp` is the MCP server, which also has its own host, `https://mcp.filecoin.io`. `GET /health` reports the latest indexed block per network, and [`GET /get/{cid}`](#retrieval) redirects to where content can be retrieved. Every data route starts with the API version and the network, `/v1/calibration/...` or `/v1/mainnet/...`, and reads one of: indexer status, storage providers, data sets and their pieces, pieces by owner or PieceCID, Filecoin Pay rails and their settlements, and session keys and their history.
 
 Conventions:
 
@@ -17,6 +17,12 @@ Conventions:
 - **Pagination** uses `limit` (1 to 200, default 50) and an opaque `cursor`. Each response looks like `{ data, nextCursor }`.
 - **Errors** look like `{ error: { code, message } }`.
 - **Operation IDs**, such as `listDataSets` and `retrieve`, name every operation in the OpenAPI document, for function calling and generated clients.
+
+## Versioning
+
+The data routes carry their version in the path, `/v1`. The paths from before versioning, such as `/mainnet/providers`, still work as aliases of v1, so older CLIs and clients keep working. They stay for as long as v1 does. `/get/{cid}`, `/health`, and the MCP server have no version.
+
+New routes, new optional parameters, and new response fields land in v1 without notice, so ignore fields you don't know. A breaking change, such as a removed or renamed field, ships under `/v2`. v1 then keeps working for at least six months, and its responses send a `Deprecation` header ([RFC 9745](https://www.rfc-editor.org/rfc/rfc9745)) and a `Sunset` header ([RFC 8594](https://www.rfc-editor.org/rfc/rfc8594)) with the date it can stop working. No route is deprecated now.
 
 ## Retrieval
 

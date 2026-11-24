@@ -15,17 +15,18 @@ type Filters<P extends keyof paths> = Omit<
 >
 
 /** Data set list filters. */
-export type DataSetFilters = Filters<'/{network}/data-sets'>
+export type DataSetFilters = Filters<'/v1/{network}/data-sets'>
 /** Provider list filters. */
-export type ProviderFilters = Filters<'/{network}/providers'>
+export type ProviderFilters = Filters<'/v1/{network}/providers'>
 /** Cross-data-set piece filters. */
-export type PieceFilters = Filters<'/{network}/pieces'>
+export type PieceFilters = Filters<'/v1/{network}/pieces'>
 /** Rail list filters. */
-export type RailFilters = Filters<'/{network}/rails'>
+export type RailFilters = Filters<'/v1/{network}/rails'>
 /** Session key list filters. */
-export type SessionKeyFilters = Filters<'/{network}/session-keys'>
+export type SessionKeyFilters = Filters<'/v1/{network}/session-keys'>
 /** Session key history filters. */
-export type SessionKeyEventFilters = Filters<'/{network}/session-keys/history'>
+export type SessionKeyEventFilters =
+  Filters<'/v1/{network}/session-keys/history'>
 
 /**
  * Query key prefix for every filecoin-api query of a network.
@@ -69,7 +70,7 @@ export function statusQuery(network: Network) {
     queryKey: apiKey(network, 'status'),
     queryFn: async ({ signal }) =>
       unwrap(
-        await api.GET('/{network}/status', {
+        await api.GET('/v1/{network}/status', {
           params: { path: { network } },
           signal,
         })
@@ -96,7 +97,7 @@ export function providersInfinite(
     queryKey: apiKey(network, 'providers', filters, limit),
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
-        await api.GET('/{network}/providers', {
+        await api.GET('/v1/{network}/providers', {
           params: {
             path: { network },
             query: { ...filters, limit, cursor: pageParam },
@@ -118,7 +119,7 @@ export function providerQuery(network: Network, providerId: string) {
     queryKey: apiKey(network, 'provider', providerId),
     queryFn: async ({ signal }) =>
       unwrap(
-        await api.GET('/{network}/providers/{providerId}', {
+        await api.GET('/v1/{network}/providers/{providerId}', {
           params: { path: { network, providerId } },
           signal,
         })
@@ -144,7 +145,7 @@ export function dataSetsInfinite(
     queryKey: apiKey(network, 'data-sets', filters, limit),
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
-        await api.GET('/{network}/data-sets', {
+        await api.GET('/v1/{network}/data-sets', {
           params: {
             path: { network },
             query: { ...filters, limit, cursor: pageParam },
@@ -166,7 +167,7 @@ export function dataSetQuery(network: Network, dataSetId: string) {
     queryKey: apiKey(network, 'data-set', dataSetId),
     queryFn: async ({ signal }) =>
       unwrap(
-        await api.GET('/{network}/data-sets/{dataSetId}', {
+        await api.GET('/v1/{network}/data-sets/{dataSetId}', {
           params: { path: { network, dataSetId } },
           signal,
         })
@@ -194,7 +195,7 @@ export function dataSetPiecesInfinite(
     queryKey: apiKey(network, 'data-set-pieces', dataSetId, removed, limit),
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
-        await api.GET('/{network}/data-sets/{dataSetId}/pieces', {
+        await api.GET('/v1/{network}/data-sets/{dataSetId}/pieces', {
           params: {
             path: { network, dataSetId },
             query: { removed, limit, cursor: pageParam },
@@ -222,7 +223,7 @@ export function piecesInfinite(
     queryKey: apiKey(network, 'pieces', filters, limit),
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
-        await api.GET('/{network}/pieces', {
+        await api.GET('/v1/{network}/pieces', {
           params: {
             path: { network },
             query: { ...filters, limit, cursor: pageParam },
@@ -250,7 +251,7 @@ export function railsInfinite(
     queryKey: apiKey(network, 'rails', filters, limit),
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
-        await api.GET('/{network}/rails', {
+        await api.GET('/v1/{network}/rails', {
           params: {
             path: { network },
             query: { ...filters, limit, cursor: pageParam },
@@ -272,7 +273,7 @@ export function railQuery(network: Network, railId: string) {
     queryKey: apiKey(network, 'rail', railId),
     queryFn: async ({ signal }) =>
       unwrap(
-        await api.GET('/{network}/rails/{railId}', {
+        await api.GET('/v1/{network}/rails/{railId}', {
           params: { path: { network, railId } },
           signal,
         })
@@ -298,7 +299,7 @@ export function settlementsInfinite(
     queryKey: apiKey(network, 'settlements', railId, limit),
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
-        await api.GET('/{network}/rails/{railId}/settlements', {
+        await api.GET('/v1/{network}/rails/{railId}/settlements', {
           params: {
             path: { network, railId },
             query: { limit, cursor: pageParam },
@@ -326,7 +327,7 @@ export function sessionKeysInfinite(
     queryKey: apiKey(network, 'session-keys', filters, limit),
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
-        await api.GET('/{network}/session-keys', {
+        await api.GET('/v1/{network}/session-keys', {
           params: {
             path: { network },
             query: { ...filters, limit, cursor: pageParam },
@@ -354,7 +355,7 @@ export function sessionKeyEventsInfinite(
     queryKey: apiKey(network, 'session-key-events', filters, limit),
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
-        await api.GET('/{network}/session-keys/history', {
+        await api.GET('/v1/{network}/session-keys/history', {
           params: {
             path: { network },
             query: { ...filters, limit, cursor: pageParam },
