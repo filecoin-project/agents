@@ -21,14 +21,14 @@ export default defineHandler(inspect, async (ctx) => {
   const path = { network: app.network, dataSetId: ctx.input.id }
   const [dataSet, pieces] = await Promise.all([
     api
-      .GET('/{network}/data-sets/{dataSetId}', { params: { path } })
+      .GET('/v1/{network}/data-sets/{dataSetId}', { params: { path } })
       .then(unwrap)
       .catch((error: unknown) => {
         if (ApiError.isNotFound(error)) return undefined
         throw error
       }),
     api
-      .GET('/{network}/data-sets/{dataSetId}/pieces', {
+      .GET('/v1/{network}/data-sets/{dataSetId}/pieces', {
         params: {
           path,
           query: {
@@ -56,7 +56,7 @@ export default defineHandler(inspect, async (ctx) => {
   const providerId = dataSet.data.providerId
   const provider = providerId
     ? await api
-        .GET('/{network}/providers/{providerId}', {
+        .GET('/v1/{network}/providers/{providerId}', {
           params: { path: { network: app.network, providerId } },
         })
         .then(unwrap)

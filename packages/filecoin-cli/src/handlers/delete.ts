@@ -81,7 +81,7 @@ async function indexedCopies(
   const [urls, sources] = await Promise.all([
     readEach(providerIds, async (providerId) => {
       const provider = await api
-        .GET('/{network}/providers/{providerId}', {
+        .GET('/v1/{network}/providers/{providerId}', {
           params: { path: { network, providerId } },
         })
         .then(unwrap)
@@ -91,7 +91,7 @@ async function indexedCopies(
       pieces.map((piece) => piece.dataSetId),
       async (dataSetId) => {
         const dataSet = await api
-          .GET('/{network}/data-sets/{dataSetId}', {
+          .GET('/v1/{network}/data-sets/{dataSetId}', {
             params: { path: { network, dataSetId } },
           })
           .then(unwrap)

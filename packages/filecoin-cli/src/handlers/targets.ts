@@ -54,7 +54,7 @@ export async function piecesByCid(
   filter: { cid: string } | { ipfs_cid: string }
 ): Promise<PieceWithDataSet[]> {
   const page = unwrap(
-    await apiClientFor(app).GET('/{network}/pieces', {
+    await apiClientFor(app).GET('/v1/{network}/pieces', {
       params: {
         path: { network: app.network },
         query: { owner: scope.payer, limit: PIECE_LIMIT, ...filter },
@@ -78,7 +78,7 @@ export async function allPiecesByCid(
   let cursor: string | undefined
   do {
     const page = unwrap(
-      await api.GET('/{network}/pieces', {
+      await api.GET('/v1/{network}/pieces', {
         params: {
           path: { network: app.network },
           query: {
@@ -115,13 +115,13 @@ export async function pieceById(
   }
   const [piece, dataSet] = await Promise.all([
     api
-      .GET('/{network}/data-sets/{dataSetId}/pieces/{pieceId}', {
+      .GET('/v1/{network}/data-sets/{dataSetId}/pieces/{pieceId}', {
         params: { path: { network: app.network, dataSetId, pieceId } },
       })
       .then(unwrap)
       .catch(missing),
     api
-      .GET('/{network}/data-sets/{dataSetId}', {
+      .GET('/v1/{network}/data-sets/{dataSetId}', {
         params: { path: { network: app.network, dataSetId } },
       })
       .then(unwrap)

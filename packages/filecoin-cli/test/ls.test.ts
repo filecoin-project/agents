@@ -96,7 +96,7 @@ test("ls asks filecoin-api for the payer's live pieces and links local refs", as
   db.close()
   const seen: URL[] = []
   server.use(
-    http.get(`${API}/calibration/pieces`, ({ request }) => {
+    http.get(`${API}/v1/calibration/pieces`, ({ request }) => {
       seen.push(new URL(request.url))
       return HttpResponse.json({
         data: [
@@ -183,7 +183,7 @@ test("ls asks filecoin-api for the payer's live pieces and links local refs", as
 test('ls passes --provider, --cursor, and --all through', async () => {
   const seen: URL[] = []
   server.use(
-    http.get(`${API}/calibration/pieces`, ({ request }) => {
+    http.get(`${API}/v1/calibration/pieces`, ({ request }) => {
       seen.push(new URL(request.url))
       return HttpResponse.json({ data: [], nextCursor: null })
     })
@@ -200,7 +200,7 @@ test('ls passes --provider, --cursor, and --all through', async () => {
 
 test('ls reports a filecoin-api outage as retryable', async () => {
   server.use(
-    http.get(`${API}/calibration/pieces`, () =>
+    http.get(`${API}/v1/calibration/pieces`, () =>
       HttpResponse.json(
         { error: { code: 'unavailable', message: 'try later' } },
         { status: 503 }

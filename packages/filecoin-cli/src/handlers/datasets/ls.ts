@@ -15,7 +15,7 @@ export default defineHandler(ls, async (ctx) => {
   const app = await appFor(ctx)
   const { payer } = accountScope(app)
   const page = unwrap(
-    await apiClientFor(app).GET('/{network}/data-sets', {
+    await apiClientFor(app).GET('/v1/{network}/data-sets', {
       params: {
         path: { network: app.network },
         query: {

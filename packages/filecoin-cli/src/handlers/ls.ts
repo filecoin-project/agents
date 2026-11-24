@@ -18,7 +18,7 @@ export default defineHandler(ls, async (ctx) => {
   const app = await appFor(ctx)
   const scope = accountScope(app)
   const page = unwrap(
-    await apiClientFor(app).GET('/{network}/pieces', {
+    await apiClientFor(app).GET('/v1/{network}/pieces', {
       params: {
         path: { network: app.network },
         query: {

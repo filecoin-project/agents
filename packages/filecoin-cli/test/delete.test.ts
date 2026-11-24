@@ -150,17 +150,17 @@ function mockApi(data: PieceWithDataSet[]): string[] {
     seen.push(`${url.pathname}${url.search}`)
   }
   server.use(
-    http.get(`${API}/calibration/pieces`, ({ request }) => {
+    http.get(`${API}/v1/calibration/pieces`, ({ request }) => {
       record(request)
       return HttpResponse.json({ data, nextCursor: null })
     }),
-    http.get(`${API}/calibration/providers/9`, ({ request }) => {
+    http.get(`${API}/v1/calibration/providers/9`, ({ request }) => {
       record(request)
       return HttpResponse.json({
         data: { providerId: '9', serviceUrl: 'https://sp9.example' },
       })
     }),
-    http.get(`${API}/calibration/data-sets/:id`, ({ request, params }) => {
+    http.get(`${API}/v1/calibration/data-sets/:id`, ({ request, params }) => {
       record(request)
       return HttpResponse.json({
         data: {
@@ -263,10 +263,10 @@ test('delete <pieceCid> --dry-run lists every copy and what the chain shows', as
 
   const json = await run(['delete', pieceCid, '--dry-run'])
   assert.deepEqual(seen.sort(), [
-    '/calibration/data-sets/201',
-    '/calibration/data-sets/202',
-    `/calibration/pieces?owner=${ROOT}&limit=200&cid=${pieceCid}`,
-    '/calibration/providers/9',
+    '/v1/calibration/data-sets/201',
+    '/v1/calibration/data-sets/202',
+    `/v1/calibration/pieces?owner=${ROOT}&limit=200&cid=${pieceCid}`,
+    '/v1/calibration/providers/9',
   ])
   assert.deepEqual(json, {
     data: {
@@ -318,7 +318,7 @@ test('delete <pieceCid> --dry-run lists every copy and what the chain shows', as
 test('delete <dataSetId>/<pieceId> --dry-run names one copy', async () => {
   const piece = apiPiece('210', '3')
   server.use(
-    http.get(`${API}/calibration/data-sets/210/pieces/3`, () =>
+    http.get(`${API}/v1/calibration/data-sets/210/pieces/3`, () =>
       HttpResponse.json({ data: piece })
     )
   )
@@ -366,7 +366,7 @@ test('delete of a piece newer than the index uses the local copy', async () => {
 
   const json = await run(['delete', pieceCid, '--dry-run'])
   assert.deepEqual(seen, [
-    `/calibration/pieces?owner=${ROOT}&limit=200&cid=${pieceCid}`,
+    `/v1/calibration/pieces?owner=${ROOT}&limit=200&cid=${pieceCid}`,
   ])
   assert.deepEqual(
     (json.data as { removals: { resourceRef?: string }[] }).removals.map(
@@ -459,7 +459,7 @@ test('delete <pieceCid> reads every page of pieces', async () => {
   const pieceCid = pieceCidOf('paged')
   const seen = mockApi([])
   server.use(
-    http.get(`${API}/calibration/pieces`, ({ request }) => {
+    http.get(`${API}/v1/calibration/pieces`, ({ request }) => {
       const url = new URL(request.url)
       seen.push(`${url.pathname}${url.search}`)
       const first = url.searchParams.get('cursor') !== 'page-2'
@@ -475,8 +475,8 @@ test('delete <pieceCid> reads every page of pieces', async () => {
   assert.deepEqual(
     seen.filter((path) => path.includes('/pieces')),
     [
-      `/calibration/pieces?owner=${ROOT}&limit=200&cid=${pieceCid}`,
-      `/calibration/pieces?owner=${ROOT}&limit=200&cid=${pieceCid}&cursor=page-2`,
+      `/v1/calibration/pieces?owner=${ROOT}&limit=200&cid=${pieceCid}`,
+      `/v1/calibration/pieces?owner=${ROOT}&limit=200&cid=${pieceCid}&cursor=page-2`,
     ]
   )
   assert.deepEqual(
