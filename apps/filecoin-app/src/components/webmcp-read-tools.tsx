@@ -128,7 +128,7 @@ export function WebMcpReadTools() {
         const network = data.network ?? pageNetwork
         const owner = walletFor(data.owner)
         const page = unwrap(
-          await api.GET('/{network}/data-sets', {
+          await api.GET('/v1/{network}/data-sets', {
             params: {
               path: { network },
               query: {
@@ -161,7 +161,7 @@ export function WebMcpReadTools() {
       runTool(listPiecesInput, input, async (data) => {
         const network = data.network ?? pageNetwork
         const page = unwrap(
-          await api.GET('/{network}/data-sets/{dataSetId}/pieces', {
+          await api.GET('/v1/{network}/data-sets/{dataSetId}/pieces', {
             params: {
               path: { network, dataSetId: data.dataSetId },
               query: {
@@ -193,7 +193,7 @@ export function WebMcpReadTools() {
       runTool(lookupPieceInput, input, async (data) => {
         const network = data.network ?? pageNetwork
         const page = unwrap(
-          await api.GET('/{network}/pieces', {
+          await api.GET('/v1/{network}/pieces', {
             params: {
               path: { network },
               query: {
@@ -227,7 +227,7 @@ export function WebMcpReadTools() {
         const network = data.network ?? pageNetwork
         const owner = walletFor(data.owner)
         const page = unwrap(
-          await api.GET('/{network}/session-keys', {
+          await api.GET('/v1/{network}/session-keys', {
             params: {
               path: { network },
               query: {
