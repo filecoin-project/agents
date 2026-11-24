@@ -123,7 +123,7 @@ docs.filecoin.io serves `.md` URLs, answers `Accept: text/markdown`, and has the
 
 poc.filecoin.cloud builds no card of its own. Its two older paths return a `308` to `https://mcp.filecoin.io/server-card`, with `Access-Control-Allow-Origin: *`. They redirect instead of proxying, because a server-side fetch from the `filecoin.cloud` zone to `mcp.filecoin.io` fails ([same-zone fetches](deployments.md#same-zone-fetches)). docs.filecoin.io serves the card of GitBook's docs MCP server at `/~gitbook/mcp/server-card` and `/.well-known/mcp/server-card.json`.
 
-**What's missing.** The card fails the schema in its `$schema` field. That schema caps `description` at 100 characters, and the card's description has 162 ([#120](https://github.com/filecoin-project/agents/issues/120)). ora finds no server card, probably for this reason.
+**What's missing.** Nothing is missing on our hosts. ora found no server card on 2026-11-14, probably because the description had 162 characters and the card's schema caps it at 100. filecoin-api 0.7.2 shortened the description ([#120](https://github.com/filecoin-project/agents/issues/120)), and a rescan has to confirm that ora now finds the card.
 
 **Where it belongs.** filecoin-api serves the card next to the endpoint. The sites list the card in an AI Catalog instead of copying it, so the card always matches what the server reports.
 
@@ -258,7 +258,7 @@ These pieces are ours:
 - Version the REST API, and send `Deprecation` and `Sunset` ([#60](https://github.com/filecoin-project/agents/issues/60))
 - Add `Organization` JSON-LD and the About, Contact, Privacy, and Pricing pages ([#62](https://github.com/filecoin-project/agents/issues/62))
 - Choose a Content-Signal policy for poc.filecoin.cloud's `robots.txt` ([#107](https://github.com/filecoin-project/agents/issues/107))
-- Shorten the server card's description to 100 characters, so the card passes its schema ([#120](https://github.com/filecoin-project/agents/issues/120))
+- Rescan poc.filecoin.cloud with ora, to confirm that it finds the server card since filecoin-api 0.7.2 shortened the description ([#120](https://github.com/filecoin-project/agents/issues/120))
 - Serve an ARD file at `/.well-known/ard.json`, and decide whether the AI Catalog entry gets a `displayName` ([#121](https://github.com/filecoin-project/agents/issues/121))
 - Call `registerTool` on `document.modelContext` directly, so that scanners credit the WebMCP tools ([#122](https://github.com/filecoin-project/agents/issues/122))
 - Serve explorer pages as Markdown ([#123](https://github.com/filecoin-project/agents/issues/123)), and add frontmatter to the Markdown pages ([#124](https://github.com/filecoin-project/agents/issues/124))
@@ -277,7 +277,7 @@ Most of ora's findings match a gap in this document, or a spec that this documen
 
 | ora checks                                                                                                                               | Where this document covers them                                                                                                                                                            |
 | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| MCP server card, MCP server or manifest, MCP well-known discovery                                                                        | [MCP server card](#mcp-server-card): the card fails its schema ([#120](https://github.com/filecoin-project/agents/issues/120))                                                             |
+| MCP server card, MCP server or manifest, MCP well-known discovery                                                                        | [MCP server card](#mcp-server-card): the card failed its schema before filecoin-api 0.7.2 ([#120](https://github.com/filecoin-project/agents/issues/120))                                  |
 | ARD discovery, ARD entry validity                                                                                                        | [AI Catalog](#ai-catalog): ARD needs a `displayName` that AI Catalog says to omit, and the file at `/.well-known/ard.json` ([#121](https://github.com/filecoin-project/agents/issues/121)) |
 | WebMCP support                                                                                                                           | [WebMCP](#webmcp): ora can't trace the `registerTool` call ([#122](https://github.com/filecoin-project/agents/issues/122))                                                                 |
 | Markdown URL fallback, Markdown frontmatter metadata                                                                                     | [Markdown versions of pages](#markdown-versions-of-pages) ([#123](https://github.com/filecoin-project/agents/issues/123), [#124](https://github.com/filecoin-project/agents/issues/124))   |
