@@ -1,5 +1,6 @@
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { Scalar } from '@scalar/hono-api-reference'
+import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { etag } from 'hono/etag'
 import { timing } from 'hono/timing'
@@ -32,6 +33,13 @@ import type { AppEnv } from './types.ts'
  * @see https://github.com/googleapis/release-please/blob/main/docs/customizing.md#updating-arbitrary-files
  */
 export const VERSION = '0.7.2' // x-release-please-version
+
+/**
+ * Version of the REST data routes, the first segment of their paths, such as
+ * `/v1/mainnet/providers`. A breaking change to a route ships under the next
+ * version, as the README's "Versioning and deprecation" section describes.
+ */
+export const API_VERSION = 'v1'
 
 /**
  * OpenAPI document settings for a server origin. `/openapi.json` serves the
@@ -73,8 +81,9 @@ export interface AppOptions {
 }
 
 /**
- * Create the filecoin-api Hono app: REST routes under `/{network}`, OpenAPI
- * document, API reference, the MCP endpoint and its server card.
+ * Create the filecoin-api Hono app: REST routes under `/v1/{network}`, with
+ * their unversioned aliases under `/{network}`, OpenAPI document, API
+ * reference, the MCP endpoint and its server card.
  *
  * @see https://hono.dev/examples/zod-openapi
  */
@@ -122,6 +131,7 @@ export function createApp(options: AppOptions = {}) {
       name: 'filecoin-api',
       version: VERSION,
       networks: NETWORK_NAMES,
+      api: `/${API_VERSION}/{network}`,
       get: '/get/{cid}',
       openapi: '/openapi.json',
       docs: '/docs',
@@ -213,7 +223,11 @@ export function createApp(options: AppOptions = {}) {
     }
   })
 
-  app.route('/', networkRoutes(dbFactory))
+  app.route(`/${API_VERSION}`, networkRoutes(dbFactory))
+  // The paths from before versioning stay as aliases of v1, because released
+  // CLIs, API clients and plugins call them. Mounting them through a plain
+  // Hono app keeps them out of the OpenAPI document.
+  app.route('/', new Hono<AppEnv>().route('/', networkRoutes(dbFactory)))
   app.route('/', retrievalRoutes(dbFactory, options.ipniFetch))
 
   app.notFound((c) => c.json(errorBody('not_found', 'Route not found'), 404))

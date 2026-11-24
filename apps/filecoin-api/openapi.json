@@ -1017,7 +1017,7 @@
     "parameters": {}
   },
   "paths": {
-    "/{network}/status": {
+    "/v1/{network}/status": {
       "get": {
         "operationId": "status",
         "tags": [
@@ -1129,7 +1129,7 @@
         }
       }
     },
-    "/{network}/providers": {
+    "/v1/{network}/providers": {
       "get": {
         "operationId": "listProviders",
         "tags": [
@@ -1306,7 +1306,7 @@
         }
       }
     },
-    "/{network}/providers/{providerId}": {
+    "/v1/{network}/providers/{providerId}": {
       "get": {
         "operationId": "getProvider",
         "tags": [
@@ -1445,7 +1445,7 @@
         }
       }
     },
-    "/{network}/data-sets": {
+    "/v1/{network}/data-sets": {
       "get": {
         "operationId": "listDataSets",
         "tags": [
@@ -1630,7 +1630,7 @@
         }
       }
     },
-    "/{network}/data-sets/{dataSetId}": {
+    "/v1/{network}/data-sets/{dataSetId}": {
       "get": {
         "operationId": "getDataSet",
         "tags": [
@@ -1769,7 +1769,7 @@
         }
       }
     },
-    "/{network}/data-sets/{dataSetId}/pieces": {
+    "/v1/{network}/data-sets/{dataSetId}/pieces": {
       "get": {
         "operationId": "listDataSetPieces",
         "tags": [
@@ -1927,7 +1927,7 @@
         }
       }
     },
-    "/{network}/data-sets/{dataSetId}/pieces/{pieceId}": {
+    "/v1/{network}/data-sets/{dataSetId}/pieces/{pieceId}": {
       "get": {
         "operationId": "getPiece",
         "tags": [
@@ -2075,7 +2075,7 @@
         }
       }
     },
-    "/{network}/pieces": {
+    "/v1/{network}/pieces": {
       "get": {
         "operationId": "listPieces",
         "tags": [
@@ -2269,7 +2269,7 @@
         }
       }
     },
-    "/{network}/rails": {
+    "/v1/{network}/rails": {
       "get": {
         "operationId": "listRails",
         "tags": [
@@ -2463,7 +2463,7 @@
         }
       }
     },
-    "/{network}/rails/{railId}": {
+    "/v1/{network}/rails/{railId}": {
       "get": {
         "operationId": "getRail",
         "tags": [
@@ -2602,7 +2602,7 @@
         }
       }
     },
-    "/{network}/rails/{railId}/settlements": {
+    "/v1/{network}/rails/{railId}/settlements": {
       "get": {
         "operationId": "listRailSettlements",
         "tags": [
@@ -2746,7 +2746,7 @@
         }
       }
     },
-    "/{network}/session-keys": {
+    "/v1/{network}/session-keys": {
       "get": {
         "operationId": "listSessionKeys",
         "tags": [
@@ -2918,7 +2918,7 @@
         }
       }
     },
-    "/{network}/session-keys/history": {
+    "/v1/{network}/session-keys/history": {
       "get": {
         "operationId": "listSessionKeyEvents",
         "tags": [

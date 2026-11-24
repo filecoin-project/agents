@@ -17,23 +17,23 @@ describe('openapi', () => {
     expect(doc.openapi).toBe('3.1.0')
     expect(Object.keys(doc.paths).sort()).toEqual(
       [
-        '/{network}/status',
-        '/{network}/providers',
-        '/{network}/providers/{providerId}',
-        '/{network}/data-sets',
-        '/{network}/data-sets/{dataSetId}',
-        '/{network}/data-sets/{dataSetId}/pieces',
-        '/{network}/data-sets/{dataSetId}/pieces/{pieceId}',
-        '/{network}/pieces',
-        '/{network}/rails',
-        '/{network}/rails/{railId}',
-        '/{network}/rails/{railId}/settlements',
-        '/{network}/session-keys',
-        '/{network}/session-keys/history',
+        '/v1/{network}/status',
+        '/v1/{network}/providers',
+        '/v1/{network}/providers/{providerId}',
+        '/v1/{network}/data-sets',
+        '/v1/{network}/data-sets/{dataSetId}',
+        '/v1/{network}/data-sets/{dataSetId}/pieces',
+        '/v1/{network}/data-sets/{dataSetId}/pieces/{pieceId}',
+        '/v1/{network}/pieces',
+        '/v1/{network}/rails',
+        '/v1/{network}/rails/{railId}',
+        '/v1/{network}/rails/{railId}/settlements',
+        '/v1/{network}/session-keys',
+        '/v1/{network}/session-keys/history',
         '/get/{cid}',
       ].sort()
     )
-    const params = doc.paths['/{network}/pieces']?.get?.parameters?.map(
+    const params = doc.paths['/v1/{network}/pieces']?.get?.parameters?.map(
       (p) => p.name
     )
     expect(params).toEqual(
@@ -45,6 +45,15 @@ describe('openapi', () => {
         'limit',
       ])
     )
+  })
+
+  it('lists the version in every data route path', async () => {
+    const { request } = testApp()
+    const doc = (await (await request('/openapi.json')).json()) as OpenApiDoc
+    const unversioned = Object.keys(doc.paths).filter(
+      (path) => path.startsWith('/{network}') || path.startsWith('/:network')
+    )
+    expect(unversioned).toEqual([])
   })
 
   it('gives every operation a unique operationId', async () => {
