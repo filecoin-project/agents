@@ -15,19 +15,19 @@ import { createApiClient, unwrap } from '@filecoin-project/api-client'
 
 const api = createApiClient() // https://api.filecoin.io
 const { data: providers, nextCursor } = unwrap(
-  await api.GET('/{network}/providers', {
+  await api.GET('/v1/{network}/providers', {
     params: { path: { network: 'calibration' } },
   })
 )
 ```
 
-| Export                                                 | Contents                                                                                        |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| `createApiClient(options)`                             | An openapi-fetch client. `baseUrl` defaults to `DEFAULT_API_URL`, `https://api.filecoin.io`.    |
-| `unwrap(result)`                                       | Returns a result's data, or throws an `ApiError` with filecoin-api's error `code` and `message` |
-| `ApiError`                                             | `status`, `code`, and `ApiError.isNotFound(error)`                                              |
-| `Provider`, `DataSet`, `Piece`, and other schema types | Shortcuts into `components['schemas']`                                                          |
-| `paths`, `components`, `operations`                    | The generated types, from `src/schema.ts`                                                       |
+| Export                                                 | Contents                                                                                                                                                                                                                                                                 |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `createApiClient(options)`                             | An openapi-fetch client. `baseUrl` is the filecoin-api origin, and defaults to `DEFAULT_API_URL`, `https://api.filecoin.io`. Paths carry the API version, such as `/v1/{network}/providers` ([versioning](../../apps/filecoin-api/README.md#versioning-and-deprecation)) |
+| `unwrap(result)`                                       | Returns a result's data, or throws an `ApiError` with filecoin-api's error `code` and `message`                                                                                                                                                                          |
+| `ApiError`                                             | `status`, `code`, and `ApiError.isNotFound(error)`                                                                                                                                                                                                                       |
+| `Provider`, `DataSet`, `Piece`, and other schema types | Shortcuts into `components['schemas']`                                                                                                                                                                                                                                   |
+| `paths`, `components`, `operations`                    | The generated types, from `src/schema.ts`                                                                                                                                                                                                                                |
 
 ## How the types stay current
 

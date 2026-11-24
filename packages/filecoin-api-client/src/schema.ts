@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/{network}/status": {
+    "/v1/{network}/status": {
         parameters: {
             query?: never;
             header?: never;
@@ -24,7 +24,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/{network}/providers": {
+    "/v1/{network}/providers": {
         parameters: {
             query?: never;
             header?: never;
@@ -41,7 +41,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/{network}/providers/{providerId}": {
+    "/v1/{network}/providers/{providerId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -58,7 +58,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/{network}/data-sets": {
+    "/v1/{network}/data-sets": {
         parameters: {
             query?: never;
             header?: never;
@@ -75,7 +75,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/{network}/data-sets/{dataSetId}": {
+    "/v1/{network}/data-sets/{dataSetId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -92,7 +92,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/{network}/data-sets/{dataSetId}/pieces": {
+    "/v1/{network}/data-sets/{dataSetId}/pieces": {
         parameters: {
             query?: never;
             header?: never;
@@ -109,7 +109,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/{network}/data-sets/{dataSetId}/pieces/{pieceId}": {
+    "/v1/{network}/data-sets/{dataSetId}/pieces/{pieceId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -126,7 +126,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/{network}/pieces": {
+    "/v1/{network}/pieces": {
         parameters: {
             query?: never;
             header?: never;
@@ -146,7 +146,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/{network}/rails": {
+    "/v1/{network}/rails": {
         parameters: {
             query?: never;
             header?: never;
@@ -163,7 +163,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/{network}/rails/{railId}": {
+    "/v1/{network}/rails/{railId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -180,7 +180,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/{network}/rails/{railId}/settlements": {
+    "/v1/{network}/rails/{railId}/settlements": {
         parameters: {
             query?: never;
             header?: never;
@@ -197,7 +197,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/{network}/session-keys": {
+    "/v1/{network}/session-keys": {
         parameters: {
             query?: never;
             header?: never;
@@ -217,7 +217,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/{network}/session-keys/history": {
+    "/v1/{network}/session-keys/history": {
         parameters: {
             query?: never;
             header?: never;

@@ -18,11 +18,11 @@ describe('createApiClient', () => {
   it('calls the production API by default', async () => {
     const { api, requests } = clientReturning(Response.json({ chainId: 314 }))
     const status = unwrap(
-      await api.GET('/{network}/status', {
+      await api.GET('/v1/{network}/status', {
         params: { path: { network: 'mainnet' } },
       })
     )
-    assert.equal(requests[0]?.url, 'https://api.filecoin.io/mainnet/status')
+    assert.equal(requests[0]?.url, 'https://api.filecoin.io/v1/mainnet/status')
     assert.deepEqual(status, { chainId: 314 })
   })
 })
@@ -35,7 +35,7 @@ describe('unwrap', () => {
         { status: 404 }
       )
     )
-    const result = await api.GET('/{network}/providers/{providerId}', {
+    const result = await api.GET('/v1/{network}/providers/{providerId}', {
       params: { path: { network: 'mainnet', providerId: '1' } },
     })
     assert.throws(
@@ -51,7 +51,7 @@ describe('unwrap', () => {
     const { api } = clientReturning(
       new Response('bad gateway', { status: 502, statusText: 'Bad Gateway' })
     )
-    const result = await api.GET('/{network}/status', {
+    const result = await api.GET('/v1/{network}/status', {
       params: { path: { network: 'mainnet' } },
     })
     assert.throws(
