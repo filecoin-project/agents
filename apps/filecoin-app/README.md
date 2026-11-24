@@ -142,10 +142,10 @@ The ChatGPT desktop app's built-in browser calls WebMCP tools "site tools", and 
 
 The app deploys as a Worker (`wrangler.jsonc`) at https://poc.filecoin.cloud. The Worker renders pages, and Cloudflare serves the client build from `dist/client` as static assets. `public/_headers` sets the cache headers for those assets. [`.github/workflows/filecoin-app.yml`](../../.github/workflows/filecoin-app.yml) mirrors filecoin-api's workflow:
 
-| Trigger                        | Result                                                                                            |
-| ------------------------------ | ------------------------------------------------------------------------------------------------- |
-| Push to `main`                 | Runs typecheck, tests, lint and build, then `wrangler deploy` and probes a server-rendered page   |
-| Pull request opened or updated | Builds, creates a `wrangler preview --name pr-<number>`, probes it and comments the URL on the PR |
-| Pull request closed            | `wrangler preview delete`                                                                         |
+| Trigger                        | Result                                                                                                                                                                                                                      |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Push to `main`                 | Waits until `https://api.filecoin.cloud` answers a `/v1` request, so the app never deploys before the routes it calls. Then runs typecheck, tests, lint and build, then `wrangler deploy` and probes a server-rendered page |
+| Pull request opened or updated | Builds, creates a `wrangler preview --name pr-<number>`, probes it and comments the URL on the PR                                                                                                                           |
+| Pull request closed            | `wrangler preview delete`                                                                                                                                                                                                   |
 
 The production deploy uses its own `fil-app-production` GitHub environment. The workflow uses the same `CLOUDFLARE_API_TOKEN` repository secret as filecoin-api, and `wrangler.jsonc` pins the same FilOz account ([setup](../filecoin-api/README.md#setup)).
