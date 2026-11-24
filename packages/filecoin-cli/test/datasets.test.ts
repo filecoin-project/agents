@@ -101,17 +101,17 @@ const provider: Provider = {
 /** Mocks the data set, piece, and provider routes of one data set. */
 function mockDataSet(dataSet: DataSet, pieces: Piece[], seen: URL[] = []) {
   server.use(
-    http.get(`${API}/calibration/data-sets/${dataSet.dataSetId}`, () =>
+    http.get(`${API}/v1/calibration/data-sets/${dataSet.dataSetId}`, () =>
       HttpResponse.json({ data: dataSet })
     ),
     http.get(
-      `${API}/calibration/data-sets/${dataSet.dataSetId}/pieces`,
+      `${API}/v1/calibration/data-sets/${dataSet.dataSetId}/pieces`,
       ({ request }) => {
         seen.push(new URL(request.url))
         return HttpResponse.json({ data: pieces, nextCursor: 'p2' })
       }
     ),
-    http.get(`${API}/calibration/providers/9`, () =>
+    http.get(`${API}/v1/calibration/providers/9`, () =>
       HttpResponse.json({ data: provider })
     )
   )
@@ -120,7 +120,7 @@ function mockDataSet(dataSet: DataSet, pieces: Piece[], seen: URL[] = []) {
 test("datasets ls asks filecoin-api for the payer's live data sets", async () => {
   const seen: URL[] = []
   server.use(
-    http.get(`${API}/calibration/data-sets`, ({ request }) => {
+    http.get(`${API}/v1/calibration/data-sets`, ({ request }) => {
       seen.push(new URL(request.url))
       return HttpResponse.json({
         data: [
@@ -178,7 +178,7 @@ test("datasets ls asks filecoin-api for the payer's live data sets", async () =>
 test('datasets ls passes --provider, --cursor, and --all through', async () => {
   const seen: URL[] = []
   server.use(
-    http.get(`${API}/calibration/data-sets`, ({ request }) => {
+    http.get(`${API}/v1/calibration/data-sets`, ({ request }) => {
       seen.push(new URL(request.url))
       return HttpResponse.json({ data: [], nextCursor: null })
     })
@@ -269,13 +269,13 @@ test('datasets inspect --removed asks for removed pieces too', async () => {
 
 test('datasets inspect of an unknown or foreign data set is not_found', async () => {
   server.use(
-    http.get(`${API}/calibration/data-sets/1`, () =>
+    http.get(`${API}/v1/calibration/data-sets/1`, () =>
       HttpResponse.json(
         { error: { code: 'not_found', message: 'Data set 1 not found' } },
         { status: 404 }
       )
     ),
-    http.get(`${API}/calibration/data-sets/1/pieces`, () =>
+    http.get(`${API}/v1/calibration/data-sets/1/pieces`, () =>
       HttpResponse.json({ data: [], nextCursor: null })
     )
   )
@@ -300,7 +300,7 @@ test('filecoin-api rate limits and outages are retryable', async () => {
     [503, 'service_unavailable'],
   ] as const) {
     server.use(
-      http.get(`${API}/calibration/data-sets`, () =>
+      http.get(`${API}/v1/calibration/data-sets`, () =>
         HttpResponse.json(
           { error: { code: 'unavailable', message: 'try later' } },
           { status }
@@ -316,7 +316,7 @@ test('filecoin-api rate limits and outages are retryable', async () => {
 
 test('an unreachable filecoin-api is service_unavailable', async () => {
   server.use(
-    http.get(`${API}/calibration/data-sets`, () => HttpResponse.error())
+    http.get(`${API}/v1/calibration/data-sets`, () => HttpResponse.error())
   )
   const json = await run(['datasets', 'ls'])
   assert.equal((json.error as { code: string }).code, 'service_unavailable')

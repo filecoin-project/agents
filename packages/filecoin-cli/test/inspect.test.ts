@@ -128,7 +128,7 @@ function apiPiece(
 function mockPieces(data: PieceWithDataSet[]): Record<string, string>[] {
   const seen: Record<string, string>[] = []
   server.use(
-    http.get(`${API}/calibration/pieces`, ({ request }) => {
+    http.get(`${API}/v1/calibration/pieces`, ({ request }) => {
       seen.push(Object.fromEntries(new URL(request.url).searchParams))
       return HttpResponse.json({ data, nextCursor: null })
     })
@@ -211,10 +211,10 @@ test('inspect <dataSetId>/<pieceId> reads the piece and its data set', async () 
   }
   let owner = ROOT
   server.use(
-    http.get(`${API}/calibration/data-sets/120/pieces/3`, () =>
+    http.get(`${API}/v1/calibration/data-sets/120/pieces/3`, () =>
       HttpResponse.json({ data: piece })
     ),
-    http.get(`${API}/calibration/data-sets/120`, () =>
+    http.get(`${API}/v1/calibration/data-sets/120`, () =>
       HttpResponse.json({
         data: { dataSetId: '120', owner, providerId: '9' } as DataSet,
       })
