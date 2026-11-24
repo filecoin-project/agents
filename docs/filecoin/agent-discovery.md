@@ -123,7 +123,7 @@ docs.filecoin.io serves `.md` URLs, answers `Accept: text/markdown`, and has the
 
 poc.filecoin.cloud builds no card of its own. Its two older paths return a `308` to `https://mcp.filecoin.io/server-card`, with `Access-Control-Allow-Origin: *`. They redirect instead of proxying, because a server-side fetch from the `filecoin.cloud` zone to `mcp.filecoin.io` fails ([same-zone fetches](deployments.md#same-zone-fetches)). docs.filecoin.io serves the card of GitBook's docs MCP server at `/~gitbook/mcp/server-card` and `/.well-known/mcp/server-card.json`.
 
-**What's missing.** Nothing is missing on our hosts. ora found no server card on 2026-11-14, probably because the description had 162 characters and the card's schema caps it at 100. filecoin-api 0.7.2 shortened the description ([#120](https://github.com/filecoin-project/agents/issues/120)), and a rescan has to confirm that ora now finds the card.
+**What's missing.** Nothing is missing on our hosts. ora found no server card on 2026-11-14, probably because the description had 162 characters and the card's schema caps it at 100. filecoin-api 0.7.2 shortened the description ([#120](https://github.com/filecoin-project/agents/issues/120)), and a rescan has to confirm that ora now finds the card. The live card is valid against `ServerCard` in the extension's [`schema.json`](https://github.com/modelcontextprotocol/experimental-ext-server-card/blob/main/schema.json). On 2026-11-24, the URL in the card's `$schema` field returned a `404`. The extension's schema requires that exact URL, so the fix is upstream.
 
 **Where it belongs.** filecoin-api serves the card next to the endpoint. The sites list the card in an AI Catalog instead of copying it, so the card always matches what the server reports.
 
