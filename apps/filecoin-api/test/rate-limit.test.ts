@@ -6,7 +6,7 @@ describe('rate limits', () => {
     const { request, fake } = testApp(() => [rows.provider], {
       RATE_LIMIT_API: fakeLimiter(false),
     })
-    const res = await request('/calibration/providers')
+    const res = await request('/v1/calibration/providers')
     expect(res.status).toBe(429)
     expect(res.headers.get('retry-after')).toBe('60')
     expect(res.headers.get('ratelimit-policy')).toBe('"api";q=120;w=60')
@@ -28,7 +28,7 @@ describe('rate limits', () => {
       text.includes('chain_id') ? [rows.checkpoint] : [rows.provider]
     )
     for (const path of [
-      '/calibration/providers',
+      '/v1/calibration/providers',
       '/health',
       '/get/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi?browser=true',
     ]) {
@@ -54,7 +54,7 @@ describe('rate limits', () => {
 
   it('exposes the policy to browsers', async () => {
     const { request } = testApp(() => [rows.provider])
-    const res = await request('/calibration/providers', {
+    const res = await request('/v1/calibration/providers', {
       headers: { Origin: 'https://example.com' },
     })
     expect(res.headers.get('access-control-expose-headers')).toContain(

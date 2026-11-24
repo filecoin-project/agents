@@ -138,7 +138,7 @@ describe.each(['mcp.filecoin.io', 'mcp.filecoin.cloud'])(
         '/mcp/server-card',
         '/health',
         '/docs',
-        '/calibration/providers',
+        '/v1/calibration/providers',
       ]) {
         const res = await request(`https://${host}${path}`)
         expect(res.status).toBe(404)
