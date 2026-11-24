@@ -47,27 +47,27 @@ Each cell has one of these values:
 | Not applicable | The spec doesn't apply to this host                                                     |
 | Theirs         | Another team runs the host. The rest of the cell says what the host serves today        |
 
-| Spec                                                             | Spec status                | poc.filecoin.cloud    | api.filecoin.io | mcp.filecoin.io | filecoin.io                          | docs.filecoin.io                  |
-| ---------------------------------------------------------------- | -------------------------- | --------------------- | --------------- | --------------- | ------------------------------------ | --------------------------------- |
-| [`llms.txt`, `llms-full.txt`](#llmstxt-and-llms-fulltxt)         | Proposal                   | Served                | Not applicable  | Not applicable  | Theirs, missing                      | Theirs, served                    |
-| [Markdown versions of pages](#markdown-versions-of-pages)        | Convention                 | Served                | Not applicable  | Not applicable  | Theirs, missing                      | Theirs, served in part            |
-| [API catalog](#api-catalog)                                      | Final (RFC 9727)           | Served                | Not applicable  | Not applicable  | Theirs, missing                      | Not applicable                    |
-| [`integrations.json`](#integrationsjson)                         | Vendor format              | Served                | Not applicable  | Not applicable  | Theirs, missing                      | Not applicable                    |
-| [MCP server card](#mcp-server-card)                              | Final (SEP-2127)           | Served, as a redirect | Served          | Served          | Not applicable                       | Theirs, served for its own server |
-| [AI Catalog](#ai-catalog)                                        | Draft                      | Served                | Not applicable  | Not applicable  | Theirs, missing                      | Theirs, served for its own server |
-| [ARD](#ai-catalog)                                               | Proposal (v0.91)           | Missing               | Not applicable  | Not applicable  | Theirs, missing                      | Theirs, missing                   |
-| [MCP registry `server.json`](#mcp-registry-serverjson)           | Preview                    | Not applicable        | Not applicable  | Not applicable  | Theirs, for the HTTP ownership proof | Not applicable                    |
-| [Agent skills discovery](#agent-skills-discovery)                | Draft                      | Served                | Not applicable  | Not applicable  | Theirs, missing                      | Not applicable                    |
-| [WebMCP](#webmcp)                                                | Draft                      | Served                | Not applicable  | Not applicable  | Theirs, not served                   | Theirs, served                    |
-| [OpenAPI document](#openapi-document)                            | Final (3.1)                | Not applicable        | Served          | Not applicable  | Not applicable                       | Not applicable                    |
-| [`service-desc` link](#service-desc-link)                        | Final (RFC 8631)           | Missing               | Served          | Not applicable  | Not applicable                       | Not applicable                    |
-| [`robots.txt`](#robotstxt-and-content-signal)                    | Final (RFC 9309)           | Served                | Not applicable  | Not applicable  | Theirs, served                       | Theirs, served                    |
-| [Content-Signal](#robotstxt-and-content-signal)                  | Vendor policy              | Missing               | Not applicable  | Not applicable  | Theirs, missing                      | Theirs, served                    |
-| [Sitemap](#sitemap-json-ld-and-open-graph)                       | Final (0.9)                | Served                | Not applicable  | Not applicable  | Theirs, served                       | Theirs, served                    |
-| [JSON-LD](#sitemap-json-ld-and-open-graph)                       | Final                      | Served in part        | Not applicable  | Not applicable  | Theirs, served                       | Theirs, missing                   |
-| [Open Graph and canonical URLs](#sitemap-json-ld-and-open-graph) | Stable                     | Served                | Not applicable  | Not applicable  | Theirs, served                       | Theirs, served                    |
-| [`RateLimit-Policy`](#ratelimit-policy)                          | Draft                      | Not applicable        | Served          | Served          | Not applicable                       | Not applicable                    |
-| [`Deprecation` and `Sunset`](#deprecation-and-sunset)            | Final (RFC 9745, RFC 8594) | Not applicable        | Missing         | Not applicable  | Not applicable                       | Not applicable                    |
+| Spec                                                             | Spec status                | poc.filecoin.cloud    | api.filecoin.io              | mcp.filecoin.io | filecoin.io                          | docs.filecoin.io                  |
+| ---------------------------------------------------------------- | -------------------------- | --------------------- | ---------------------------- | --------------- | ------------------------------------ | --------------------------------- |
+| [`llms.txt`, `llms-full.txt`](#llmstxt-and-llms-fulltxt)         | Proposal                   | Served                | Not applicable               | Not applicable  | Theirs, missing                      | Theirs, served                    |
+| [Markdown versions of pages](#markdown-versions-of-pages)        | Convention                 | Served                | Not applicable               | Not applicable  | Theirs, missing                      | Theirs, served in part            |
+| [API catalog](#api-catalog)                                      | Final (RFC 9727)           | Served                | Not applicable               | Not applicable  | Theirs, missing                      | Not applicable                    |
+| [`integrations.json`](#integrationsjson)                         | Vendor format              | Served                | Not applicable               | Not applicable  | Theirs, missing                      | Not applicable                    |
+| [MCP server card](#mcp-server-card)                              | Final (SEP-2127)           | Served, as a redirect | Served                       | Served          | Not applicable                       | Theirs, served for its own server |
+| [AI Catalog](#ai-catalog)                                        | Draft                      | Served                | Not applicable               | Not applicable  | Theirs, missing                      | Theirs, served for its own server |
+| [ARD](#ai-catalog)                                               | Proposal (v0.91)           | Missing               | Not applicable               | Not applicable  | Theirs, missing                      | Theirs, missing                   |
+| [MCP registry `server.json`](#mcp-registry-serverjson)           | Preview                    | Not applicable        | Not applicable               | Not applicable  | Theirs, for the HTTP ownership proof | Not applicable                    |
+| [Agent skills discovery](#agent-skills-discovery)                | Draft                      | Served                | Not applicable               | Not applicable  | Theirs, missing                      | Not applicable                    |
+| [WebMCP](#webmcp)                                                | Draft                      | Served                | Not applicable               | Not applicable  | Theirs, not served                   | Theirs, served                    |
+| [OpenAPI document](#openapi-document)                            | Final (3.1)                | Not applicable        | Served                       | Not applicable  | Not applicable                       | Not applicable                    |
+| [`service-desc` link](#service-desc-link)                        | Final (RFC 8631)           | Missing               | Served                       | Not applicable  | Not applicable                       | Not applicable                    |
+| [`robots.txt`](#robotstxt-and-content-signal)                    | Final (RFC 9309)           | Served                | Not applicable               | Not applicable  | Theirs, served                       | Theirs, served                    |
+| [Content-Signal](#robotstxt-and-content-signal)                  | Vendor policy              | Missing               | Not applicable               | Not applicable  | Theirs, missing                      | Theirs, served                    |
+| [Sitemap](#sitemap-json-ld-and-open-graph)                       | Final (0.9)                | Served                | Not applicable               | Not applicable  | Theirs, served                       | Theirs, served                    |
+| [JSON-LD](#sitemap-json-ld-and-open-graph)                       | Final                      | Served in part        | Not applicable               | Not applicable  | Theirs, served                       | Theirs, missing                   |
+| [Open Graph and canonical URLs](#sitemap-json-ld-and-open-graph) | Stable                     | Served                | Not applicable               | Not applicable  | Theirs, served                       | Theirs, served                    |
+| [`RateLimit-Policy`](#ratelimit-policy)                          | Draft                      | Not applicable        | Served                       | Served          | Not applicable                       | Not applicable                    |
+| [`Deprecation` and `Sunset`](#deprecation-and-sunset)            | Final (RFC 9745, RFC 8594) | Not applicable        | Policy, no deprecated routes | Not applicable  | Not applicable                       | Not applicable                    |
 
 No host serves the MCP registry's `server.json`. We publish it to the registry, and that entry is missing ([#75](https://github.com/filecoin-project/agents/issues/75)). The row shows only where the ownership proof would go.
 
@@ -180,7 +180,7 @@ poc.filecoin.cloud builds no card of its own. Its two older paths return a `308`
 
 **What we serve.** filecoin-api serves the document at `https://api.filecoin.io/openapi.json`, with a reference at `/docs`. The API root, `https://api.filecoin.io/`, returns JSON that names `/openapi.json`, `/docs`, and `/mcp`. poc.filecoin.cloud links the document from its API catalog, `integrations.json`, and `llms.txt`.
 
-**What's missing.** The routes have no version ([#60](https://github.com/filecoin-project/agents/issues/60)).
+**What's missing.** Nothing is missing. The data routes are under `/v1`, and the document lists them there ([#60](https://github.com/filecoin-project/agents/issues/60)). The paths from before `/v1` still work, but the document leaves them out ([versioning](../../apps/filecoin-api/README.md#versioning-and-deprecation)).
 
 **Where it belongs.** filecoin-api serves it.
 
@@ -230,9 +230,9 @@ filecoin.io's sitemap lists 751 URLs. It has `Organization`, `WebSite`, `WebPage
 
 **What it is.** The `Deprecation` header ([RFC 9745](https://www.rfc-editor.org/rfc/rfc9745)) and the `Sunset` header ([RFC 8594](https://www.rfc-editor.org/rfc/rfc8594)) are final. They tell a client that a route is deprecated and when it stops working.
 
-**What we serve.** filecoin-api has no versioned routes and no deprecation policy.
+**What we serve.** filecoin-api versions its data routes under `/v1` and publishes a deprecation policy ([#60](https://github.com/filecoin-project/agents/issues/60)). When `/v2` ships, v1 responses send `Deprecation`, `Sunset`, and a `deprecation` link for at least six months ([versioning](../../apps/filecoin-api/README.md#versioning-and-deprecation)). No route is deprecated now, so no response sends the headers.
 
-**What's missing.** filecoin-api needs a versioning scheme and a deprecation policy ([#60](https://github.com/filecoin-project/agents/issues/60)).
+**What's missing.** Nothing is missing.
 
 **Where it belongs.** filecoin-api sends them.
 
@@ -255,7 +255,6 @@ These pieces are ours:
 - Publish `io.filecoin/mcp` to the MCP registry, with a DNS TXT record or an HTTP file on `filecoin.io` ([#75](https://github.com/filecoin-project/agents/issues/75))
 - Map poc.filecoin.cloud on integrations.sh, so that `npx add-mcp find` lists the MCP server ([#10](https://github.com/filecoin-project/agents/issues/10))
 - Find out why Is Agentic finds no API from poc.filecoin.cloud ([#56](https://github.com/filecoin-project/agents/issues/56))
-- Version the REST API, and send `Deprecation` and `Sunset` ([#60](https://github.com/filecoin-project/agents/issues/60))
 - Add `Organization` JSON-LD and the About, Contact, Privacy, and Pricing pages ([#62](https://github.com/filecoin-project/agents/issues/62))
 - Choose a Content-Signal policy for poc.filecoin.cloud's `robots.txt` ([#107](https://github.com/filecoin-project/agents/issues/107))
 - Rescan poc.filecoin.cloud with ora, to confirm that it finds the server card since filecoin-api 0.7.2 shortened the description ([#120](https://github.com/filecoin-project/agents/issues/120))
