@@ -34,6 +34,8 @@ permissions:
 env:
   WRANGLER_SEND_METRICS: "false"
   PRODUCTION_URL: https://poc.filecoin.cloud
+  # The origin the app's API client calls.
+  API_URL: https://api.filecoin.cloud
 
 jobs:
   deploy:
@@ -66,6 +68,20 @@ jobs:
           key: turbo-${{ runner.os }}-${{ github.workflow }}-${{ github.sha }}
           restore-keys: |
             turbo-${{ runner.os }}-
+
+      # A push that changes both apps deploys filecoin-api at the same time. Keep
+      # the current app live until the routes the new one calls answer.
+      - name: Wait for the API
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --show-error --silent --max-time 10 --output /dev/null \
+              "$API_URL/v1/mainnet/rails?limit=1"; then
+              exit 0
+            fi
+            echo "attempt $attempt failed, retrying in 15s"
+            sleep 15
+          done
+          exit 1
 
       - name: Check and deploy
         run: pnpm turbo run deploy --filter=filecoin-app
