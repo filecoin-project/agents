@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.0](https://github.com/filecoin-project/agents/compare/filecoin-api-v0.7.2...filecoin-api-v0.8.0) (2026-11-25)
+
+
+### Features
+
+* **filecoin-api:** serve the data routes under /v1 and state a deprecation policy ([fdc7f4c](https://github.com/filecoin-project/agents/commit/fdc7f4c148214efeb22ffafa4a1cb1a534d70f82))
+
+
+### Bug Fixes
+
+* **filecoin-api:** link the server card to the MCP page ([eaf98c2](https://github.com/filecoin-project/agents/commit/eaf98c28272d728cb9e7e5e8e6ee11b21b21adfc))
+
 ## [0.7.2](https://github.com/filecoin-project/agents/compare/filecoin-api-v0.7.1...filecoin-api-v0.7.2) (2026-11-17)
 
 
