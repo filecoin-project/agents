@@ -1,6 +1,6 @@
 {
   "name": "@filecoin-project/api-client",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Typed filecoin-api REST client generated from its OpenAPI document",
   "keywords": [
     "filecoin",
