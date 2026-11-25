@@ -27,6 +27,7 @@ import {
   findSitePage,
   HOME_PAGE,
   movedPath,
+  movedResponse,
   SITE_PAGES,
 } from '../src/lib/site/pages.ts'
 
@@ -97,6 +98,30 @@ describe('movedPath', () => {
     assert.equal(movedPath('/docs/cli'), undefined)
     assert.equal(movedPath('/constructor'), undefined)
     assert.equal(movedPath('/'), undefined)
+  })
+})
+
+describe('movedResponse', () => {
+  // A browser drops a cross-origin fetch whose redirect lacks the header.
+  for (const suffix of ['', '.md']) {
+    it(`lets other origins follow the redirect of /docs/quickstart${suffix}`, () => {
+      const response = movedResponse(
+        new URL(`https://poc.filecoin.cloud/docs/quickstart${suffix}?a=1`)
+      )
+      assert.equal(response?.status, 308)
+      assert.equal(
+        response?.headers.get('location'),
+        `/docs/getting-started${suffix}?a=1`
+      )
+      assert.equal(response?.headers.get('access-control-allow-origin'), '*')
+    })
+  }
+
+  it('leaves other paths alone', () => {
+    assert.equal(
+      movedResponse(new URL('https://poc.filecoin.cloud/docs/cli')),
+      undefined
+    )
   })
 })
 

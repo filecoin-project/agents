@@ -170,6 +170,28 @@ export function movedPath(pathname: string) {
 }
 
 /**
+ * Redirect a request for a page that moved, or return `undefined`. The
+ * redirect allows any origin, as the Markdown it leads to does: a browser
+ * checks every response of a cross-origin fetch, redirects included.
+ *
+ * @param url - Request URL.
+ * @see https://www.rfc-editor.org/rfc/rfc9110#name-308-permanent-redirect
+ * @see https://fetch.spec.whatwg.org/#http-cors-protocol
+ */
+export function movedResponse(url: URL) {
+  const target = movedPath(url.pathname)
+  return target === undefined
+    ? undefined
+    : new Response(null, {
+        status: 308,
+        headers: {
+          Location: `${target}${url.search}`,
+          'Access-Control-Allow-Origin': '*',
+        },
+      })
+}
+
+/**
  * Find the page that serves a path, as HTML or as Markdown. A trailing
  * slash and a `.md` suffix both resolve to the page.
  *
