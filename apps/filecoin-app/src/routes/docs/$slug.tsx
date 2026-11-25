@@ -5,7 +5,6 @@ import { DOC_PAGES } from '@/lib/site/pages'
 
 export const Route = createFileRoute('/docs/$slug')({
   loader: async ({ params }) => {
-    // The Agents page has its own route at /agents.
     const page = DOC_PAGES.find(
       (candidate) => candidate.path === `/docs/${params.slug}`
     )

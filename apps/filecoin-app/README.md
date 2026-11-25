@@ -2,7 +2,7 @@
 
 A React app for Filecoin, built with [TanStack Start](https://tanstack.com/start) and rendered on a Cloudflare Worker. It has four parts:
 
-- **Website** (`/`, `/docs`, `/agents`): the landing page, the docs, and the Agents page. See [Website](#website).
+- **Website** (`/`, `/docs`, `/agents`): the landing page and the docs, which include the Agents pages. See [Website](#website).
 
 - **Explorer** (`/mainnet`, `/calibration`): public pages for data sets, pieces, storage providers, Filecoin Pay rails and settlements, session keys, and per-address views. All data comes from [filecoin-api](../filecoin-api). The Worker renders these pages on the server.
 - **Dashboard** (`/dashboard`): gated on a connected wallet, and rendered only in the browser. Manage your Filecoin Pay account (deposit, withdraw), the Warm Storage (FWSS) operator approval, data sets (create, terminate, delete pieces), uploads, rails (settle) and session keys (generate, authorize, revoke, sign with them).
@@ -59,9 +59,22 @@ Any module can run in the Worker as well as in the browser:
 
 ## Website
 
-The landing page at `/` is a React page. The docs under `/docs` and the Agents page at `/agents` render Markdown from `src/content` on the server, with [marked](https://marked.js.org). `src/lib/site/pages.ts` lists the pages and their order.
+The landing page at `/` is a React page. The docs under `/docs` and `/agents` render Markdown from `src/content` on the server, with [marked](https://marked.js.org).
 
-A page can show some of its Markdown as tabs. Between `<!-- tabs -->` and `<!-- /tabs -->`, each `###` heading starts a tab, and its code blocks show in a terminal with a copy button. The Quickstart uses one for the ways to add the plugin or the CLI to an agent. The Markdown version keeps the headings, so it reads the same without tabs.
+`src/lib/site/pages.ts` lists the pages. `DOC_NAV` is the docs navigation: Getting started, CLI with Retrieve and verify under it, Agents with its subpages, API, and Web app. Pages that other pages link to but the navigation leaves out, such as the agent setup guide, go in `UNLISTED_PAGES`. `MOVED_PAGES` redirects the old path of a page that moved, with a `308` for both the HTML and the Markdown.
+
+A page can show some of its Markdown as components, between a pair of comments such as `<!-- tabs -->` and `<!-- /tabs -->`. The Markdown version keeps the source, so it reads the same without them:
+
+| Comment   | Markdown inside                        | Shows as                                                                      |
+| --------- | -------------------------------------- | ----------------------------------------------------------------------------- |
+| `tabs`    | `###` headings and what follows each   | A tab for each heading, with code blocks in a terminal that has a copy button |
+| `install` | A code block, then a list of links     | A value to copy, and a button for each link                                   |
+| `prompt`  | A code block                           | A prompt to paste into an agent, with a button that copies it                 |
+| `cards`   | A list of `[title](link): description` | A card for each item                                                          |
+
+Getting started has the prompt that sets up an agent. The prompt sends the agent to the setup guide at `/agents/setup.md`, which takes it through the install, the key's approval, and the account check.
+
+The MCP page uses an `install` block for the MCP server's URL and its install links for [Claude](https://claude.com/docs/connectors/building/directory-vs-custom), [Cursor](https://cursor.com/docs/mcp/install-links), and [VS Code](https://code.visualstudio.com/api/extension-guides/ai/mcp). The links encode the URL, so `test/site.test.ts` checks that they match it.
 
 The Markdown files are edited copies of the READMEs, written for people who use `filecoin`, not for contributors. When a user-facing behavior changes, update both. Nothing from `docs/` is published.
 

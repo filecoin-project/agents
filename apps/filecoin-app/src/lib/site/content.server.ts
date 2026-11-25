@@ -18,7 +18,7 @@ import { MARKDOWN_TYPE } from './negotiate'
 import { AGENTS_PAGE, SITE_PAGES, type SitePage } from './pages'
 
 /** Markdown sources in `src/content`, keyed by file path. */
-const CONTENT = import.meta.glob<string>('../../content/*.md', {
+const CONTENT = import.meta.glob<string>('../../content/**/*.md', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -76,14 +76,14 @@ const LLMS_SUMMARY =
  * no headings here, so the router is a bold lead-in.
  *
  * @param origin - Site origin.
- * @see ../../content/agents.md
+ * @see ../../content/agents/index.md
  */
 function llmsDetails(origin: string) {
   return [
     [
       '**Pick a way in.** Each kind of agent has one:',
       '',
-      `- Agents with a shell, local or in the cloud, install the agent skill: \`npx skills add ${origin}\`. It covers storing, retrieving, and verifying with the CLI.`,
+      `- Agents with a shell, local or in the cloud, follow the [agent setup guide](${origin}/agents/setup.md). It installs the agent skill, which covers storing, retrieving, and verifying with the CLI.`,
       `- Browser agents open [filecoin-app](${origin}/). Its WebMCP tools read the account and prepare the wallet owner's approval.`,
       `- Agents that only call remote tools add the read-only MCP server at \`${env.mcpUrl}\`, over Streamable HTTP. It cannot store content.`,
     ].join('\n'),

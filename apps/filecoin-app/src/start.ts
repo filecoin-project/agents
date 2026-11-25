@@ -2,7 +2,7 @@ import { createMiddleware, createStart } from '@tanstack/react-start'
 import { markdownResponse } from '@/lib/site/content.server'
 import { markdownPath } from '@/lib/site/discovery'
 import { prefersMarkdown } from '@/lib/site/negotiate'
-import { findSitePage } from '@/lib/site/pages'
+import { findSitePage, movedPath } from '@/lib/site/pages'
 
 /**
  * WebMCP origin-trial token for `https://filecoin.cloud` and its subdomains,
@@ -34,6 +34,23 @@ const responseHeaders = createMiddleware().server(async ({ next }) => {
     result.response.headers.set(name, value)
   }
   return result
+})
+
+/**
+ * Redirect the old path of a page that moved, and its Markdown version.
+ *
+ * @see https://www.rfc-editor.org/rfc/rfc9110#name-308-permanent-redirect
+ */
+const movedPages = createMiddleware().server(({ request, next }) => {
+  const url = new URL(request.url)
+  const target = movedPath(url.pathname)
+  if (target === undefined) {
+    return next()
+  }
+  return new Response(null, {
+    status: 308,
+    headers: { Location: `${target}${url.search}` },
+  })
 })
 
 /**
@@ -69,5 +86,5 @@ const markdownPages = createMiddleware().server(async ({ request, next }) => {
  * @see https://tanstack.com/start/latest/docs/framework/react/guide/middleware#global-middleware
  */
 export const startInstance = createStart(() => ({
-  requestMiddleware: [responseHeaders, markdownPages],
+  requestMiddleware: [responseHeaders, movedPages, markdownPages],
 }))

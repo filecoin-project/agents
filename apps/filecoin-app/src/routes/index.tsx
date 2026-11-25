@@ -58,14 +58,22 @@ function Hero() {
         <div className="flex flex-wrap gap-3">
           <Button
             nativeButton={false}
-            render={<Link params={{ slug: 'quickstart' }} to="/docs/$slug" />}
+            render={
+              <Link params={{ slug: 'getting-started' }} to="/docs/$slug" />
+            }
             size="lg"
           >
-            Read the quickstart
+            Get started
           </Button>
           <Button
             nativeButton={false}
-            render={<Link to="/agents" />}
+            render={
+              <Link
+                hash="set-up-your-agent"
+                params={{ slug: 'getting-started' }}
+                to="/docs/$slug"
+              />
+            }
             size="lg"
             variant="outline"
           >
@@ -170,10 +178,10 @@ function WaysIn() {
       link: (
         <Link
           className="text-primary underline-offset-4 hover:underline"
-          params={{ slug: 'api' }}
-          to="/docs/$slug"
+          params={{ slug: 'mcp' }}
+          to="/agents/$slug"
         >
-          API and MCP docs
+          MCP docs
         </Link>
       ),
     },
@@ -226,7 +234,7 @@ function Access() {
       text: 'The agent makes a session key on its own machine and returns an approval link.',
     },
     {
-      action: 'Approve in filecoin-app',
+      action: 'Approve in the Filecoin Pay console',
       text: 'You review the request, choose its permissions and expiry, and sign with your wallet.',
     },
     {
@@ -302,9 +310,10 @@ function Discovery() {
       <p className="text-sm">
         <Link
           className="text-primary underline-offset-4 hover:underline"
-          to="/agents"
+          params={{ slug: 'discovery' }}
+          to="/agents/$slug"
         >
-          How to set up an agent
+          Markdown and agent discovery
         </Link>
       </p>
     </section>
