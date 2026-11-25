@@ -76,7 +76,7 @@ function TabPart(props: { part: MarkdownTabPart }) {
   }
   return (
     <div
-      className="text-sm text-pretty text-muted-foreground [&_a]:text-primary [&_a]:underline-offset-4 [&_a:hover]:underline [&_code]:font-mono [&_code]:text-foreground [&_p]:my-0"
+      className="text-sm text-pretty text-muted-foreground [&_a]:text-primary [&_a]:underline-offset-4 [&_a:hover]:underline [&_code]:font-mono [&_code]:whitespace-nowrap [&_code]:text-foreground [&_p]:my-0 [&_p+p]:mt-2"
       // The HTML comes from the Markdown files in src/content.
       // biome-ignore lint/security/noDangerouslySetInnerHtml: trusted, server-rendered content
       dangerouslySetInnerHTML={{ __html: part.html }}

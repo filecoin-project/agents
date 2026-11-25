@@ -27,13 +27,21 @@ The session key signs each request, the provider submits the transactions, and t
 
 In a terminal, `filecoin login` opens the browser and waits for approval. An agent, or any run without a terminal, gets a `login_pending` error instead and never waits. The error's `next` steps are the approval link for the user and `filecoin login --check` for the agent to run after the user approves. `--check` only confirms the saved key and never makes a new one.
 
-Running `filecoin login` again never changes a saved key's request: flags you leave out keep its scopes, name, and expiry. An interrupted login resumes with the same key, and an approved key is reused when it has the requested permissions. `filecoin login` replaces a saved key on its own only when the key has expired. If `--scopes` asks for more than a pending or valid key has, you get a `session_conflict` error and the key stays, because the owner may already have approved it. Pass `--fresh` to replace it.
+Running `filecoin login` again never changes a saved key's request: flags you leave out keep its scopes, name, and expiry. An interrupted login resumes with the same key, and an approved key is reused when it has the requested permissions. `filecoin login` replaces a saved key on its own only when the key has expired. If `--scopes` asks for more than a pending or valid key has, you get a `session_conflict` error. The key stays, because the owner may already have approved it. Pass `--fresh` to replace it.
 
 For CI or a [cloud agent](/agents#cloud-agents), set `FILECOIN_SESSION_KEY` and `FILECOIN_ROOT_ADDRESS` instead of running `filecoin login`.
 
 ## Check the account
 
-The session key cannot fund the account. `filecoin status` reports when each permission expires, the Warm Storage approval, the FIL and USDFC in the wallet, the Filecoin Pay funds and how they are locked, the monthly spend, how many days the funds last, and the bytes stored. When the account needs a deposit or the Warm Storage approval, it also returns a funding link to the console's setup page, which asks for both. It always returns a link to the console home, where you manage funds, services, and approvals.
+The session key cannot fund the account. `filecoin status` reports:
+
+- when each permission expires, and the Warm Storage approval
+- the FIL and USDFC in the wallet
+- the Filecoin Pay funds, and how they are locked
+- the monthly spend, and how many days the funds last
+- the bytes stored
+
+When the account needs a deposit or the Warm Storage approval, `filecoin status` also returns a funding link. The link opens the console's setup page, which asks for both. The output always includes a link to the console home, where you manage funds, services, and approvals.
 
 `filecoin doctor` shows the network, RPC, Filecoin Pay console and filecoin-api origins, and folder that `filecoin` uses, with where each value came from.
 

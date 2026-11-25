@@ -125,10 +125,10 @@ export function integrationsJson(
       filecoin_session_key: {
         type: 'signature',
         label: 'filecoin session key',
-        generateUrl: `${siteUrl}/dashboard/session-keys`,
+        generateUrl: 'https://pay.filecoin.cloud/console/session-keys',
         setup: [
           'Run `filecoin login`. It makes a session key on the machine and returns a Filecoin Pay console approval link, which the wallet owner opens to approve the key with their wallet. The CLI finds the approval on chain.',
-          'For CI or a cloud agent, generate, authorize, and export a key on the filecoin-app session keys page instead, and set `FILECOIN_SESSION_KEY` and `FILECOIN_ROOT_ADDRESS`.',
+          'For CI or a cloud agent, create and authorize a key on the Filecoin Pay console session keys page instead. Set `FILECOIN_SESSION_KEY` to its `SESSION_KEY` value and `FILECOIN_ROOT_ADDRESS` to its `WALLET_ADDRESS` value.',
           'The key signs storage requests. It cannot move funds, and it expires.',
         ].join('\n\n'),
         fields: {
@@ -161,7 +161,7 @@ export function integrationsJson(
         type: 'mcp',
         url: mcpUrl,
         transports: ['streamable-http'],
-        docs: `${siteUrl}/docs/api#mcp-server`,
+        docs: `${siteUrl}/agents/mcp`,
         basis,
         auth: { status: 'none', basis },
       },

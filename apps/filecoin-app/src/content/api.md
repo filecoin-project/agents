@@ -1,4 +1,4 @@
-# API and MCP
+# API
 
 [filecoin-api](https://api.filecoin.io) serves read-only Filecoin data: storage providers, data sets, pieces, Filecoin Pay rails, and session keys. It reads from an indexer of the Filecoin chain, so its data trails the chain. `/health` reports the latest indexed block. It cannot store, delete, or sign anything.
 
@@ -8,7 +8,7 @@ To call the API from TypeScript, install [`@filecoin-project/api-client`](https:
 
 ## Routes
 
-`GET /openapi.json` lists every route and its filters, and `POST /mcp` is the MCP server, which also has its own host, `https://mcp.filecoin.io`. `GET /health` reports the latest indexed block per network, and [`GET /get/{cid}`](#retrieval) redirects to where content can be retrieved. Every data route starts with the API version and the network, `/v1/calibration/...` or `/v1/mainnet/...`, and reads one of: indexer status, storage providers, data sets and their pieces, pieces by owner or PieceCID, Filecoin Pay rails and their settlements, and session keys and their history.
+`GET /openapi.json` lists every route and its filters. `POST /mcp` is the [MCP server](/agents/mcp). `GET /health` reports the latest indexed block per network, and [`GET /get/{cid}`](#retrieval) redirects to where content can be retrieved. Every data route starts with the API version and the network, `/v1/calibration/...` or `/v1/mainnet/...`, and reads one of: indexer status, storage providers, data sets and their pieces, pieces by owner or PieceCID, Filecoin Pay rails and their settlements, and session keys and their history.
 
 Conventions:
 
@@ -22,7 +22,7 @@ Conventions:
 
 The data routes carry their version in the path, `/v1`. The paths from before versioning, such as `/mainnet/providers`, still work as aliases of v1, so older CLIs and clients keep working. They stay for as long as v1 does. `/get/{cid}`, `/health`, and the MCP server have no version.
 
-New routes, new optional parameters, and new response fields land in v1 without notice, so ignore fields you don't know. A breaking change, such as a removed or renamed field, ships under `/v2`. v1 then keeps working for at least six months, and its responses send a `Deprecation` header ([RFC 9745](https://www.rfc-editor.org/rfc/rfc9745)) and a `Sunset` header ([RFC 8594](https://www.rfc-editor.org/rfc/rfc8594)) with the date it can stop working. No route is deprecated now.
+New routes, new optional parameters, and new response fields land in v1 without notice, so ignore fields you don't know. A breaking change, such as a removed or renamed field, ships under `/v2`. v1 then keeps working for at least six months. Its responses send a `Deprecation` header ([RFC 9745](https://www.rfc-editor.org/rfc/rfc9745)), and a `Sunset` header ([RFC 8594](https://www.rfc-editor.org/rfc/rfc8594)) with the date when v1 can stop working. No route is deprecated now.
 
 ## Retrieval
 
@@ -37,28 +37,12 @@ New routes, new optional parameters, and new response fields land in v1 without 
 
 `provider={id}` names a provider to redirect to when the indexer has no copy yet. It covers the time between a provider receiving a piece and the indexer seeing the commit. An indexed copy always wins over it. `filecoin put` adds it to the early links it prints before the commit confirms.
 
-When neither the indexer nor `provider` has the CID, the route looks it up in [IPNI](https://cid.contact) and redirects to a provider that serves it over https, including providers outside Filecoin. The `X-Source` header says whether the answer came from `index`, `hint`, or `ipni`.
+When neither the indexer nor `provider` has the CID, the route looks it up in [IPNI](https://cid.contact). It then redirects to a provider that serves the content over https, which can be a provider outside Filecoin. The `X-Source` header says whether the answer came from `index`, `hint`, or `ipni`.
 
 Legacy v1 PieceCIDs (`baga…`) and strings that aren't CIDs return `400`. If no source has the CID, the response is `404`. If IPNI fails after the indexer had no copy, the response is `502`. When several providers store the content, the route prefers endorsed providers, then approved ones, then the oldest copy.
-
-## MCP server
-
-The MCP server at `https://mcp.filecoin.io` offers one read-only tool for each data route, plus `search_docs`. Each data tool requires a `network` argument.
-
-| Tool                                               | Reads                                                                                 |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `get_status`                                       | Indexer progress                                                                      |
-| `list_providers`, `get_provider`                   | Storage providers                                                                     |
-| `list_data_sets`, `get_data_set`                   | Data sets                                                                             |
-| `list_data_set_pieces`, `get_piece`, `list_pieces` | Pieces                                                                                |
-| `list_rails`, `get_rail`, `list_rail_settlements`  | Filecoin Pay rails and settlements                                                    |
-| `list_session_keys`, `list_session_key_events`     | Session keys and their history                                                        |
-| `search_docs`                                      | Page excerpts from the [Filecoin docs](https://docs.filecoin.io) that match a `query` |
-
-[Agents](/agents#mcp-server) shows how to add it to an agent.
 
 ## Limits
 
 - **Rate limits.** 120 requests a minute per IP for the REST API, and 60 for MCP. Responses send the limit in a `RateLimit-Policy` header, such as `"api";q=120;w=60`. Over the limit, requests get `429` with `Retry-After`.
-- **Caching.** Data reads are not cached by browsers, so every read returns the latest indexed data.
+- **Caching.** Browsers do not cache data reads. filecoin-api can reuse a query result for up to 5 seconds, so a read can be that far behind the indexer.
 - **No authentication.** Every route is public and read-only.

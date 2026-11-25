@@ -22,9 +22,11 @@ import {
 import { withMarkdownErrors } from '../src/lib/site/markdown-errors.ts'
 import { prefersMarkdown } from '../src/lib/site/negotiate.ts'
 import {
+  DOC_NAV,
   DOC_PAGES,
   findSitePage,
   HOME_PAGE,
+  movedPath,
   SITE_PAGES,
 } from '../src/lib/site/pages.ts'
 
@@ -62,7 +64,8 @@ describe('findSitePage', () => {
     })
     assert.equal(findSitePage('/docs/cli.md')?.suffixed, true)
     assert.equal(findSitePage('/docs/cli/')?.page.slug, 'cli')
-    assert.equal(findSitePage('/agents.md')?.page.slug, 'agents')
+    assert.equal(findSitePage('/agents.md')?.page.slug, 'agents/index')
+    assert.equal(findSitePage('/agents/mcp.md')?.page.slug, 'agents/mcp')
   })
 
   it('maps / and /index.md to the home page', () => {
@@ -79,6 +82,44 @@ describe('findSitePage', () => {
     assert.equal(
       findSitePage('/.well-known/agent-skills/filecoin/SKILL.md'),
       undefined
+    )
+  })
+})
+
+describe('movedPath', () => {
+  it('points a moved page and its Markdown version to the new path', () => {
+    assert.equal(movedPath('/docs/quickstart'), '/docs/getting-started')
+    assert.equal(movedPath('/docs/quickstart/'), '/docs/getting-started')
+    assert.equal(movedPath('/docs/quickstart.md'), '/docs/getting-started.md')
+  })
+
+  it('leaves other paths alone', () => {
+    assert.equal(movedPath('/docs/cli'), undefined)
+    assert.equal(movedPath('/constructor'), undefined)
+    assert.equal(movedPath('/'), undefined)
+  })
+})
+
+describe('DOC_NAV', () => {
+  it('lists the docs sections in order', () => {
+    assert.deepEqual(
+      DOC_NAV.map((section) => [
+        section.page.path,
+        ...section.children.map((page) => page.path),
+      ]),
+      [
+        ['/docs/getting-started'],
+        ['/docs/cli', '/docs/retrieve'],
+        [
+          '/agents',
+          '/agents/plugin',
+          '/agents/skills',
+          '/agents/mcp',
+          '/agents/discovery',
+        ],
+        ['/docs/api'],
+        ['/docs/app'],
+      ]
     )
   })
 })
@@ -167,9 +208,11 @@ describe('renderMarkdownBlocks', () => {
       .flatMap((block) =>
         block.type === 'html'
           ? [block.html]
-          : block.tabs.flatMap((tab) =>
-              tab.parts.map((part) => (part.type === 'html' ? part.html : ''))
-            )
+          : block.type === 'tabs'
+            ? block.tabs.flatMap((tab) =>
+                tab.parts.map((part) => (part.type === 'html' ? part.html : ''))
+              )
+            : []
       )
       .join('')
     assert.match(html, /id="a".*id="a-1".*id="a-2"/s)
@@ -177,6 +220,123 @@ describe('renderMarkdownBlocks', () => {
 
   it('rejects an unclosed tabs block', () => {
     assert.throws(() => renderMarkdownBlocks('<!-- tabs -->\n\n### One'))
+  })
+
+  it('turns an install block into a value and links', () => {
+    const blocks = renderMarkdownBlocks(
+      [
+        'Before.',
+        '',
+        '<!-- install -->',
+        '',
+        '```text',
+        'https://mcp.example',
+        '```',
+        '',
+        '- [Add to One](https://one.example/?a=1&b=2)',
+        '- [Add to Two](two:install?%7B%7D)',
+        '',
+        '<!-- /install -->',
+        '',
+        'After.',
+      ].join('\n')
+    )
+    assert.deepEqual(
+      blocks.map((block) => block.type),
+      ['html', 'install', 'html']
+    )
+    assert.deepEqual(blocks[1], {
+      type: 'install',
+      value: 'https://mcp.example',
+      links: [
+        { label: 'Add to One', href: 'https://one.example/?a=1&b=2' },
+        { label: 'Add to Two', href: 'two:install?%7B%7D' },
+      ],
+    })
+  })
+
+  it('turns prompt and cards blocks into a prompt and cards', () => {
+    assert.deepEqual(
+      renderMarkdownBlocks(
+        '<!-- prompt -->\n\n```text\nDo it.\n```\n\n<!-- /prompt -->'
+      ),
+      [{ type: 'prompt', text: 'Do it.' }]
+    )
+    assert.deepEqual(
+      renderMarkdownBlocks(
+        '<!-- cards -->\n\n- [A](/a): First.\n- [B](/b): Second.\n\n<!-- /cards -->'
+      ),
+      [
+        {
+          type: 'cards',
+          cards: [
+            { title: 'A', href: '/a', description: 'First.' },
+            { title: 'B', href: '/b', description: 'Second.' },
+          ],
+        },
+      ]
+    )
+  })
+
+  it('rejects malformed prompt and cards blocks', () => {
+    assert.throws(() =>
+      renderMarkdownBlocks('<!-- prompt -->\n\nText.\n\n<!-- /prompt -->')
+    )
+    assert.throws(() =>
+      renderMarkdownBlocks('<!-- cards -->\n\n- [A](/a)\n\n<!-- /cards -->')
+    )
+  })
+
+  it('renders every site page', async () => {
+    for (const page of SITE_PAGES) {
+      const markdown = await readFile(
+        new URL(`../src/content/${page.slug}.md`, import.meta.url),
+        'utf8'
+      )
+      assert.ok(renderMarkdownBlocks(markdown).length > 0, page.path)
+    }
+  })
+
+  it('rejects an unclosed or malformed install block', () => {
+    assert.throws(() => renderMarkdownBlocks('<!-- install -->\n\n- One'))
+    assert.throws(() =>
+      renderMarkdownBlocks('<!-- install -->\n\nText.\n\n<!-- /install -->')
+    )
+  })
+})
+
+describe('MCP page install links', () => {
+  it('encode the MCP server URL they show', async () => {
+    const markdown = await readFile(
+      new URL('../src/content/agents/mcp.md', import.meta.url),
+      'utf8'
+    )
+    const block = renderMarkdownBlocks(markdown).find(
+      (candidate) => candidate.type === 'install'
+    )
+    assert.ok(block?.type === 'install')
+    const href = (label: string) => {
+      const link = block.links.find((candidate) => candidate.label === label)
+      assert.ok(link, label)
+      return new URL(link.href)
+    }
+
+    const claude = href('Add to Claude').searchParams
+    assert.equal(claude.get('modal'), 'add-custom-connector')
+    assert.equal(claude.get('connectorUrl'), block.value)
+
+    const cursor = href('Add to Cursor').searchParams
+    assert.equal(cursor.get('name'), 'filecoin')
+    assert.deepEqual(JSON.parse(atob(cursor.get('config') ?? '')), {
+      url: block.value,
+    })
+
+    const vscode = href('Add to VS Code').search.slice(1)
+    assert.deepEqual(JSON.parse(decodeURIComponent(vscode)), {
+      name: 'filecoin',
+      type: 'http',
+      url: block.value,
+    })
   })
 })
 
@@ -382,7 +542,7 @@ describe('withMarkdownErrors', () => {
         headers: {
           'Content-Type': 'text/html',
           'X-Frame-Options': 'DENY',
-          ...(status === 307 ? { Location: '/docs/quickstart' } : {}),
+          ...(status === 307 ? { Location: '/docs/getting-started' } : {}),
         },
       })
     }

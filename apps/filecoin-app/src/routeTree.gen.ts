@@ -11,7 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as NetworkRouteRouteImport } from './routes/$network/route'
-import { Route as AgentsRouteImport } from './routes/agents'
+import { Route as AgentsRouteRouteImport } from './routes/agents/route'
 import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as DocsRouteRouteImport } from './routes/docs/route'
 import { Route as LlmsFullDottxtRouteImport } from './routes/llms-full[.]txt'
@@ -24,6 +24,8 @@ import { Route as DotwellKnownAiCatalogDotjsonRouteImport } from './routes/[.]we
 import { Route as DotwellKnownApiCatalogRouteImport } from './routes/[.]well-known/api-catalog'
 import { Route as DotwellKnownIntegrationsDotjsonRouteImport } from './routes/[.]well-known/integrations[.]json'
 import { Route as DotwellKnownMcpServerCardRouteImport } from './routes/[.]well-known/mcp-server-card'
+import { Route as AgentsIndexRouteImport } from './routes/agents/index'
+import { Route as AgentsSlugRouteImport } from './routes/agents/$slug'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardAccountRouteImport } from './routes/dashboard/account'
 import { Route as DashboardApprovalsRouteImport } from './routes/dashboard/approvals'
@@ -56,7 +58,7 @@ const NetworkRouteRoute = NetworkRouteRouteImport.update({
   path: '/$network',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AgentsRoute = AgentsRouteImport.update({
+const AgentsRouteRoute = AgentsRouteRouteImport.update({
   id: '/agents',
   path: '/agents',
   getParentRoute: () => rootRouteImport,
@@ -124,6 +126,16 @@ const DotwellKnownMcpServerCardRoute =
     path: '/.well-known/mcp-server-card',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AgentsIndexRoute = AgentsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AgentsRouteRoute,
+} as any)
+const AgentsSlugRoute = AgentsSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => AgentsRouteRoute,
+} as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -234,9 +246,9 @@ const DashboardDataSetsIdRoute = DashboardDataSetsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$network': typeof NetworkRouteRouteWithChildren
+  '/agents': typeof AgentsRouteRouteWithChildren
   '/dashboard': typeof DashboardRouteRouteWithChildren
   '/docs': typeof DocsRouteRouteWithChildren
-  '/agents': typeof AgentsRoute
   '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/llms.txt': typeof LlmsDottxtRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -246,6 +258,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/api-catalog': typeof DotwellKnownApiCatalogRoute
   '/.well-known/integrations.json': typeof DotwellKnownIntegrationsDotjsonRoute
   '/.well-known/mcp-server-card': typeof DotwellKnownMcpServerCardRoute
+  '/agents/$slug': typeof AgentsSlugRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/approvals': typeof DashboardApprovalsRoute
   '/dashboard/rails': typeof DashboardRailsRoute
@@ -254,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/upload': typeof DashboardUploadRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/$network/': typeof NetworkIndexRoute
+  '/agents/': typeof AgentsIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/$network/address/$address': typeof NetworkAddressAddressRoute
@@ -271,7 +285,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/agents': typeof AgentsRoute
   '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/llms.txt': typeof LlmsDottxtRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -281,6 +294,7 @@ export interface FileRoutesByTo {
   '/.well-known/api-catalog': typeof DotwellKnownApiCatalogRoute
   '/.well-known/integrations.json': typeof DotwellKnownIntegrationsDotjsonRoute
   '/.well-known/mcp-server-card': typeof DotwellKnownMcpServerCardRoute
+  '/agents/$slug': typeof AgentsSlugRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/approvals': typeof DashboardApprovalsRoute
   '/dashboard/rails': typeof DashboardRailsRoute
@@ -289,6 +303,7 @@ export interface FileRoutesByTo {
   '/dashboard/upload': typeof DashboardUploadRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/$network': typeof NetworkIndexRoute
+  '/agents': typeof AgentsIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/docs': typeof DocsIndexRoute
   '/$network/address/$address': typeof NetworkAddressAddressRoute
@@ -308,9 +323,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$network': typeof NetworkRouteRouteWithChildren
+  '/agents': typeof AgentsRouteRouteWithChildren
   '/dashboard': typeof DashboardRouteRouteWithChildren
   '/docs': typeof DocsRouteRouteWithChildren
-  '/agents': typeof AgentsRoute
   '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/llms.txt': typeof LlmsDottxtRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -320,6 +335,7 @@ export interface FileRoutesById {
   '/.well-known/api-catalog': typeof DotwellKnownApiCatalogRoute
   '/.well-known/integrations.json': typeof DotwellKnownIntegrationsDotjsonRoute
   '/.well-known/mcp-server-card': typeof DotwellKnownMcpServerCardRoute
+  '/agents/$slug': typeof AgentsSlugRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/approvals': typeof DashboardApprovalsRoute
   '/dashboard/rails': typeof DashboardRailsRoute
@@ -328,6 +344,7 @@ export interface FileRoutesById {
   '/dashboard/upload': typeof DashboardUploadRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/$network/': typeof NetworkIndexRoute
+  '/agents/': typeof AgentsIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/$network/address/$address': typeof NetworkAddressAddressRoute
@@ -348,9 +365,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$network'
+    | '/agents'
     | '/dashboard'
     | '/docs'
-    | '/agents'
     | '/llms-full.txt'
     | '/llms.txt'
     | '/robots.txt'
@@ -360,6 +377,7 @@ export interface FileRouteTypes {
     | '/.well-known/api-catalog'
     | '/.well-known/integrations.json'
     | '/.well-known/mcp-server-card'
+    | '/agents/$slug'
     | '/dashboard/account'
     | '/dashboard/approvals'
     | '/dashboard/rails'
@@ -368,6 +386,7 @@ export interface FileRouteTypes {
     | '/dashboard/upload'
     | '/docs/$slug'
     | '/$network/'
+    | '/agents/'
     | '/dashboard/'
     | '/docs/'
     | '/$network/address/$address'
@@ -385,7 +404,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/agents'
     | '/llms-full.txt'
     | '/llms.txt'
     | '/robots.txt'
@@ -395,6 +413,7 @@ export interface FileRouteTypes {
     | '/.well-known/api-catalog'
     | '/.well-known/integrations.json'
     | '/.well-known/mcp-server-card'
+    | '/agents/$slug'
     | '/dashboard/account'
     | '/dashboard/approvals'
     | '/dashboard/rails'
@@ -403,6 +422,7 @@ export interface FileRouteTypes {
     | '/dashboard/upload'
     | '/docs/$slug'
     | '/$network'
+    | '/agents'
     | '/dashboard'
     | '/docs'
     | '/$network/address/$address'
@@ -421,9 +441,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/$network'
+    | '/agents'
     | '/dashboard'
     | '/docs'
-    | '/agents'
     | '/llms-full.txt'
     | '/llms.txt'
     | '/robots.txt'
@@ -433,6 +453,7 @@ export interface FileRouteTypes {
     | '/.well-known/api-catalog'
     | '/.well-known/integrations.json'
     | '/.well-known/mcp-server-card'
+    | '/agents/$slug'
     | '/dashboard/account'
     | '/dashboard/approvals'
     | '/dashboard/rails'
@@ -441,6 +462,7 @@ export interface FileRouteTypes {
     | '/dashboard/upload'
     | '/docs/$slug'
     | '/$network/'
+    | '/agents/'
     | '/dashboard/'
     | '/docs/'
     | '/$network/address/$address'
@@ -460,9 +482,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   NetworkRouteRoute: typeof NetworkRouteRouteWithChildren
+  AgentsRouteRoute: typeof AgentsRouteRouteWithChildren
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
   DocsRouteRoute: typeof DocsRouteRouteWithChildren
-  AgentsRoute: typeof AgentsRoute
   LlmsFullDottxtRoute: typeof LlmsFullDottxtRoute
   LlmsDottxtRoute: typeof LlmsDottxtRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
@@ -494,7 +516,7 @@ declare module '@tanstack/react-router' {
       id: '/agents'
       path: '/agents'
       fullPath: '/agents'
-      preLoaderRoute: typeof AgentsRouteImport
+      preLoaderRoute: typeof AgentsRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -580,6 +602,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/.well-known/mcp-server-card'
       preLoaderRoute: typeof DotwellKnownMcpServerCardRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/agents/': {
+      id: '/agents/'
+      path: '/'
+      fullPath: '/agents/'
+      preLoaderRoute: typeof AgentsIndexRouteImport
+      parentRoute: typeof AgentsRouteRoute
+    }
+    '/agents/$slug': {
+      id: '/agents/$slug'
+      path: '/$slug'
+      fullPath: '/agents/$slug'
+      preLoaderRoute: typeof AgentsSlugRouteImport
+      parentRoute: typeof AgentsRouteRoute
     }
     '/dashboard/': {
       id: '/dashboard/'
@@ -763,6 +799,20 @@ const NetworkRouteRouteWithChildren = NetworkRouteRoute._addFileChildren(
   NetworkRouteRouteChildren,
 )
 
+interface AgentsRouteRouteChildren {
+  AgentsSlugRoute: typeof AgentsSlugRoute
+  AgentsIndexRoute: typeof AgentsIndexRoute
+}
+
+const AgentsRouteRouteChildren: AgentsRouteRouteChildren = {
+  AgentsSlugRoute: AgentsSlugRoute,
+  AgentsIndexRoute: AgentsIndexRoute,
+}
+
+const AgentsRouteRouteWithChildren = AgentsRouteRoute._addFileChildren(
+  AgentsRouteRouteChildren,
+)
+
 interface DashboardRouteRouteChildren {
   DashboardAccountRoute: typeof DashboardAccountRoute
   DashboardApprovalsRoute: typeof DashboardApprovalsRoute
@@ -808,9 +858,9 @@ const DocsRouteRouteWithChildren = DocsRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   NetworkRouteRoute: NetworkRouteRouteWithChildren,
+  AgentsRouteRoute: AgentsRouteRouteWithChildren,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
   DocsRouteRoute: DocsRouteRouteWithChildren,
-  AgentsRoute: AgentsRoute,
   LlmsFullDottxtRoute: LlmsFullDottxtRoute,
   LlmsDottxtRoute: LlmsDottxtRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,

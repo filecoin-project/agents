@@ -7,15 +7,16 @@ This is a prototype. It runs on the calibration test network unless you choose m
 ## Ways to use it
 
 - **CLI.** `filecoin put ./site` stores a folder and returns a browser link. `filecoin get` downloads and verifies it. See the [CLI docs](/docs/cli).
-- **MCP server.** `https://mcp.filecoin.io` gives agents read-only tools for providers, data sets, pieces, payment rails, and session keys. See [API and MCP](/docs/api).
+- **MCP server.** `https://mcp.filecoin.io` gives agents read-only tools for providers, data sets, pieces, payment rails, and session keys. See [MCP](/agents/mcp).
 - **Web app.** [filecoin-app](https://poc.filecoin.cloud) is an explorer for that data and a wallet dashboard for funding storage and approving keys. See [Web app](/docs/app).
 
 ## How an agent gets access
 
-The agent never holds the wallet key. It gets a session key, which the wallet owner approves in the Filecoin Pay console and which cannot move funds. [Agents](/agents) shows the way in for each kind of agent: local, cloud, browser, or chat app.
+The agent never holds the wallet key. It gets a session key, which the wallet owner approves in the Filecoin Pay console and which cannot move funds. [Agents](/agents) shows the way in for local agents, cloud agents, browser agents, and chat apps.
 
 ## Start
 
-- [Quickstart](/docs/quickstart): install the CLI, log in, and store a file.
+- [Getting started](/docs/getting-started): set up your agent with one prompt, or install the CLI and store a file.
 - [Agents](/agents): add `filecoin` to Claude, ChatGPT, or another agent.
+- [API](/docs/api): read Filecoin data over HTTP.
 - [Source code](https://github.com/filecoin-project/agents) on GitHub.

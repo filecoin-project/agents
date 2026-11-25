@@ -39,7 +39,7 @@ Use `filecoin get` when the content must be intact. When you hand over a link th
 
 Each piece comes with a retrieval link. `filecoin get <PieceCID>` downloads and checks one, and `filecoin get <root CID>` extracts a file or folder stored as a CAR. Neither needs a login: for content outside local state, `filecoin` finds the provider through filecoin-api.
 
-`filecoin inspect` shows a piece without a ref by the `<dataSetId>/<pieceId>` that `ls` prints, its PieceCID, or its root CID, and adds `--check` to probe the piece link. Unlike `get`, it needs a login, because it lists only the wallet's own pieces.
+`filecoin inspect` shows a piece that has no ref. Pass the `<dataSetId>/<pieceId>` that `ls` prints, the PieceCID, or the root CID. `--check` probes the piece link. Unlike `get`, it needs a login, because it lists only the wallet's own pieces.
 
 ## Store without the CLI
 

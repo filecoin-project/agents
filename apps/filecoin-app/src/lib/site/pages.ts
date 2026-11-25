@@ -8,7 +8,7 @@
 export interface SitePage {
   /** Site path. */
   path: string
-  /** File name in `src/content`, without `.md`. */
+  /** File path in `src/content`, without `.md`. */
   slug: string
   /** Page title. */
   title: string
@@ -25,57 +25,149 @@ export const HOME_PAGE: SitePage = {
     'Store files and folders on Filecoin from a terminal or an agent, and get links back.',
 }
 
-/** Agents page. */
+/** Agents overview page, above the pages for each part of agent support. */
 export const AGENTS_PAGE: SitePage = {
   path: '/agents',
-  slug: 'agents',
+  slug: 'agents/index',
   title: 'Agents',
   description:
     'The way in for each kind of agent: local, cloud, browser, or chat app with connectors, and how the wallet owner approves its key.',
 }
 
-/** Docs pages under `/docs`, in navigation order. */
+/** First docs page. */
+export const START_PAGE: SitePage = {
+  path: '/docs/getting-started',
+  slug: 'getting-started',
+  title: 'Getting started',
+  description:
+    'Set up your agent with one prompt, or install the filecoin CLI and store a file on the calibration network.',
+}
+
+/** A top-level entry of the docs navigation. */
+export interface DocSection {
+  /** Page the entry links to. */
+  page: SitePage
+  /** Pages listed under the entry. */
+  children: SitePage[]
+}
+
+/** Docs navigation, in order. */
+export const DOC_NAV: DocSection[] = [
+  { page: START_PAGE, children: [] },
+  {
+    page: {
+      path: '/docs/cli',
+      slug: 'cli',
+      title: 'CLI',
+      description:
+        'How the filecoin CLI works: log in, check the account, store, retrieve, delete, resume, and read its JSON output.',
+    },
+    children: [
+      {
+        path: '/docs/retrieve',
+        slug: 'retrieve',
+        title: 'Retrieve and verify',
+        description:
+          'What the PieceCID, the root CID, and each retrieval link check, how to find stored content, and how to store without the CLI.',
+      },
+    ],
+  },
+  {
+    page: AGENTS_PAGE,
+    children: [
+      {
+        path: '/agents/plugin',
+        slug: 'agents/plugin',
+        title: 'Agent plugin',
+        description:
+          'Install the filecoin plugin in Claude Code, Codex, or Cursor. It bundles the agent skill and the MCP server.',
+      },
+      {
+        path: '/agents/skills',
+        slug: 'agents/skills',
+        title: 'Skills',
+        description:
+          'Install the agent skill that teaches any agent with a shell when and how to run the filecoin CLI.',
+      },
+      {
+        path: '/agents/mcp',
+        slug: 'agents/mcp',
+        title: 'MCP',
+        description:
+          'Add the read-only MCP server to Claude, Cursor, VS Code, Codex, or another agent, and see its tools.',
+      },
+      {
+        path: '/agents/discovery',
+        slug: 'agents/discovery',
+        title: 'Markdown and agent discovery',
+        description:
+          'The Markdown version of every docs page, and the files that describe the site to agents.',
+      },
+    ],
+  },
+  {
+    page: {
+      path: '/docs/api',
+      slug: 'api',
+      title: 'API',
+      description:
+        'filecoin-api routes, conventions, versioning, retrieval redirects, and rate limits. The OpenAPI document lists the routes.',
+    },
+    children: [],
+  },
+  {
+    page: {
+      path: '/docs/app',
+      slug: 'app',
+      title: 'Web app',
+      description:
+        'The explorer, the wallet dashboard, setup links, and the WebMCP tools in filecoin-app.',
+    },
+    children: [],
+  },
+]
+
+/** Pages that other pages link to, outside the docs navigation. */
+const UNLISTED_PAGES: SitePage[] = [
+  {
+    path: '/agents/setup',
+    slug: 'agents/setup',
+    title: 'Agent setup guide',
+    description:
+      'Steps for an agent to set up filecoin for its user: install, get its key approved, and check the account.',
+  },
+]
+
+/** Every docs page: the navigation in order, then the unlisted pages. */
 export const DOC_PAGES: SitePage[] = [
-  {
-    path: '/docs/quickstart',
-    slug: 'quickstart',
-    title: 'Quickstart',
-    description:
-      'Install the filecoin CLI, log in, store a file, and download it again on the calibration network.',
-  },
-  {
-    path: '/docs/cli',
-    slug: 'cli',
-    title: 'CLI',
-    description:
-      'How the filecoin CLI works: log in, check the account, store, retrieve, delete, resume, and read its JSON output.',
-  },
-  {
-    path: '/docs/retrieve',
-    slug: 'retrieve',
-    title: 'Retrieve and verify',
-    description:
-      'What the PieceCID, the root CID, and each retrieval link check, how to find stored content, and how to store without the CLI.',
-  },
-  AGENTS_PAGE,
-  {
-    path: '/docs/api',
-    slug: 'api',
-    title: 'API and MCP',
-    description:
-      'filecoin-api retrieval redirects, MCP tools, conventions, and rate limits. The OpenAPI document lists the routes.',
-  },
-  {
-    path: '/docs/app',
-    slug: 'app',
-    title: 'Web app',
-    description:
-      'The explorer, the wallet dashboard, setup links, and the WebMCP tools in filecoin-app.',
-  },
+  ...DOC_NAV.flatMap((section) => [section.page, ...section.children]),
+  ...UNLISTED_PAGES,
 ]
 
 /** Every page with a Markdown version. */
 export const SITE_PAGES: SitePage[] = [HOME_PAGE, ...DOC_PAGES]
+
+/** Paths of pages that moved, and where they moved to. */
+const MOVED_PAGES: Record<string, string> = {
+  '/docs/quickstart': START_PAGE.path,
+}
+
+/**
+ * Where a moved page's path points now, or undefined when the page has not
+ * moved. A `.md` path points to the Markdown version.
+ *
+ * @param pathname - Request path.
+ */
+export function movedPath(pathname: string) {
+  const suffix = pathname.endsWith('.md') ? '.md' : ''
+  const path = pathname
+    .slice(0, pathname.length - suffix.length)
+    .replace(/\/$/, '')
+  const target = Object.hasOwn(MOVED_PAGES, path)
+    ? MOVED_PAGES[path]
+    : undefined
+  return target === undefined ? undefined : `${target}${suffix}`
+}
 
 /**
  * Find the page that serves a path, as HTML or as Markdown. A trailing
