@@ -16,7 +16,15 @@ The repository root is the marketplace for both clients. [`.claude-plugin/market
 
 ## Install
 
-Each client adds this repository as a marketplace from GitHub, then installs the plugin from it.
+Vercel's [`plugins`](https://github.com/vercel-labs/plugins) installer finds the agents on the machine and installs the plugin in each one:
+
+```sh
+npx plugins add filecoin-project/agents
+```
+
+`--target claude-code`, `--target codex`, or `--target cursor` picks one agent, and `--yes` skips the prompt, which a run without a terminal needs. The installer sends anonymous install telemetry to Vercel unless `DO_NOT_TRACK=1` is set. It turns on auto-updates when it adds the marketplace to Claude Code.
+
+Each client can also add this repository as a marketplace from GitHub, then install the plugin from it.
 
 In Claude Code:
 
@@ -34,7 +42,9 @@ codex plugin add filecoin@filecoin
 
 The MCP server needs no sign-in. Ask the agent to store or share a file on Filecoin, and it loads the skill. In Claude Code, `/filecoin:filecoin` also invokes it. If you added filecoin-api as a standalone MCP server before, remove it, so the agent has one copy of its tools.
 
-Another Agent Plugins client loads the `plugins/filecoin` directory as it is. Claude and ChatGPT on the web don't install local plugins; add `https://mcp.filecoin.io` as a custom connector there instead, which gives the MCP tools without the skill.
+Another Agent Plugins client loads the `plugins/filecoin` directory as it is.
+
+Web apps load the plugin from this repository as a marketplace. In Claude, use **Add > Add marketplace** in [**Customize > Plugins**](https://claude.com/docs/plugins/overview). In Cursor, use **Add marketplace > Import from GitHub** in [**Customize > Marketplace**](https://cursor.com/customize/marketplace). In ChatGPT, a workspace admin can [import it](https://learn.chatgpt.com/docs/enterprise/plugin-management). Otherwise, add `https://mcp.filecoin.io` as a custom connector, which gives the MCP tools without the skill.
 
 ## Versions
 
@@ -64,3 +74,5 @@ codex plugin add filecoin@filecoin
 ```
 
 On 2026-10-08, Claude Code 2.1.289 and the Codex CLI 0.161.0 installed the plugin from a local checkout, listed the `filecoin` skill and the 13 filecoin-api tools, and called `get_status` on calibration. The desktop apps are not verified yet.
+
+On 2026-11-25, `plugins` 1.3.9 installed the plugin from GitHub in Claude Code and Codex, each with its MCP server. The plugin also works in Cursor, with its MCP server. The installer sets Cursor up through `~/.claude/plugins`. The installer reported success for VS Code, but nobody has checked that VS Code loads the plugin. It looks for MCP servers in `.mcp.json`, and this plugin has `mcp.json`.
