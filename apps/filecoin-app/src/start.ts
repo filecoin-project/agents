@@ -2,7 +2,7 @@ import { createMiddleware, createStart } from '@tanstack/react-start'
 import { markdownResponse } from '@/lib/site/content.server'
 import { markdownPath } from '@/lib/site/discovery'
 import { prefersMarkdown } from '@/lib/site/negotiate'
-import { findSitePage, movedPath } from '@/lib/site/pages'
+import { findSitePage, movedResponse } from '@/lib/site/pages'
 
 /**
  * WebMCP origin-trial token for `https://filecoin.cloud` and its subdomains,
@@ -41,17 +41,9 @@ const responseHeaders = createMiddleware().server(async ({ next }) => {
  *
  * @see https://www.rfc-editor.org/rfc/rfc9110#name-308-permanent-redirect
  */
-const movedPages = createMiddleware().server(({ request, next }) => {
-  const url = new URL(request.url)
-  const target = movedPath(url.pathname)
-  if (target === undefined) {
-    return next()
-  }
-  return new Response(null, {
-    status: 308,
-    headers: { Location: `${target}${url.search}` },
-  })
-})
+const movedPages = createMiddleware().server(
+  ({ request, next }) => movedResponse(new URL(request.url)) ?? next()
+)
 
 /**
  * Serve a site page's Markdown at `<path>.md`, or at the page's own path when
