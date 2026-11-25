@@ -49,7 +49,7 @@ A person owns the wallet and approves what you may do. Never ask for a private k
    - `pending`: give the user the link in `data.session.url`, then stop until they say that they approved it.
    - `active`: go to step 6. An active key can still lack permissions, which step 6 checks.
 
-5. Run `npx -y filecoin login --check --network calibration` once to confirm the approval. If it returns an error, give the user its `next` steps and stop.
+5. Run `npx -y filecoin login --check --network calibration` once to confirm the approval. If it returns `permission_denied`, the user approved only some of the permissions. Go to step 6, which checks the ones that storing needs. If it returns any other error, give the user its `next` steps and stop.
 
 6. Run `npx -y filecoin status --network calibration`. You can store files only when both of these checks pass:
    - `data.session.scopes.createDataSet` and `data.session.scopes.addPieces` each hold an expiry date. If either is `expired` or `not granted`, the key cannot store files. Replace the key as the rest of this step describes, and wait for the user.
@@ -57,10 +57,10 @@ A person owns the wallet and approves what you may do. Never ask for a private k
 
    To replace a key when `data.session.source` is `env`, ask the user to follow [Cloud agents](https://poc.filecoin.cloud/agents.md#cloud-agents), replace the two environment values, and tell you when they are set. Never ask for the key itself, and tell the user not to paste it into the chat. Then repeat this step.
 
-   To replace a key when `data.session.source` is `config`, request one with the scopes that storing and deleting need:
+   To replace a key when `data.session.source` is `config`, request one with the two scopes that storing needs. Request `schedulePieceRemovals` too only if the user wants you to delete pieces:
 
    ```sh
-   npx -y filecoin login --scopes createDataSet --scopes addPieces --scopes schedulePieceRemovals --network calibration
+   npx -y filecoin login --scopes createDataSet --scopes addPieces --network calibration
    ```
 
    If it returns `login_pending`, give the user the approval link. If it returns `session_conflict`, the saved key still has other permissions. Ask the user whether to replace the key. If they agree, run the command again with `--fresh`, and give the user the approval link. When the user has approved the key, go to step 5.
