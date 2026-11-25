@@ -67,5 +67,5 @@ These files advertise `https://api.filecoin.io` or `https://mcp.filecoin.io`:
 - The CLI's `DEFAULT_API_URL` in [`src/globals.ts`](../../packages/filecoin-cli/src/globals.ts), which builds the retrieval links it prints unless `FILECOIN_API_URL` overrides it
 - The REST API and MCP server rows in the [Filecoin for Agents README](README.md)
 - filecoin-app's defaults in [`src/config/env.ts`](../../apps/filecoin-app/src/config/env.ts), which its retrieval links, explorer, discovery files, and `llms.txt` use ([development](../../apps/filecoin-app/README.md#development))
-- filecoin-app's [landing page](../../apps/filecoin-app/src/routes/index.tsx), its header and footer links to the API reference, and its content pages
+- filecoin-app's [landing page](../../apps/filecoin-app/src/routes/index.tsx), its header and footer links to the API reference, and its content pages. The install links in [`src/content/agents/mcp.md`](../../apps/filecoin-app/src/content/agents/mcp.md) encode the MCP server URL, so a search for the URL misses them
 - The production probes in [`.github/workflows/filecoin-api.yml`](../../.github/workflows/filecoin-api.yml)
