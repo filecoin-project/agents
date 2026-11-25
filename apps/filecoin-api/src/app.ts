@@ -32,7 +32,7 @@ import type { AppEnv } from './types.ts'
  *
  * @see https://github.com/googleapis/release-please/blob/main/docs/customizing.md#updating-arbitrary-files
  */
-export const VERSION = '0.7.2' // x-release-please-version
+export const VERSION = '0.8.0' // x-release-please-version
 
 /**
  * Version of the REST data routes, the first segment of their paths, such as

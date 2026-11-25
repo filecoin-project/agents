@@ -1,7 +1,7 @@
 {
   "packages/filecoin-cli": "0.8.0",
   "packages/filecoin-api-client": "0.4.1",
-  "apps/filecoin-api": "0.7.2",
+  "apps/filecoin-api": "0.8.0",
   "apps/filecoin-app": "0.9.1",
   "plugins/filecoin": "0.3.0"
 }
