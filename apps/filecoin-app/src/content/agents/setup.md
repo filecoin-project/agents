@@ -49,7 +49,7 @@ A person owns the wallet and approves what you may do. Never ask for a private k
    - `pending`: give the user the link in `data.session.url`, then stop until they say that they approved it.
    - `active`: go to step 6. An active key can still lack permissions, which step 6 checks.
 
-5. Run `npx -y filecoin login --check --network calibration` once to confirm the approval. If it returns `permission_denied`, the user approved only some of the permissions. Go to step 6, which checks the ones that storing needs. If it returns any other error, give the user its `next` steps and stop.
+5. Run `npx -y filecoin login --check --network calibration` once to confirm the approval. If it returns `permission_denied`, the user approved only some of the permissions. Ignore its `next` steps and go to step 6, which checks the permissions that storing needs. If it returns any other error, give the user its `next` steps and stop.
 
 6. Run `npx -y filecoin status --network calibration`. You can store files only when both of these checks pass:
    - `data.session.scopes.createDataSet` and `data.session.scopes.addPieces` each hold an expiry date. If either is `expired` or `not granted`, the key cannot store files. Replace the key as the rest of this step describes, and wait for the user.
@@ -67,4 +67,4 @@ A person owns the wallet and approves what you may do. Never ask for a private k
 
 7. When both checks pass, tell the user that the setup is done, and offer to store a file or a folder. Store only what the user names. Before you store it, check the size and the cost with `npx -y filecoin put <path> --dry-run --network calibration`.
 
-Every command writes one JSON object, with `data` or `error`, then optional `next` steps. Give the user each step that is marked `by: "user"`. `npx -y filecoin --help` lists the commands, and the [CLI](https://poc.filecoin.cloud/docs/cli.md) page explains how they work.
+Every command writes one JSON object, with `data` or `error`, then optional `next` steps. Give the user each step that is marked `by: "user"`, unless a step above says otherwise. `npx -y filecoin --help` lists the commands, and the [CLI](https://poc.filecoin.cloud/docs/cli.md) page explains how they work.
