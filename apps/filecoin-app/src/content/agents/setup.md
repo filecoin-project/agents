@@ -4,7 +4,7 @@ Follow these steps to set up `filecoin` for your user. `filecoin` stores files a
 
 A person owns the wallet and approves what you may do. Never ask for a private key or a seed phrase. Stay on the calibration test network unless the user asks for mainnet.
 
-1. Run `node --version`. If Node.js is missing, tell the user and stop.
+1. Run `node --version`. If Node.js is missing, tell the user and stop. If it is older than 24, install the current LTS version and continue.
 
 2. Tell the user what you are about to install, then install it for your agent.
 
