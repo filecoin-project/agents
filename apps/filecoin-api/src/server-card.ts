@@ -89,7 +89,7 @@ export function mcpServerCard(mcpUrl: string, version: string) {
     description:
       'Read-only Filecoin data: storage providers, data sets, pieces, payment rails, and a docs search.',
     icons: MCP_SERVER_ICONS,
-    websiteUrl: 'https://poc.filecoin.cloud/docs/api',
+    websiteUrl: 'https://poc.filecoin.cloud/agents/mcp',
     repository: {
       url: 'https://github.com/filecoin-project/agents',
       source: 'github',
