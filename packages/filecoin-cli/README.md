@@ -69,6 +69,8 @@ filecoin delete 39723/0 --dry-run  # lists the copies a target names; signs noth
 
 `put --raw` stores a file as its exact bytes, with no root CID and no IPFS indexing. Use it when a download from `/piece/<pieceCid>` must be the file itself.
 
+`put` refuses a path that is itself a symlink, with or without `--raw`, and fails with `invalid_input`. Pass the path the link points to. A symlink in a parent directory of the path is fine.
+
 `put` returns two links on filecoin-api's `/get/{cid}` route, which redirects without proxying the bytes:
 
 - `urls.piece` redirects to the exact stored bytes at a provider's `/piece/<pieceCid>`: the CAR, or the file stored with `--raw`.
@@ -131,6 +133,7 @@ A resume also does the following:
 
 - Skips the upload when the provider already has the piece.
 - Fails with `source_changed` when the source file changed.
+- Fails with `invalid_input` when it still has to upload and the source path is now a symlink.
 - Returns the saved result of an operation that already completed.
 
 If a removal transaction reverts, the resource stays active and you can resume the delete.
