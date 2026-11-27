@@ -10,7 +10,7 @@ import type {
 import { equals } from 'multiformats/bytes'
 import type { CID } from 'multiformats/cid'
 import { sha256 } from 'multiformats/hashes/sha2'
-import { ErrorCodes, invalidInput } from '../errors.ts'
+import { ErrorCodes } from '../errors.ts'
 
 /**
  * The single UnixFS profile used for every CAR: IPIP-499
@@ -23,16 +23,45 @@ export const IMPORTER_OPTIONS: ImporterOptions = { profile: 'unixfs-v1-2025' }
 /** A file included in a folder, relative to the packed directory. */
 export type PackEntry = { path: string; size: number }
 
+/** Why an entry cannot be packed, worded to follow its path. */
+const UNSUPPORTED = {
+  symlink: 'is a symlink',
+} as const
+
+/** An entry that cannot be packed, relative to the packed directory. */
+type UnsupportedEntry = { path: string; kind: keyof typeof UNSUPPORTED }
+
+/**
+ * An `invalid_input` error with one `details` issue for each entry that cannot
+ * be packed.
+ *
+ * @see ../../../../docs/filecoin/architecture.md#car-packing
+ */
+function unsupportedEntries(entries: UnsupportedEntry[]): CliError {
+  const count = entries.length === 1 ? '1 entry' : `${entries.length} entries`
+  return new CliError({
+    code: 'invalid_input',
+    message: `The folder has ${count} that cannot be uploaded.`,
+    details: entries.map(({ path, kind }) => ({
+      path: 'path',
+      message: `${path} ${UNSUPPORTED[kind]}`,
+    })),
+  })
+}
+
 /**
  * List the files and directories to pack, sorted for a deterministic DAG.
  * Dotfiles and dot-directories are skipped. Symlinks are rejected rather than
- * followed, so a publication never reaches outside the chosen directory.
+ * followed, so a publication never reaches outside the chosen directory. The
+ * walk finishes before it fails, so the error lists every rejected entry.
  */
 export async function listEntries(
   root: string
 ): Promise<{ files: PackEntry[]; directories: string[] }> {
   const files: PackEntry[] = []
   const directories: string[] = []
+  const unsupported: UnsupportedEntry[] = []
+  /** Add the entries under `dir` to the lists, depth first. */
   async function walk(dir: string): Promise<void> {
     const names = (await readdir(dir)).sort()
     for (const name of names) {
@@ -41,9 +70,8 @@ export async function listEntries(
       const stats = await lstat(path)
       const rel = relative(root, path).split(sep).join('/')
       if (stats.isSymbolicLink()) {
-        throw invalidInput(`Symlinks are not supported: ${rel}`, 'path')
-      }
-      if (stats.isDirectory()) {
+        unsupported.push({ path: rel, kind: 'symlink' })
+      } else if (stats.isDirectory()) {
         directories.push(rel)
         await walk(path)
       } else if (stats.isFile()) {
@@ -52,6 +80,7 @@ export async function listEntries(
     }
   }
   await walk(root)
+  if (unsupported.length > 0) throw unsupportedEntries(unsupported)
   return { files, directories }
 }
 

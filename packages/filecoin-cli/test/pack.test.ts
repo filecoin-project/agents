@@ -49,7 +49,7 @@ test('a packed tree extracts without its dotfiles', async () => {
   await assert.rejects(readFile(join(out, '.env')), { code: 'ENOENT' })
 })
 
-test('listEntries skips dotfiles and rejects symlinks', async () => {
+test('listEntries skips dotfiles', async () => {
   const root = await tempDir()
   const dir = await site(root)
   const entries = await listEntries(dir)
@@ -58,9 +58,24 @@ test('listEntries skips dotfiles and rejects symlinks', async () => {
     ['assets/img/big.bin', 'index.html']
   )
   assert.deepEqual(entries.directories, ['assets', 'assets/img', 'empty'])
+})
 
+test('listEntries reports every symlink at once', async () => {
+  const root = await tempDir()
+  const dir = await site(root)
+  // A link to a file, a broken nested link, and a dot-named link.
   await symlink('/etc/hosts', join(dir, 'hosts'))
-  await assert.rejects(listEntries(dir), { code: 'invalid_input' })
+  await symlink('missing', join(dir, 'assets', 'img', 'broken'))
+  await symlink('/etc/hosts', join(dir, '.hidden'))
+
+  await assert.rejects(listEntries(dir), {
+    code: 'invalid_input',
+    message: 'The folder has 2 entries that cannot be uploaded.',
+    details: [
+      { path: 'path', message: 'assets/img/broken is a symlink' },
+      { path: 'path', message: 'hosts is a symlink' },
+    ],
+  })
 })
 
 /** Count the blocks in a CAR file. */

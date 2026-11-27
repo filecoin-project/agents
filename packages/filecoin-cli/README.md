@@ -91,7 +91,7 @@ The links in the result carry no hint. filecoin-api finds providers through its 
 
 A ref, or a CID in local state, downloads from the provider of the first saved copy. Any other CID resolves through filecoin-api's `/get/{cid}` and needs no login.
 
-Packing skips dotfiles and rejects symlinks. The packed CAR, or a file stored with `--raw`, must be between 127 and 68,182,605,824 bytes (63.5 GiB).
+Packing skips dotfiles and rejects symlinks. A folder with symlinks fails with `invalid_input`, and the error's `details` names each one. The packed CAR, or a file stored with `--raw`, must be between 127 and 68,182,605,824 bytes (63.5 GiB).
 
 `filecoin delete <target>` schedules removal of stored copies, and the providers then delete them. The target is a ref, a PieceCID, a root CID, or the `<dataSetId>/<pieceId>` that `ls` prints:
 
