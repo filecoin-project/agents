@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.10.0](https://github.com/filecoin-project/agents/compare/filecoin-app-v0.9.1...filecoin-app-v0.10.0) (2026-11-27)
+
+
+### Features
+
+* **filecoin-app:** call filecoin-api's /v1 routes and publish its deprecation policy ([b9cb594](https://github.com/filecoin-project/agents/commit/b9cb594d11120b40f7fc6cba4d9a35609bf0c066))
+* **filecoin-app:** restructure the docs and add an agent setup guide ([e816f33](https://github.com/filecoin-project/agents/commit/e816f33595e97b9e3b33e40d00199b926a04452d))
+
+
+### Bug Fixes
+
+* **filecoin-app:** allow cross-origin fetches to follow the Quickstart redirect ([103a644](https://github.com/filecoin-project/agents/commit/103a6448ca77e8c66f42458be58396a6106b7c33))
+* **filecoin-app:** drop the Node.js check from the agent setup guide ([f86c018](https://github.com/filecoin-project/agents/commit/f86c01882122d670630ac811017357872f5487a1))
+* **filecoin-app:** drop the Node.js version from the agent setup guide ([f7d59ee](https://github.com/filecoin-project/agents/commit/f7d59eeaf065de31a0cb0be1e35176ca7195580d))
+* **filecoin-app:** install the current Node.js LTS in the agent setup guide ([3fa12bc](https://github.com/filecoin-project/agents/commit/3fa12bcf24fadf964a0d4de775bddeca3fd2e7d0))
+* **filecoin-app:** keep agent setup on one network and check the key's scopes ([0edf418](https://github.com/filecoin-project/agents/commit/0edf4187592e6733165f50b67e97ed5541a20347))
+* **filecoin-app:** let agent setup finish without permission to delete ([df11531](https://github.com/filecoin-project/agents/commit/df115311a9053167bf6cf7ae2aae8e190c385c1e))
+* **filecoin-app:** name the Filecoin Pay console in the integrations.json login setup ([#157](https://github.com/filecoin-project/agents/issues/157)) ([1e9a964](https://github.com/filecoin-project/agents/commit/1e9a964c261bc85f38b4ddd52954d7e193c04e29))
+* **filecoin-app:** recover agent setup from a key that cannot store files ([fd3eda7](https://github.com/filecoin-project/agents/commit/fd3eda7b5530e09a5f403330c5c50efcfa181fbe))
+* **filecoin-app:** set up cloud agents from account settings in the agent setup guide ([#167](https://github.com/filecoin-project/agents/issues/167)) ([9ad8e4f](https://github.com/filecoin-project/agents/commit/9ad8e4fc6af294e3b30488fe865b8dffe627b2b4))
+* **filecoin-app:** shorten the agent setup guide to five steps ([43c22ea](https://github.com/filecoin-project/agents/commit/43c22ea293350eb63366b49b8796d0b9fe3cdd1f))
+* **filecoin-app:** skip the retry step after a partial approval in agent setup ([bbc83bd](https://github.com/filecoin-project/agents/commit/bbc83bde98fa236ae894f3a10d0042ba3c014606))
+
 ## [0.9.1](https://github.com/filecoin-project/agents/compare/filecoin-app-v0.9.0...filecoin-app-v0.9.1) (2026-11-17)
 
 
