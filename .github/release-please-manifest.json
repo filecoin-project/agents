@@ -4,5 +4,5 @@
   "packages/encryption": "0.1.0",
   "apps/filecoin-api": "0.8.0",
   "apps/filecoin-app": "0.10.0",
-  "plugins/filecoin": "0.3.0"
+  "plugins/filecoin": "0.3.1"
 }
