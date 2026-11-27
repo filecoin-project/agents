@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
+import { once } from 'node:events'
 import { createReadStream } from 'node:fs'
 import { mkdir, readFile, symlink, writeFile } from 'node:fs/promises'
+import { createServer } from 'node:net'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { CarIndexer } from '@ipld/car'
@@ -76,6 +79,63 @@ test('listEntries reports every symlink at once', async () => {
       { path: 'path', message: 'assets/img/broken is a symlink' },
       { path: 'path', message: 'hosts is a symlink' },
     ],
+  })
+})
+
+test('listEntries rejects FIFOs and sockets', async () => {
+  const root = await tempDir()
+  const dir = await site(root)
+  execFileSync('mkfifo', [join(dir, 'assets', 'pipe'), join(dir, '.pipe')])
+  const server = createServer()
+  server.listen(join(dir, 'sock'))
+  await once(server, 'listening')
+
+  try {
+    await assert.rejects(listEntries(dir), {
+      code: 'invalid_input',
+      details: [
+        { path: 'path', message: 'assets/pipe is a FIFO' },
+        { path: 'path', message: 'sock is a socket' },
+      ],
+    })
+  } finally {
+    server.close()
+  }
+})
+
+test('listEntries rejects names with a backslash', async () => {
+  const root = await tempDir()
+  const dir = await site(root)
+  await writeFile(join(dir, 'a\\b'), 'a')
+  await mkdir(join(dir, 'dir\\'))
+  await writeFile(join(dir, 'dir\\', 'f'), 'f')
+  await symlink('f', join(dir, 'dir\\', 'link'))
+  await writeFile(join(dir, '.a\\b'), 'hidden')
+
+  await assert.rejects(listEntries(dir), {
+    code: 'invalid_input',
+    details: [
+      { path: 'path', message: 'a\\b has a backslash in its name' },
+      { path: 'path', message: 'dir\\ has a backslash in its name' },
+      { path: 'path', message: 'dir\\/link is a symlink' },
+    ],
+  })
+})
+
+test('a folder name may hold a backslash but not end in one', async () => {
+  const root = await tempDir()
+  const inside = join(root, 'a\\b')
+  await mkdir(inside)
+  await writeFile(join(inside, 'f'), 'f')
+  assert.equal((await planDirectory(inside)).files, 1)
+
+  const last = join(root, 'a\\')
+  await mkdir(last)
+  await assert.rejects(planDirectory(last), { code: 'invalid_input' })
+  await writeFile(join(last, 'f'), 'f')
+  await assert.rejects(planDirectory(last), {
+    code: 'invalid_input',
+    message: /ends in a backslash/,
   })
 })
 
