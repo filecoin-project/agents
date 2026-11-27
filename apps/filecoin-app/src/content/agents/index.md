@@ -27,7 +27,7 @@ A cloud agent has a shell, so it uses the same skill and CLI as a local agent. I
 Give the agent a key that outlives the session instead:
 
 1. On the Filecoin Pay console's [session keys page](https://pay.filecoin.cloud/console/session-keys), select **New session key** and authorize the key with your wallet. Use the network that the agent will use. The console shows the key once, as `SESSION_KEY` and `WALLET_ADDRESS`.
-2. In the agent's environment settings, add the `SESSION_KEY` value as the secret `FILECOIN_SESSION_KEY`, and the `WALLET_ADDRESS` value as `FILECOIN_ROOT_ADDRESS`.
+2. In the agent's environment settings, add the `SESSION_KEY` value as the secret `FILECOIN_SESSION_KEY`, and the `WALLET_ADDRESS` value as `FILECOIN_ROOT_ADDRESS`. Both must be environment variables that the agent's commands can read. A secret that only the setup script sees, or that the agent sees as a placeholder, doesn't work. If teammates share the environment, add `FILECOIN_SESSION_KEY` as a personal value, because a task that can read the key can store files that your wallet pays for.
 
 The agent then skips `filecoin login`. To confirm that the key works, it runs `filecoin status`. The key expires, and it cannot move funds. Revoke it on the same page to stop the agent. Never paste the key into a chat.
 
