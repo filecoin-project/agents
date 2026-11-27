@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
+import { once } from 'node:events'
 import { createReadStream } from 'node:fs'
-import { mkdir, readFile, symlink, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, readFile, symlink, writeFile } from 'node:fs/promises'
+import { createServer } from 'node:net'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { CarIndexer } from '@ipld/car'
@@ -11,7 +14,7 @@ import * as raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { planDirectory } from '../src/storage/dfs-car.ts'
 import { listEntries } from '../src/storage/pack.ts'
-import { extractCar, tempDir, writeCar } from './helpers.ts'
+import { extractCar, POSIX_ONLY, tempDir, writeCar } from './helpers.ts'
 
 /** Create a small site with nested assets, a dotfile, and an empty dir. */
 async function site(root: string): Promise<string> {
@@ -78,6 +81,106 @@ test('listEntries reports every symlink at once', async () => {
     ],
   })
 })
+
+test('listEntries rejects FIFOs and sockets', POSIX_ONLY, async () => {
+  const root = await tempDir()
+  const dir = await site(root)
+  execFileSync('mkfifo', [join(dir, 'assets', 'pipe'), join(dir, '.pipe')])
+  const server = createServer()
+  server.listen(join(dir, 'sock'))
+  await once(server, 'listening')
+
+  try {
+    await assert.rejects(listEntries(dir), {
+      code: 'invalid_input',
+      details: [
+        { path: 'path', message: 'assets/pipe is a FIFO' },
+        { path: 'path', message: 'sock is a socket' },
+      ],
+    })
+  } finally {
+    server.close()
+  }
+})
+
+test('listEntries rejects names with a backslash', POSIX_ONLY, async () => {
+  const root = await tempDir()
+  const dir = await site(root)
+  await writeFile(join(dir, 'a\\b'), 'a')
+  await mkdir(join(dir, 'dir\\'))
+  await writeFile(join(dir, 'dir\\', 'f'), 'f')
+  await symlink('f', join(dir, 'dir\\', 'link'))
+  await writeFile(join(dir, '.a\\b'), 'hidden')
+
+  await assert.rejects(listEntries(dir), {
+    code: 'invalid_input',
+    details: [
+      { path: 'path', message: 'a\\b has a backslash in its name' },
+      { path: 'path', message: 'dir\\ has a backslash in its name' },
+      { path: 'path', message: 'dir\\/link is a symlink' },
+    ],
+  })
+})
+
+test(
+  'an unreadable rejected directory is still reported',
+  POSIX_ONLY,
+  async () => {
+    const root = await tempDir()
+    const dir = await site(root)
+    // One that cannot be listed, and one whose entries cannot be read.
+    const locked = join(dir, 'a\\')
+    const listOnly = join(dir, 'b\\')
+    for (const path of [locked, listOnly]) {
+      await mkdir(path)
+      await writeFile(join(path, 'f'), 'f')
+    }
+    // One with a supported name, below a rejected directory.
+    const nested = join(dir, 'c\\', 'sub')
+    await mkdir(nested, { recursive: true })
+    await symlink('missing', join(dir, 'link'))
+    await chmod(nested, 0o000)
+    await chmod(locked, 0o000)
+    await chmod(listOnly, 0o400)
+
+    try {
+      await assert.rejects(listEntries(dir), {
+        code: 'invalid_input',
+        details: [
+          { path: 'path', message: 'a\\ has a backslash in its name' },
+          { path: 'path', message: 'b\\ has a backslash in its name' },
+          { path: 'path', message: 'c\\ has a backslash in its name' },
+          { path: 'path', message: 'link is a symlink' },
+        ],
+      })
+    } finally {
+      await chmod(locked, 0o700)
+      await chmod(listOnly, 0o700)
+      await chmod(nested, 0o700)
+    }
+  }
+)
+
+test(
+  'a folder name may hold a backslash but not end in one',
+  POSIX_ONLY,
+  async () => {
+    const root = await tempDir()
+    const inside = join(root, 'a\\b')
+    await mkdir(inside)
+    await writeFile(join(inside, 'f'), 'f')
+    assert.equal((await planDirectory(inside)).files, 1)
+
+    const last = join(root, 'a\\')
+    await mkdir(last)
+    await assert.rejects(planDirectory(last), { code: 'invalid_input' })
+    await writeFile(join(last, 'f'), 'f')
+    await assert.rejects(planDirectory(last), {
+      code: 'invalid_input',
+      message: /ends in a backslash/,
+    })
+  }
+)
 
 /** Count the blocks in a CAR file. */
 async function countBlocks(carPath: string): Promise<number> {

@@ -1,6 +1,6 @@
-import { createReadStream } from 'node:fs'
+import { createReadStream, type Stats } from 'node:fs'
 import { lstat, readdir } from 'node:fs/promises'
-import { join, relative, sep } from 'node:path'
+import { basename, join, relative, sep } from 'node:path'
 import { CliError } from 'clipact'
 import type {
   DirectoryCandidate,
@@ -10,7 +10,7 @@ import type {
 import { equals } from 'multiformats/bytes'
 import type { CID } from 'multiformats/cid'
 import { sha256 } from 'multiformats/hashes/sha2'
-import { ErrorCodes } from '../errors.ts'
+import { ErrorCodes, invalidInput } from '../errors.ts'
 
 /**
  * The single UnixFS profile used for every CAR: IPIP-499
@@ -26,10 +26,33 @@ export type PackEntry = { path: string; size: number }
 /** Why an entry cannot be packed, worded to follow its path. */
 const UNSUPPORTED = {
   symlink: 'is a symlink',
+  fifo: 'is a FIFO',
+  socket: 'is a socket',
+  device: 'is a device',
+  backslash: 'has a backslash in its name',
 } as const
 
 /** An entry that cannot be packed, relative to the packed directory. */
 type UnsupportedEntry = { path: string; kind: keyof typeof UNSUPPORTED }
+
+/**
+ * Why the entry `name` cannot be packed, from its `lstat` result, or
+ * `undefined` when it can. Its type counts before its name. `get` refuses a
+ * name with a backslash, and the importer reads `\/` as an escaped slash.
+ *
+ * @see https://nodejs.org/api/fs.html#class-fsstats
+ */
+function unsupportedKind(
+  name: string,
+  stats: Stats
+): UnsupportedEntry['kind'] | undefined {
+  if (stats.isSymbolicLink()) return 'symlink'
+  if (stats.isFIFO()) return 'fifo'
+  if (stats.isSocket()) return 'socket'
+  if (stats.isBlockDevice() || stats.isCharacterDevice()) return 'device'
+  if (name.includes('\\')) return 'backslash'
+  return undefined
+}
 
 /**
  * An `invalid_input` error with one `details` issue for each entry that cannot
@@ -52,29 +75,48 @@ function unsupportedEntries(entries: UnsupportedEntry[]): CliError {
 
 /**
  * List the files and directories to pack, sorted for a deterministic DAG.
- * Dotfiles and dot-directories are skipped. Symlinks are rejected rather than
- * followed, so a publication never reaches outside the chosen directory. The
- * walk finishes before it fails, so the error lists every rejected entry.
+ * Dot-named entries are skipped. Symlinks are rejected rather than followed,
+ * so a publication never reaches outside the chosen directory. FIFOs, sockets,
+ * devices, and names with a backslash are rejected too. The walk finishes
+ * before it fails, so the error lists every rejected entry. A `root` whose own
+ * name ends in a backslash is rejected before the walk.
  */
 export async function listEntries(
   root: string
 ): Promise<{ files: PackEntry[]; directories: string[] }> {
+  // The importer would read the `/` after this name as escaped.
+  if (basename(root).endsWith('\\')) {
+    throw invalidInput(
+      `The folder name of ${root} ends in a backslash. Rename the folder.`,
+      'path'
+    )
+  }
   const files: PackEntry[] = []
   const directories: string[] = []
   const unsupported: UnsupportedEntry[] = []
-  /** Add the entries under `dir` to the lists, depth first. */
-  async function walk(dir: string): Promise<void> {
-    const names = (await readdir(dir)).sort()
+  /**
+   * Add the entries under `dir` to the lists, depth first. `rejected` means
+   * that `dir` or a directory above it is already reported, so failing to read
+   * there is not an error.
+   */
+  async function walk(dir: string, rejected = false): Promise<void> {
+    /** Ignore a filesystem error under a rejected directory. */
+    const ignore = (error: unknown): undefined => {
+      if (!rejected) throw error
+    }
+    const names = ((await readdir(dir).catch(ignore)) ?? []).sort()
     for (const name of names) {
       if (name.startsWith('.')) continue
       const path = join(dir, name)
-      const stats = await lstat(path)
+      const stats = await lstat(path).catch(ignore)
+      if (!stats) continue
       const rel = relative(root, path).split(sep).join('/')
-      if (stats.isSymbolicLink()) {
-        unsupported.push({ path: rel, kind: 'symlink' })
-      } else if (stats.isDirectory()) {
+      const kind = unsupportedKind(name, stats)
+      if (kind) unsupported.push({ path: rel, kind })
+      // A rejected directory is still walked, to list what it holds.
+      if (stats.isDirectory()) {
         directories.push(rel)
-        await walk(path)
+        await walk(path, rejected || kind !== undefined)
       } else if (stats.isFile()) {
         files.push({ path: rel, size: stats.size })
       }

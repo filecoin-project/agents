@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import {
   mkdir,
@@ -39,7 +40,7 @@ import {
   startRemove,
 } from '../src/storage/jobs.ts'
 import type { CommittedPiece, StorageBackend } from '../src/storage/types.ts'
-import { tempDir } from './helpers.ts'
+import { POSIX_ONLY, tempDir } from './helpers.ts'
 
 const TX = `0x${'aa'.repeat(32)}` as Hex
 const PAYER: Hex = '0x00000000000000000000000000000000000000aa'
@@ -448,6 +449,45 @@ test('put --raw rejects a directory', async () => {
     0
   )
 })
+
+test(
+  'put and its dry run reject special files and backslash names',
+  POSIX_ONLY,
+  async () => {
+    const { backend } = fakeBackend()
+    const ctx = await context(backend)
+    const dir = join(ctx.root, 'site')
+    const trailing = join(ctx.root, 'out\\')
+    await mkdir(dir)
+    await mkdir(trailing)
+    await writeFile(join(dir, 'a\\b'), 'a')
+    execFileSync('mkfifo', [join(dir, 'pipe')])
+
+    for (const [path, message] of [
+      [dir, /2 entries .* First: a\\b has a backslash in its name\./],
+      [trailing, /ends in a backslash/],
+    ] as const) {
+      const expected = { code: 'invalid_input', message }
+      await assert.rejects(estimatePut({ path }), expected)
+      await assert.rejects(startPut(ctx, { path }), expected)
+    }
+    assert.deepEqual(ctx.started, [])
+  }
+)
+
+test(
+  'put stores a single file with a backslash in its name',
+  POSIX_ONLY,
+  async () => {
+    const { backend } = fakeBackend()
+    const ctx = await context(backend)
+    const path = await file(ctx, 'a\\b', 4096)
+
+    assert.equal((await estimatePut({ path })).name, 'a\\b')
+    const result = await startPut(ctx, { path })
+    assert.equal(result.resource.name, 'a\\b')
+  }
+)
 
 test('a file put saved without a format by filecoin 0.7.0 resumes raw', async () => {
   const { backend, calls } = fakeBackend({ failSubmitOnce: true })
