@@ -916,9 +916,15 @@ for (const raw of [false, true]) {
     ctx.onOperation = undefined
     await assert.rejects(runOperation(ctx, failed.id), {
       code: 'invalid_input',
-      message: `${path} is a symlink; pass the path it points to.`,
+      message: `${path} is a symlink. Replace it with the file or folder itself, then resume operation ${failed.id}.`,
     })
     assert.equal(calls.upload, 0)
+
+    // Following the message lets the same operation finish.
+    await rm(path)
+    await rename(moved, path)
+    await resumePut(ctx, failed.id)
+    assert.equal(calls.upload, 1)
   })
 }
 

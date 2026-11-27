@@ -133,7 +133,7 @@ A resume also does the following:
 
 - Skips the upload when the provider already has the piece.
 - Fails with `source_changed` when the source file changed.
-- Fails with `invalid_input` when it still has to upload and the source path is now a symlink.
+- Fails with `invalid_input` when it still has to upload and the source path is now a symlink. Replace the link with the file or folder itself, then resume.
 - Returns the saved result of an operation that already completed.
 
 If a removal transaction reverts, the resource stays active and you can resume the delete.
