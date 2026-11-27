@@ -70,7 +70,8 @@ test('listEntries reports every symlink at once', async () => {
 
   await assert.rejects(listEntries(dir), {
     code: 'invalid_input',
-    message: 'The folder has 2 entries that cannot be uploaded.',
+    message:
+      'The folder has 2 entries that cannot be uploaded. First: assets/img/broken is a symlink.',
     details: [
       { path: 'path', message: 'assets/img/broken is a symlink' },
       { path: 'path', message: 'hosts is a symlink' },

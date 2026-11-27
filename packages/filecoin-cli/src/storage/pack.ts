@@ -33,19 +33,20 @@ type UnsupportedEntry = { path: string; kind: keyof typeof UNSUPPORTED }
 
 /**
  * An `invalid_input` error with one `details` issue for each entry that cannot
- * be packed.
+ * be packed. The message names the first one, because a saved operation keeps
+ * only the message.
  *
  * @see ../../../../docs/filecoin/architecture.md#car-packing
  */
 function unsupportedEntries(entries: UnsupportedEntry[]): CliError {
   const count = entries.length === 1 ? '1 entry' : `${entries.length} entries`
+  const problems = entries.map(
+    ({ path, kind }) => `${path} ${UNSUPPORTED[kind]}`
+  )
   return new CliError({
     code: 'invalid_input',
-    message: `The folder has ${count} that cannot be uploaded.`,
-    details: entries.map(({ path, kind }) => ({
-      path: 'path',
-      message: `${path} ${UNSUPPORTED[kind]}`,
-    })),
+    message: `The folder has ${count} that cannot be uploaded. First: ${problems[0]}.`,
+    details: problems.map((message) => ({ path: 'path', message })),
   })
 }
 
