@@ -51,6 +51,7 @@ When the account needs a deposit or the Warm Storage approval, `filecoin status`
 filecoin put ./report.pdf          # a file, packed into a UnixFS CAR with an IPFS root CID
 filecoin put ./report.pdf --raw    # a file, stored as its exact bytes
 filecoin put ./site                # a folder, packed into a UnixFS CAR
+filecoin put ./site --include-hidden # a folder with its dot-named files and folders
 filecoin put ./site --dry-run      # size, provider, cost, and authorization; stores nothing
 filecoin get res_… --output ./copy # extracts a CAR, checking each block
 filecoin ls                        # every piece the wallet pays for; add --all to include removed ones
@@ -62,7 +63,7 @@ filecoin delete 39723/0 --dry-run  # lists the copies a target names; signs noth
 
 `put` returns `urls.browser`, the link to share, and `urls.piece`, the exact stored bytes. [Retrieve and verify](/docs/retrieve) explains what each link and `filecoin get` check.
 
-Packing skips dotfiles and rejects symlinks. The packed file or folder, or a file stored with `--raw`, must be between 127 bytes and 68,182,605,824 bytes (63.5 GiB).
+Packing skips dot-named files and folders inside a folder and rejects symlinks. `--include-hidden` stores all the dot-named entries, such as `.env`, `.git`, and `.DS_Store`, which become public. Pass it to `put --dry-run` too, so the dry run reports the same files. The packed file or folder, or a file stored with `--raw`, must be between 127 bytes and 68,182,605,824 bytes (63.5 GiB).
 
 `delete` takes a ref, a PieceCID, a root CID, or a `<dataSetId>/<pieceId>` from `ls`, and schedules removal of the copies it names. The providers then delete them. A ref or a CID removes every copy that the wallet pays for, including copies stored from another machine or by another tool. A `<dataSetId>/<pieceId>` removes one copy, and `--provider <id>` keeps only the copies on one provider. `--dry-run` lists the copies without signing. Without `--yes`, `delete` asks a person at a terminal to confirm. Everyone else, including agents, gets `confirmation_required` with a step for the user.
 
