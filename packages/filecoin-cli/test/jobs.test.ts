@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
-import { mkdir, rm, stat, truncate, writeFile } from 'node:fs/promises'
+import {
+  mkdir,
+  rename,
+  rm,
+  stat,
+  symlink,
+  truncate,
+  writeFile,
+} from 'node:fs/promises'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import * as Piece from '@filoz/synapse-core/piece'
@@ -841,6 +849,84 @@ test('resume refuses a source that changed since the job started', async () => {
     code: 'source_changed',
   })
 })
+
+test('put rejects an input that is a symlink', async () => {
+  const { backend, calls } = fakeBackend()
+  const ctx = await context(backend)
+  const path = await file(ctx, 'data.bin', 4096)
+  const dir = join(ctx.root, 'site')
+  await mkdir(dir)
+  await writeFile(join(dir, 'index.html'), randomBytes(4096))
+  const links = [join(ctx.root, 'file-link'), join(ctx.root, 'dir-link')]
+  await symlink(path, links[0] as string)
+  await symlink(dir, links[1] as string)
+
+  // A trailing slash must not follow the link either.
+  for (const target of [...links, `${links[1]}/`]) {
+    const expected = {
+      code: 'invalid_input',
+      message: `${target} is a symlink; pass the path it points to.`,
+    }
+    for (const raw of [false, true]) {
+      await assert.rejects(startPut(ctx, { path: target, raw }), expected)
+      await assert.rejects(estimatePut({ path: target, raw }), expected)
+    }
+  }
+  const { items } = listOperations(ctx.db, {
+    chainId: ctx.chainId,
+    payer: ctx.payer,
+    limit: 1,
+  })
+  assert.equal(items.length, 0)
+  assert.equal(calls.select.length, 0)
+})
+
+test('put follows a symlinked parent directory', async () => {
+  const { backend } = fakeBackend()
+  const ctx = await context(backend)
+  const dir = join(ctx.root, 'site')
+  await mkdir(join(dir, 'assets'), { recursive: true })
+  await writeFile(join(dir, 'assets', 'app.js'), randomBytes(4096))
+  const link = join(ctx.root, 'link')
+  await symlink(dir, link)
+
+  for (const path of [join(link, 'assets'), join(link, 'assets', 'app.js')]) {
+    await estimatePut({ path })
+    assert.equal((await startPut(ctx, { path })).state, 'ready')
+  }
+})
+
+for (const raw of [false, true]) {
+  test(`resume refuses to upload a ${raw ? 'raw' : 'CAR'} source swapped for a symlink`, async () => {
+    const { backend, calls } = fakeBackend()
+    const ctx = await context(backend)
+    // Stop before the put saves a CID that a resume could compare.
+    ctx.onOperation = () => {
+      throw new Error('stopped')
+    }
+    const path = await file(ctx, 'data.bin', 4096)
+    await assert.rejects(startPut(ctx, { path, raw }))
+    const failed = onlyOperation(ctx)
+    assert.equal(failed.checkpoint.rootCid, undefined)
+    assert.equal(failed.checkpoint.pieceCid, undefined)
+
+    const moved = join(ctx.root, 'moved.bin')
+    await rename(path, moved)
+    await symlink(moved, path)
+    ctx.onOperation = undefined
+    await assert.rejects(runOperation(ctx, failed.id), {
+      code: 'invalid_input',
+      message: `${path} is a symlink. Replace it with the file or folder itself, then resume operation ${failed.id}.`,
+    })
+    assert.equal(calls.upload, 0)
+
+    // Following the message lets the same operation finish.
+    await rm(path)
+    await rename(moved, path)
+    await resumePut(ctx, failed.id)
+    assert.equal(calls.upload, 1)
+  })
+}
 
 test('put rejects content below the minimum piece size', async () => {
   const { backend } = fakeBackend()

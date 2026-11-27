@@ -1,5 +1,5 @@
 import { createReadStream } from 'node:fs'
-import { rm, stat } from 'node:fs/promises'
+import { lstat, rm, stat } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
 import type { DatabaseSync } from 'node:sqlite'
 import * as Piece from '@filoz/synapse-core/piece'
@@ -166,10 +166,29 @@ type PutSource = {
   size?: number
 }
 
+/**
+ * `lstat` a put's source, and reject one that is itself a symlink rather than
+ * follow it. Only the last part of the path counts, so a symlinked parent
+ * directory is fine. Resolves to `undefined` when the source can't be read.
+ * `message` is the error's, because a new put and a resume recover differently.
+ *
+ * @see https://nodejs.org/api/fs.html#fspromiseslstatpath-options
+ */
+async function lstatSource(sourcePath: string, message: string) {
+  const stats = await lstat(sourcePath).catch(() => undefined)
+  if (stats?.isSymbolicLink()) {
+    throw invalidInput(message, 'path')
+  }
+  return stats
+}
+
 /** Check that `path` is a storable file or directory. */
 async function inspectSource(options: StartPutOptions): Promise<PutSource> {
   const sourcePath = resolve(options.path)
-  const stats = await stat(sourcePath).catch(() => undefined)
+  const stats = await lstatSource(
+    sourcePath,
+    `${options.path} is a symlink; pass the path it points to.`
+  )
   if (!stats || !(stats.isFile() || stats.isDirectory())) {
     throw invalidInput(`No file or directory at ${options.path}.`, 'path')
   }
@@ -472,6 +491,8 @@ async function runPut(ctx: JobContext, op: Operation): Promise<PutResult> {
   const name = input.name ?? 'upload'
   const signal = ctx.signal
   if (!input.sourcePath) throw new Error(`Operation ${op.id} has no source.`)
+  // A resume takes no path, so only the saved one can change.
+  const symlinked = `${input.sourcePath} is a symlink. Replace it with the file or folder itself, then resume operation ${op.id}.`
 
   const stored = Boolean(op.checkpoint.commit || op.checkpoint.stored)
   let placement: Placement
@@ -484,6 +505,7 @@ async function runPut(ctx: JobContext, op: Operation): Promise<PutResult> {
         phase: 'packing',
         message: `Packing ${input.sourcePath}`,
       })
+      await lstatSource(input.sourcePath, symlinked)
       const plan = kind === 'folder' ? planDirectory : planFile
       car = await plan(input.sourcePath, PACK_OPTIONS)
       const rootCid = car.rootCid.toString()
@@ -520,6 +542,7 @@ async function runPut(ctx: JobContext, op: Operation): Promise<PutResult> {
     }
   } else {
     signal?.throwIfAborted()
+    if (!stored) await lstatSource(input.sourcePath, symlinked)
     const size = (await stat(input.sourcePath)).size
     assertPieceSize(size)
     ctx.progress?.({ phase: 'hashing', message: 'Computing PieceCID' })
