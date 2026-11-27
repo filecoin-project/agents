@@ -251,7 +251,7 @@ To return to one copy, delete `secondary-copy.ts` and the code marked `secondary
 
 ### CAR packing
 
-`dfs-car.ts` packs files and folders with `ipfs-unixfs-importer` and the IPIP-499 `unixfs-v1-2025` profile: CIDv1, raw leaves, and 1 MiB chunks. Filecoin Pin uses the same profile. Packing walks entries in sorted order, skips dotfiles, and rejects symlinks, so packing the same folder twice gives the same root CID.
+`dfs-car.ts` packs files and folders with `ipfs-unixfs-importer` and the IPIP-499 `unixfs-v1-2025` profile: CIDv1, raw leaves, and 1 MiB chunks. Filecoin Pin uses the same profile. Packing walks entries in sorted order, skips dotfiles, and rejects symlinks, so packing the same folder twice gives the same root CID. The walk finishes before it rejects a folder. The `invalid_input` error then has one `details` issue for each rejected path, relative to the folder. Its `message` names the first of those paths, because a failed operation saves only the message.
 
 The importer derives parent directories from file paths. `pack.ts` passes only empty directories to the importer explicitly, because an explicit parent makes the importer emit an empty-directory block that nothing references.
 
