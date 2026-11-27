@@ -30,6 +30,7 @@ export default defineHandler(put, async (ctx) => {
     name: input.name,
     providerId: input.provider == null ? undefined : BigInt(input.provider),
     raw: input.raw,
+    includeHidden: input.includeHidden,
   }
 
   if (ctx.dryRun) {

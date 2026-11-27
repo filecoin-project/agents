@@ -56,6 +56,7 @@ When the account needs a deposit or the Warm Storage approval, `filecoin status`
 filecoin put ./report.pdf          # UnixFS CAR  → <api>/get/<rootCid>?browser=true
 filecoin put ./report.pdf --raw    # raw piece   → <api>/get/<pieceCid>?browser=true
 filecoin put ./site                # UnixFS CAR  → <api>/get/<rootCid>?browser=true
+filecoin put ./site --include-hidden # also stores dot-named files and folders
 filecoin put ./site --dry-run      # size, provider, cost, and authorization; stores nothing
 filecoin get res_… --output ./copy # extracts a CAR from /ipfs, checking each block
 filecoin ls                        # add --all to include removed pieces
@@ -93,7 +94,11 @@ The links in the result carry no hint. filecoin-api finds providers through its 
 
 A ref, or a CID in local state, downloads from the provider of the first saved copy. Any other CID resolves through filecoin-api's `/get/{cid}` and needs no login.
 
-Packing skips dot-named entries. A folder that holds a symlink, a FIFO, a socket, a device, or a name with a backslash fails with `invalid_input`. The error's `message` names the first such entry, and `details` names each one. A folder whose own name ends in a backslash also fails. A single file may have a backslash in its name. The packed CAR, or a file stored with `--raw`, must be between 127 and 68,182,605,824 bytes (63.5 GiB).
+Packing skips dot-named files and folders unless you pass `--include-hidden`. A hidden folder that you pass as the path gets no exception: packing still skips the dot-named entries inside it. A dot-named file that you pass as the path is stored either way.
+
+`--include-hidden` stores files such as `.env`, `.git`, and `.DS_Store`. Everything you `put` is public, so check the folder for secrets first. `put --dry-run --include-hidden` reports the file count and size with those entries.
+
+A folder that holds a symlink, a FIFO, a socket, a device, or a name with a backslash fails with `invalid_input`. The error's `message` names the first such entry, and `details` names each one. A folder whose own name ends in a backslash also fails. A single file may have a backslash in its name. The packed CAR, or a file stored with `--raw`, must be between 127 and 68,182,605,824 bytes (63.5 GiB).
 
 `filecoin delete <target>` schedules removal of stored copies, and the providers then delete them. The target is a ref, a PieceCID, a root CID, or the `<dataSetId>/<pieceId>` that `ls` prints:
 

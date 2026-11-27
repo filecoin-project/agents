@@ -177,6 +177,20 @@ test('put --dry-run describes a directory without a session', async () => {
   assert.equal(estimate.cost, undefined)
 })
 
+test('put --dry-run counts hidden files only with --include-hidden', async () => {
+  const dir = join(await tempDir(), 'site')
+  await mkdir(dir)
+  await writeFile(join(dir, 'index.html'), '<h1>hello world</h1>')
+  await writeFile(join(dir, '.env'), 'SECRET=1')
+  for (const [flags, files] of [
+    [[], 1],
+    [['--include-hidden'], 2],
+  ] as const) {
+    const { data } = await run(['put', dir, '--dry-run', ...flags])
+    assert.equal((data.estimate as Record<string, unknown>).files, files)
+  }
+})
+
 test('delete needs --yes when no human can confirm', async () => {
   const { json } = await run(['delete', 'res_x'])
   assert.equal(code(json), 'confirmation_required')

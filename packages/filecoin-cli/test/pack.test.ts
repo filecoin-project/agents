@@ -63,6 +63,68 @@ test('listEntries skips dotfiles', async () => {
   assert.deepEqual(entries.directories, ['assets', 'assets/img', 'empty'])
 })
 
+test('includeHidden packs dotfiles and dot-named directories', async () => {
+  const root = await tempDir()
+  const dir = await site(root)
+  await mkdir(join(dir, '.git'))
+  await writeFile(join(dir, '.git', 'HEAD'), 'ref: refs/heads/main')
+  await writeFile(join(dir, 'assets', '.DS_Store'), 'finder')
+
+  const car = await planDirectory(dir, { includeHidden: true })
+  assert.equal(car.files, 5)
+  await writeCar(car, join(root, 'a.car'))
+  const out = join(root, 'out')
+  await extractCar(join(root, 'a.car'), car.rootCid.toString(), out)
+  for (const path of ['.env', '.git/HEAD', 'assets/.DS_Store']) {
+    assert.deepEqual(
+      await readFile(join(out, path)),
+      await readFile(join(dir, path))
+    )
+  }
+})
+
+test('a hidden root skips nested dotfiles without includeHidden', async () => {
+  const dir = join(await tempDir(), '.config')
+  await mkdir(dir)
+  await writeFile(join(dir, 'a.txt'), 'a')
+  await writeFile(join(dir, '.env'), 'SECRET=1')
+
+  const { files } = await listEntries(dir)
+  assert.deepEqual(
+    files.map((f) => f.path),
+    ['a.txt']
+  )
+  assert.equal((await planDirectory(dir)).files, 1)
+  assert.equal((await planDirectory(dir, { includeHidden: true })).files, 2)
+})
+
+test(
+  'includeHidden rejects unsupported hidden entries',
+  POSIX_ONLY,
+  async (t) => {
+    const dir = join(await tempDir(), 'site')
+    await mkdir(join(dir, '.git'), { recursive: true })
+    await symlink('/etc/hosts', join(dir, '.link'))
+    execFileSync('mkfifo', [join(dir, '.git', 'pipe')])
+    await writeFile(join(dir, '.a\\b'), 'a')
+    const server = createServer().listen(join(dir, '.sock'))
+    t.after(() => server.close())
+    await once(server, 'listening')
+
+    // Without the flag, all of them are skipped.
+    assert.deepEqual((await listEntries(dir)).files, [])
+    await assert.rejects(listEntries(dir, { includeHidden: true }), {
+      code: 'invalid_input',
+      details: [
+        { path: 'path', message: '.a\\b has a backslash in its name' },
+        { path: 'path', message: '.git/pipe is a FIFO' },
+        { path: 'path', message: '.link is a symlink' },
+        { path: 'path', message: '.sock is a socket' },
+      ],
+    })
+  }
+)
+
 test('listEntries reports every symlink at once', async () => {
   const root = await tempDir()
   const dir = await site(root)

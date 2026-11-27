@@ -818,6 +818,45 @@ test('a CAR put resumed after a failed upload streams the same piece', async () 
   assert.equal(result.resource.size, failed.checkpoint.size)
 })
 
+test('put --include-hidden resumes with the same hidden entries', async () => {
+  const { backend, calls } = fakeBackend({ failUploadOnce: true })
+  const ctx = await context(backend)
+  const dir = join(ctx.root, 'site')
+  await mkdir(join(dir, '.git'), { recursive: true })
+  await writeFile(join(dir, 'a.bin'), randomBytes(4096))
+  await writeFile(join(dir, '.git', 'HEAD'), 'ref: refs/heads/main')
+
+  const hidden = await estimatePut({ path: dir, includeHidden: true })
+  const plain = await estimatePut({ path: dir })
+  assert.equal(hidden.files, 2)
+  assert.equal(plain.files, 1)
+
+  await assert.rejects(startPut(ctx, { path: dir, includeHidden: true }))
+  const failed = onlyOperation(ctx)
+  assert.equal(failed.input.includeHidden, true)
+  assert.equal(failed.checkpoint.rootCid, hidden.rootCid)
+
+  const result = await resumePut(ctx, failed.id)
+  assert.equal(result.resource.rootCid, hidden.rootCid)
+  assert.equal(calls.streamed[0], calls.streamed[1])
+})
+
+test('a put saved without includeHidden resumes without hidden entries', async () => {
+  const { backend } = fakeBackend({ failUploadOnce: true })
+  const ctx = await context(backend)
+  const dir = join(ctx.root, 'site')
+  await mkdir(dir)
+  await writeFile(join(dir, 'a.bin'), randomBytes(4096))
+  await writeFile(join(dir, '.env'), 'SECRET=1')
+
+  await assert.rejects(startPut(ctx, { path: dir }))
+  const failed = onlyOperation(ctx)
+  assert.equal('includeHidden' in failed.input, false)
+
+  const result = await resumePut(ctx, failed.id)
+  assert.equal(result.resource.rootCid, failed.checkpoint.rootCid)
+})
+
 test('a CAR put resumed after its source changed fails with source_changed', async () => {
   const { backend, calls } = fakeBackend({ failUploadOnce: true })
   const ctx = await context(backend)
