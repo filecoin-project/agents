@@ -6,7 +6,14 @@ A person owns the wallet and approves what you may do. Never ask for a private k
 
 1. Run `node --version`. If Node.js is missing, tell the user and stop. If it is older than 24, install the current LTS version and continue.
 
-2. Tell the user what you are about to install, then install it for your agent.
+2. If your disk is gone when the session ends, such as in a cloud sandbox, don't install anything. Files that you install are gone with the session. Instead, follow these steps, then go to step 5. Otherwise, go to step 3.
+   1. Tell the user to add `filecoin` in their cloud agent's account settings, so that every new session has it. If the agent supports plugins, they add the [agent plugin](https://poc.filecoin.cloud/agents/plugin.md) from `filecoin-project/agents`. Otherwise, they add the [agent skill](https://poc.filecoin.cloud/agents/skills.md) from `filecoin-project/agents`, and `https://mcp.filecoin.io` as an MCP server or connector.
+
+   2. Tell the user how to give you a session key that outlives the session. On the Filecoin Pay console's [session keys page](https://pay.filecoin.cloud/console/session-keys), they select **New session key** and authorize the key with their wallet, on the network that you use. The console shows the key once, as `SESSION_KEY` and `WALLET_ADDRESS`. In the cloud agent's environment settings, they add the `SESSION_KEY` value as the secret `FILECOIN_SESSION_KEY`, and the `WALLET_ADDRESS` value as `FILECOIN_ROOT_ADDRESS`. Tell them never to paste the key into the chat.
+
+   3. Stop until the user says that they added the secrets. Don't run `filecoin login`. In step 5, if `session.state` is `none`, the secrets reach only new sessions. Ask the user to start a new session.
+
+3. Tell the user what you are about to install, then install it for your agent.
 
    If your agent is in this table, install the [agent plugin](https://poc.filecoin.cloud/agents/plugin.md):
 
@@ -42,10 +49,10 @@ A person owns the wallet and approves what you may do. Never ask for a private k
 
    The agent loads what you installed in its next session. To finish the setup in this session, follow the rest of this guide.
 
-3. If your disk is gone when the session ends, such as in a cloud sandbox, follow [Cloud agents](https://poc.filecoin.cloud/agents.md#cloud-agents), then go to step 4. Otherwise, run `npx -y filecoin login`. If it returns an approval link, give the user the link and stop until they say that they approved it. Then run `npx -y filecoin login --check`.
+4. Run `npx -y filecoin login`. If it returns an approval link, give the user the link and stop until they say that they approved it. Then run `npx -y filecoin login --check`.
 
-4. Run `npx -y filecoin status`. If a scope is `expired` or `not granted`, or `account.ready` is `false`, tell the user. If the output has `account.fundingUrl`, give the user that link.
+5. Run `npx -y filecoin status`. If a scope is `expired` or `not granted`, or `account.ready` is `false`, tell the user. If the output has `account.fundingUrl`, give the user that link.
 
-5. When `createDataSet` and `addPieces` have an expiry date and `account.ready` is `true`, tell the user that the setup is done. Offer to store a file or a folder. Store only what the user names. Before you store it, check the size and the cost with `npx -y filecoin put <path> --dry-run`.
+6. When `createDataSet` and `addPieces` have an expiry date and `account.ready` is `true`, tell the user that the setup is done. Offer to store a file or a folder. Store only what the user names. Before you store it, check the size and the cost with `npx -y filecoin put <path> --dry-run`.
 
 Every command writes one JSON object, with `data` or `error`, then optional `next` steps. Give the user each step that is marked `by: "user"`. `npx -y filecoin --help` lists the commands, and the [CLI](https://poc.filecoin.cloud/docs/cli.md) page explains how they work.
