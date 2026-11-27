@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.5.0](https://github.com/filecoin-project/agents/compare/filecoin-api-client-v0.4.1...filecoin-api-client-v0.5.0) (2026-11-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* **filecoin-api-client:** Data route paths start with /v1. Replace paths such as '/{network}/providers' with '/v1/{network}/providers'. '/get/{cid}' does not change.
+
+### Features
+
+* **filecoin-api-client:** call the data routes under /v1 ([a0525b1](https://github.com/filecoin-project/agents/commit/a0525b164fcb41a18d4a11dc85589c2c8d6c6d58))
+
 ## [0.4.1](https://github.com/filecoin-project/agents/compare/filecoin-api-client-v0.4.0...filecoin-api-client-v0.4.1) (2026-11-17)
 
 
