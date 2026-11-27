@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/filecoin-project/agents/compare/filecoin-plugin-v0.3.0...filecoin-plugin-v0.3.1) (2026-11-27)
+
+
+### Bug Fixes
+
+* **filecoin-app:** shorten the agent setup guide to five steps ([43c22ea](https://github.com/filecoin-project/agents/commit/43c22ea293350eb63366b49b8796d0b9fe3cdd1f))
+
 ## [0.3.0](https://github.com/filecoin-project/agents/compare/filecoin-plugin-v0.2.0...filecoin-plugin-v0.3.0) (2026-10-20)
 
 
