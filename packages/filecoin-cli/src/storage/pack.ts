@@ -95,11 +95,12 @@ export async function listEntries(
   const directories: string[] = []
   const unsupported: UnsupportedEntry[] = []
   /**
-   * Add the entries under `dir` to the lists, depth first. A `rejected`
-   * directory is already reported, so failing to list it is not an error.
+   * Add the entries under `dir` to the lists, depth first. `rejected` means
+   * that `dir` or a directory above it is already reported, so failing to read
+   * there is not an error.
    */
   async function walk(dir: string, rejected = false): Promise<void> {
-    /** Ignore a filesystem error in a rejected directory. */
+    /** Ignore a filesystem error under a rejected directory. */
     const ignore = (error: unknown): undefined => {
       if (!rejected) throw error
     }
@@ -115,7 +116,7 @@ export async function listEntries(
       // A rejected directory is still walked, to list what it holds.
       if (stats.isDirectory()) {
         directories.push(rel)
-        await walk(path, kind !== undefined)
+        await walk(path, rejected || kind !== undefined)
       } else if (stats.isFile()) {
         files.push({ path: rel, size: stats.size })
       }

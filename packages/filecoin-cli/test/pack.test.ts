@@ -135,7 +135,11 @@ test(
       await mkdir(path)
       await writeFile(join(path, 'f'), 'f')
     }
+    // One with a supported name, below a rejected directory.
+    const nested = join(dir, 'c\\', 'sub')
+    await mkdir(nested, { recursive: true })
     await symlink('missing', join(dir, 'link'))
+    await chmod(nested, 0o000)
     await chmod(locked, 0o000)
     await chmod(listOnly, 0o400)
 
@@ -145,12 +149,14 @@ test(
         details: [
           { path: 'path', message: 'a\\ has a backslash in its name' },
           { path: 'path', message: 'b\\ has a backslash in its name' },
+          { path: 'path', message: 'c\\ has a backslash in its name' },
           { path: 'path', message: 'link is a symlink' },
         ],
       })
     } finally {
       await chmod(locked, 0o700)
       await chmod(listOnly, 0o700)
+      await chmod(nested, 0o700)
     }
   }
 )
