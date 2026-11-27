@@ -12,6 +12,14 @@ import { type DfsCar, planDirectory, planFile } from '../src/storage/dfs-car.ts'
 import { carFetch } from './dfs-car.ts'
 
 /**
+ * Test options that skip fixtures Windows cannot create: a FIFO, a socket
+ * path, or a name with a backslash.
+ *
+ * @see https://nodejs.org/api/test.html#testname-options-fn
+ */
+export const POSIX_ONLY = { skip: process.platform === 'win32' }
+
+/**
  * Create a temporary directory removed after the current test file.
  */
 export async function tempDir(prefix = 'filecoin-test-'): Promise<string> {

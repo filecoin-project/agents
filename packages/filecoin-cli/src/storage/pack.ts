@@ -94,20 +94,28 @@ export async function listEntries(
   const files: PackEntry[] = []
   const directories: string[] = []
   const unsupported: UnsupportedEntry[] = []
-  /** Add the entries under `dir` to the lists, depth first. */
-  async function walk(dir: string): Promise<void> {
-    const names = (await readdir(dir)).sort()
+  /**
+   * Add the entries under `dir` to the lists, depth first. A `rejected`
+   * directory is already reported, so failing to list it is not an error.
+   */
+  async function walk(dir: string, rejected = false): Promise<void> {
+    /** Ignore a filesystem error in a rejected directory. */
+    const ignore = (error: unknown): undefined => {
+      if (!rejected) throw error
+    }
+    const names = ((await readdir(dir).catch(ignore)) ?? []).sort()
     for (const name of names) {
       if (name.startsWith('.')) continue
       const path = join(dir, name)
-      const stats = await lstat(path)
+      const stats = await lstat(path).catch(ignore)
+      if (!stats) continue
       const rel = relative(root, path).split(sep).join('/')
       const kind = unsupportedKind(name, stats)
       if (kind) unsupported.push({ path: rel, kind })
       // A rejected directory is still walked, to list what it holds.
       if (stats.isDirectory()) {
         directories.push(rel)
-        await walk(path)
+        await walk(path, kind !== undefined)
       } else if (stats.isFile()) {
         files.push({ path: rel, size: stats.size })
       }
