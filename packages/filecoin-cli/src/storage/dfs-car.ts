@@ -15,7 +15,12 @@ import { equals } from 'multiformats/bytes'
 import type { CID } from 'multiformats/cid'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { invalidInput, sourceChanged } from '../errors.ts'
-import { directoryCandidates, IMPORTER_OPTIONS, listEntries } from './pack.ts'
+import {
+  directoryCandidates,
+  IMPORTER_OPTIONS,
+  listEntries,
+  type WalkOptions,
+} from './pack.ts'
 
 /** Multicodec of a UnixFS node (directory, HAMT shard, or file node). */
 const DAG_PB = 0x70
@@ -55,7 +60,7 @@ type Visit =
   | { cid: BlockCid; source: string; offset: number; length: number }
 
 /** Options for {@link planDirectory} and {@link planFile}. */
-export type PackOptions = {
+export type PackOptions = WalkOptions & {
   /**
    * Largest CAR to plan, in bytes. Planning stops with `invalid_input` as
    * soon as the imported blocks pass it.
@@ -95,7 +100,7 @@ export async function planDirectory(
 ): Promise<DfsCar> {
   const root = resolve(dir)
   const name = basename(root)
-  const { files, directories } = await listEntries(root)
+  const { files, directories } = await listEntries(root, options)
   const paths = new Map(
     files.map((file) => [`${name}/${file.path}`, join(root, file.path)])
   )

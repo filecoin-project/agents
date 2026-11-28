@@ -23,6 +23,15 @@ export const IMPORTER_OPTIONS: ImporterOptions = { profile: 'unixfs-v1-2025' }
 /** A file included in a folder, relative to the packed directory. */
 export type PackEntry = { path: string; size: number }
 
+/** Which entries of a folder a walk includes. */
+export type WalkOptions = {
+  /**
+   * Include dot-named files and directories, such as `.env`, `.git`, and
+   * `.DS_Store`. The name of the walked folder never turns this on.
+   */
+  includeHidden?: boolean | undefined
+}
+
 /** Why an entry cannot be packed, worded to follow its path. */
 const UNSUPPORTED = {
   symlink: 'is a symlink',
@@ -75,14 +84,16 @@ function unsupportedEntries(entries: UnsupportedEntry[]): CliError {
 
 /**
  * List the files and directories to pack, sorted for a deterministic DAG.
- * Dot-named entries are skipped. Symlinks are rejected rather than followed,
- * so a publication never reaches outside the chosen directory. FIFOs, sockets,
- * devices, and names with a backslash are rejected too. The walk finishes
- * before it fails, so the error lists every rejected entry. A `root` whose own
- * name ends in a backslash is rejected before the walk.
+ * Dot-named entries are skipped unless `options.includeHidden` is set.
+ * Symlinks are rejected rather than followed, so a publication never reaches
+ * outside the chosen directory. FIFOs, sockets, devices, and names with a
+ * backslash are rejected too. The walk finishes before it fails, so the error
+ * lists every rejected entry. A `root` whose own name ends in a backslash is
+ * rejected before the walk.
  */
 export async function listEntries(
-  root: string
+  root: string,
+  options: WalkOptions = {}
 ): Promise<{ files: PackEntry[]; directories: string[] }> {
   // The importer would read the `/` after this name as escaped.
   if (basename(root).endsWith('\\')) {
@@ -106,7 +117,7 @@ export async function listEntries(
     }
     const names = ((await readdir(dir).catch(ignore)) ?? []).sort()
     for (const name of names) {
-      if (name.startsWith('.')) continue
+      if (!options.includeHidden && name.startsWith('.')) continue
       const path = join(dir, name)
       const stats = await lstat(path).catch(ignore)
       if (!stats) continue

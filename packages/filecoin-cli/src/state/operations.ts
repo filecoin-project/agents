@@ -36,6 +36,11 @@ export type OperationInput = {
    */
   format?: StorageFormat
   /**
+   * A folder put packs dot-named entries too, so a resume packs the same
+   * ones. Puts saved without it skip them.
+   */
+  includeHidden?: boolean
+  /**
    * Provider of a put's first copy, or the only provider whose copies a
    * delete removes.
    */

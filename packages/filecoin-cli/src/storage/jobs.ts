@@ -154,6 +154,8 @@ export type StartPutOptions = {
   providerId?: bigint | undefined
   /** Store a file's exact bytes instead of a UnixFS CAR. */
   raw?: boolean | undefined
+  /** Pack a folder's dot-named entries too. */
+  includeHidden?: boolean | undefined
 }
 
 /** A file or directory checked for a put. */
@@ -197,7 +199,7 @@ async function inspectSource(options: StartPutOptions): Promise<PutSource> {
     if (options.raw) {
       throw invalidInput('--raw stores only files, not directories.', 'raw')
     }
-    const { files } = await listEntries(sourcePath)
+    const { files } = await listEntries(sourcePath, options)
     assertContentFits(files.reduce((total, file) => total + file.size, 0))
     return { sourcePath, kind: 'folder', format: 'car', name }
   }
@@ -236,6 +238,7 @@ export async function startPut(
       name: source.name,
       kind: source.kind,
       format: source.format,
+      includeHidden: options.includeHidden,
       providerId: options.providerId?.toString(),
       // secondary-copy: remove to go back to one copy.
       copies: REQUESTED_COPIES,
@@ -292,7 +295,10 @@ export async function estimatePut(
     }
   } else {
     const plan = source.kind === 'folder' ? planDirectory : planFile
-    const packed = await plan(source.sourcePath, PACK_OPTIONS)
+    const packed = await plan(source.sourcePath, {
+      ...PACK_OPTIONS,
+      includeHidden: options.includeHidden,
+    })
     assertPieceSize(packed.size)
     estimate = {
       kind: source.kind,
@@ -507,7 +513,10 @@ async function runPut(ctx: JobContext, op: Operation): Promise<PutResult> {
       })
       await lstatSource(input.sourcePath, symlinked)
       const plan = kind === 'folder' ? planDirectory : planFile
-      car = await plan(input.sourcePath, PACK_OPTIONS)
+      car = await plan(input.sourcePath, {
+        ...PACK_OPTIONS,
+        includeHidden: input.includeHidden,
+      })
       const rootCid = car.rootCid.toString()
       if (op.checkpoint.rootCid && op.checkpoint.rootCid !== rootCid) {
         throw sourceChanged(

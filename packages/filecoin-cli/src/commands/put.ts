@@ -70,6 +70,8 @@ export const put = defineCommand({
     'filecoin put ./report.pdf',
     'filecoin put ./report.pdf --raw',
     'filecoin put ./site --name docs',
+    'filecoin put ./site --include-hidden --dry-run',
+    'filecoin put ./site --include-hidden',
     'filecoin put ./site --dry-run',
   ],
   input: z.strictObject({
@@ -89,6 +91,12 @@ export const put = defineCommand({
       .default(false)
       .describe(
         'Store a file as its exact bytes, without a UnixFS CAR or IPFS indexing'
+      ),
+    includeHidden: z
+      .boolean()
+      .default(false)
+      .describe(
+        "Include all of a folder's hidden files and directories, such as .env, .git, and .DS_Store, which become public. Pass it with --dry-run too. To store only some of them, put a folder that holds just the files to publish"
       ),
     ...account,
   }),
