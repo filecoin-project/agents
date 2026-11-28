@@ -1,0 +1,111 @@
+{
+  "name": "@filecoin-project/encryption",
+  "version": "0.0.0",
+  "description": "Filecoin's encrypted upload format (Keysmith format 2): group keys, Grants, FEE envelopes, the inner CAR, and share links",
+  "keywords": [
+    "filecoin",
+    "encryption",
+    "keysmith",
+    "fee",
+    "unixfs",
+    "car",
+    "agents"
+  ],
+  "license": "MIT",
+  "author": "Hugo Dias <hugomrdias@gmail.com>",
+  "homepage": "https://github.com/filecoin-project/agents/tree/main/packages/encryption#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/filecoin-project/agents.git",
+    "directory": "packages/encryption"
+  },
+  "bugs": {
+    "url": "https://github.com/filecoin-project/agents/issues"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./archive": "./src/archive.ts",
+    "./car": "./src/car/index.ts",
+    "./envelope": "./src/envelope.ts",
+    "./errors": "./src/errors.ts",
+    "./grant": "./src/grant.ts",
+    "./group-key": "./src/group-key.ts",
+    "./share": "./src/share.ts"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "pnpm clean && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "pnpm test:node && pnpm test:browser",
+    "test:node": "node --test 'test/**/*.test.ts'",
+    "test:browser": "pw-test 'test/**/*.test.ts'",
+    "lint": "biome check .",
+    "check": "pnpm typecheck && pnpm test && pnpm lint"
+  },
+  "dependencies": {
+    "@filoz/keysmith": "^0.2.0",
+    "@ipld/dag-cbor": "^11.0.0",
+    "@ipld/dag-pb": "^4.2.0",
+    "filecoin-encryption-envelope": "^0.1.1",
+    "ipfs-unixfs": "^13.1.2",
+    "ipfs-unixfs-importer": "^17.1.1",
+    "multiformats": "^14.0.8"
+  },
+  "peerDependencies": {
+    "viem": "^2.58.8"
+  },
+  "devDependencies": {
+    "@ipld/car": "^6.2.1",
+    "@types/node": "catalog:",
+    "playwright-test": "^16.0.0",
+    "typescript": "catalog:",
+    "viem": "^2.58.8"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./archive": {
+        "types": "./dist/archive.d.ts",
+        "default": "./dist/archive.js"
+      },
+      "./car": {
+        "types": "./dist/car/index.d.ts",
+        "default": "./dist/car/index.js"
+      },
+      "./envelope": {
+        "types": "./dist/envelope.d.ts",
+        "default": "./dist/envelope.js"
+      },
+      "./errors": {
+        "types": "./dist/errors.d.ts",
+        "default": "./dist/errors.js"
+      },
+      "./grant": {
+        "types": "./dist/grant.d.ts",
+        "default": "./dist/grant.js"
+      },
+      "./group-key": {
+        "types": "./dist/group-key.d.ts",
+        "default": "./dist/group-key.js"
+      },
+      "./share": {
+        "types": "./dist/share.d.ts",
+        "default": "./dist/share.js"
+      }
+    }
+  }
+}
