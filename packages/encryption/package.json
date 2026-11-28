@@ -1,6 +1,6 @@
 {
   "name": "@filecoin-project/encryption",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Filecoin's encrypted upload format (Keysmith format 2): group keys, Grants, FEE envelopes, the inner CAR, and share links",
   "keywords": [
     "filecoin",
