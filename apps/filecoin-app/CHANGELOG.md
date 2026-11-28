@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/filecoin-project/agents/compare/filecoin-app-v0.10.0...filecoin-app-v0.11.0) (2026-11-28)
+
+
+### Features
+
+* **filecoin-cli:** add --include-hidden to put ([#176](https://github.com/filecoin-project/agents/issues/176)) ([429bfd9](https://github.com/filecoin-project/agents/commit/429bfd940585d9b3c622295e802e8aa2db68a95c))
+
 ## [0.10.0](https://github.com/filecoin-project/agents/compare/filecoin-app-v0.9.1...filecoin-app-v0.10.0) (2026-11-27)
 
 
