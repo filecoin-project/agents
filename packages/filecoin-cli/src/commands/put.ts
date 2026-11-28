@@ -70,6 +70,7 @@ export const put = defineCommand({
     'filecoin put ./report.pdf',
     'filecoin put ./report.pdf --raw',
     'filecoin put ./site --name docs',
+    'filecoin put ./site --include-hidden --dry-run',
     'filecoin put ./site --include-hidden',
     'filecoin put ./site --dry-run',
   ],
@@ -95,7 +96,7 @@ export const put = defineCommand({
       .boolean()
       .default(false)
       .describe(
-        "Include a folder's hidden files and directories, such as .env, .git, and .DS_Store, which become public"
+        "Include all of a folder's hidden files and directories, such as .env, .git, and .DS_Store, which become public. Pass it with --dry-run too. To store only some of them, put a folder that holds just the files to publish"
       ),
     ...account,
   }),
