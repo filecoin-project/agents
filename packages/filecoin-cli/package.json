@@ -34,7 +34,7 @@
   "devDependencies": {
     "@filecoin-project/api-client": "workspace:*",
     "@filoz/synapse-core": "catalog:",
-    "@ipld/car": "^5.4.7",
+    "@ipld/car": "^6.2.1",
     "@ipld/dag-pb": "^4.2.0",
     "@types/node": "catalog:",
     "clipact": "0.7.0",
