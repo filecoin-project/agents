@@ -231,8 +231,8 @@ importers:
         specifier: 'catalog:'
         version: 0.11.0(typescript@7.0.2)(viem@2.57.20(typescript@7.0.2)(zod@4.6.7))
       '@ipld/car':
-        specifier: ^5.4.7
-        version: 5.4.7
+        specifier: ^6.2.1
+        version: 6.2.1
       '@ipld/dag-pb':
         specifier: ^4.2.0
         version: 4.2.0
@@ -1046,12 +1046,12 @@ packages:
       '@types/node':
         optional: true
 
-  '@ipld/car@5.4.7':
-    resolution: {integrity: sha512-fohzeOYlm0vM1kGn48zcyDunamXSJaeM5xt0Fmkp5YJkZzgZyjLbb0DcDK6TDgZWo54btkXNACaXUw2H86Elag==}
+  '@ipld/car@6.2.1':
+    resolution: {integrity: sha512-F6vrUrVeAHNdWC53d5T0ZtzUcM7gQa+9sQZ1MiY71jlz1Af8hK+iqsu4qdLFqDIGnyI+MdMnTX0LOJf6thkWGw==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
 
-  '@ipld/dag-cbor@10.0.2':
-    resolution: {integrity: sha512-1eCD4YMTlkx5i36oQUmeAojLS/wu+XCd1Gs31BA0afk0TaVkhnyMofIAT/pi0wV3HS3/G7QSN/1NibhiksMyZQ==}
+  '@ipld/dag-cbor@11.0.0':
+    resolution: {integrity: sha512-acQ7PkMIvGvEiMr+Fksl1sLgJKXrTiaKWAEmH1OJZKXwPGttuX5W1evOmH89jyF57yzE7/UqGM/pT05bB3348w==}
 
   '@ipld/dag-cbor@9.2.7':
     resolution: {integrity: sha512-ZmfXmElRWATr+hoUTSAOr6HUcjVhOcNHDqgczc76qte2DHHFEK0ZhNzUcdTDQhF/VSIvf2ioaRTRLWwLc83sNw==}
@@ -2220,8 +2220,8 @@ packages:
     resolution: {integrity: sha512-oc6Pzg/gkTobxHZNgMmny+G99dOeBMbAmnGHcZWMKtolxZBIVwfi0Pj0khxEtNU8HMFdbT5sK0HmtgecDUPP0A==}
     hasBin: true
 
-  cborg@6.1.3:
-    resolution: {integrity: sha512-Kb/wD/AFuVcqvVjR+HYNOjNiuhVJ2C+RWxQE2Yqq2WVlVkRjdvVLkkM6QsL3NMsBRh+rgNc+aXmcraA+X0HObQ==}
+  cborg@7.0.0:
+    resolution: {integrity: sha512-YYXJ+ozY26INm46oz2P+iOww/LhrfgPz2CuHaskDcitt0rKyh6LlWhNCfMlxxcdD+k7m0TspkRvcPPXAGYzZ8w==}
     hasBin: true
 
   chai@6.3.0:
@@ -4751,16 +4751,16 @@ snapshots:
     optionalDependencies:
       '@types/node': 26.6.6
 
-  '@ipld/car@5.4.7':
+  '@ipld/car@6.2.1':
     dependencies:
-      '@ipld/dag-cbor': 10.0.2
-      cborg: 6.1.3
+      '@ipld/dag-cbor': 11.0.0
+      cborg: 7.0.0
       multiformats: 14.0.5
       varint: 6.0.0
 
-  '@ipld/dag-cbor@10.0.2':
+  '@ipld/dag-cbor@11.0.0':
     dependencies:
-      cborg: 6.1.3
+      cborg: 7.0.0
       multiformats: 14.0.5
 
   '@ipld/dag-cbor@9.2.7':
@@ -5830,7 +5830,7 @@ snapshots:
 
   cborg@5.1.11: {}
 
-  cborg@6.1.3: {}
+  cborg@7.0.0: {}
 
   chai@6.3.0: {}
 

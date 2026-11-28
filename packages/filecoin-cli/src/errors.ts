@@ -103,7 +103,8 @@ export const errors = {
     description: 'filecoin get would overwrite an existing path.',
   },
   [ErrorCodes.verificationFailed]: {
-    description: 'Retrieved bytes or blocks do not match their CIDs.',
+    description:
+      'Retrieved bytes or blocks do not match their CIDs, or a retrieved CAR is malformed or over a size limit.',
   },
   [ErrorCodes.unsafePath]: {
     description:

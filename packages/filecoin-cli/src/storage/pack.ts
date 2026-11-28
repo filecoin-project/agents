@@ -173,6 +173,16 @@ export function* directoryCandidates(
 export const IDENTITY_CODE = 0x00
 
 /**
+ * A CID for an error message: its string, or its length and codec when the
+ * string would be long. A CAR section can carry a CID of megabytes, and its
+ * base32 string would take far more memory.
+ */
+export function describe(cid: CID): string {
+  if (cid.bytes.length <= 128) return cid.toString()
+  return `a ${cid.bytes.length}-byte CID with codec 0x${cid.code.toString(16)}`
+}
+
+/**
  * Check that a block's bytes hash to its CID, like ipfs-car's `--verify`.
  * A CAR verified by PieceCID is already exact, but a CAR rebuilt by a
  * gateway (for example Curio `/ipfs/…?format=car`) is only trustworthy
@@ -190,13 +200,13 @@ export async function assertBlock(cid: CID, bytes: Uint8Array): Promise<void> {
   } else {
     throw new CliError({
       code: ErrorCodes.verificationFailed,
-      message: `Unsupported multihash 0x${code.toString(16)} in block ${cid}.`,
+      message: `Unsupported multihash 0x${code.toString(16)} in block ${describe(cid)}.`,
     })
   }
   if (!equals(actual, digest)) {
     throw new CliError({
       code: ErrorCodes.verificationFailed,
-      message: `Block ${cid} does not match its CID.`,
+      message: `Block ${describe(cid)} does not match its CID.`,
     })
   }
 }

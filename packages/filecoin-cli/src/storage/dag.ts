@@ -9,7 +9,7 @@ import {
   stat,
 } from 'node:fs/promises'
 import { dirname, resolve, sep } from 'node:path'
-import { CarBlockIterator } from '@ipld/car'
+import { readBlockHead, readHeader } from '@ipld/car/decoder'
 import * as DagPb from '@ipld/dag-pb'
 import { CliError } from 'clipact'
 import { UnixFS } from 'ipfs-unixfs'
@@ -18,7 +18,7 @@ import { CID } from 'multiformats/cid'
 import * as Raw from 'multiformats/codecs/raw'
 import { ErrorCodes } from '../errors.ts'
 import { fetchContent, outputExists } from './get.ts'
-import { assertBlock, IDENTITY_CODE } from './pack.ts'
+import { assertBlock, describe, IDENTITY_CODE } from './pack.ts'
 
 /**
  * `Accept` header for a trustless-gateway CAR whose blocks come depth-first,
@@ -129,6 +129,159 @@ function invalid(message: string): CliError {
   return new CliError({ code: ErrorCodes.verificationFailed, message })
 }
 
+/**
+ * Largest CAR header `get` reads, a limit of the CLI. Curio's `/ipfs`
+ * endpoint (frisbii) sends one root, about 60 bytes for a SHA-256 CID.
+ * `@ipld/car` defaults to 32 MiB, but a header of tiny CIDs decodes to about
+ * 80 times its size, so 32 MiB could take 2.5 GiB.
+ */
+const MAX_CAR_HEADER = 64 * 1024
+
+/**
+ * Largest CAR section `get` reads, CID included: the `@ipld/car` and go-car
+ * default. UnixFS needs blocks of up to 2 MiB and sets no maximum.
+ *
+ * @see https://github.com/ipld/js-car/blob/v6.2.1/src/limits.js
+ * @see https://specs.ipfs.tech/unixfs/#block-size-considerations
+ */
+const MAX_CAR_SECTION = 8 * 1024 * 1024
+
+/** No bytes, in a buffer of its own. */
+const EMPTY = new Uint8Array(0)
+
+/** The reader that the `@ipld/car` decoder reads from. */
+type BytesReader = Parameters<typeof readHeader>[0]
+
+/**
+ * A {@link BytesReader} over the chunks that `read` returns, which copies
+ * the bytes of each request into a buffer of the requested length. The
+ * `@ipld/car` stream reader keeps every chunk of a section until the
+ * section is complete, about 100 bytes of heap per chunk, so a section sent
+ * in 1-byte chunks takes about 100 times its size. It also returns a block
+ * as a view of a buffer that can hold earlier sections. Here a request
+ * holds its own length plus the rest of one chunk, and a block keeps only
+ * its own bytes alive.
+ *
+ * @see https://github.com/ipld/js-car/blob/v6.2.1/src/decoder.js
+ */
+function spanReader(
+  read: () => Promise<IteratorResult<Uint8Array>>
+): BytesReader {
+  let buffer: Uint8Array = EMPTY
+  let offset = 0
+  /** Unread bytes of the last chunk, after `buffer`. */
+  let rest: Uint8Array = EMPTY
+  let pos = 0
+  let done = false
+  const fill = async (length: number) => {
+    const unread = buffer.length - offset
+    if (unread >= length) return
+    const out = new Uint8Array(length)
+    out.set(buffer.subarray(offset))
+    let filled = unread
+    for (let chunk = rest; ; ) {
+      const take = Math.min(chunk.length, length - filled)
+      out.set(chunk.subarray(0, take), filled)
+      filled += take
+      rest = take === chunk.length ? EMPTY : chunk.subarray(take)
+      if (filled === length || done) break
+      const next = await read()
+      if (next.done) {
+        done = true
+        break
+      }
+      chunk = next.value
+    }
+    buffer = filled === length ? out : out.subarray(0, filled)
+    offset = 0
+  }
+  const skip = (length: number) => {
+    if (length > buffer.length - offset) {
+      throw new Error('Seek past the bytes read')
+    }
+    offset += length
+    pos += length
+  }
+  return {
+    async upTo(length) {
+      await fill(length)
+      return buffer.subarray(offset, offset + length)
+    },
+    async exactly(length, seek = false) {
+      await fill(length)
+      if (buffer.length - offset < length) {
+        throw new Error('Unexpected end of data')
+      }
+      // An empty view would keep the buffer under it alive.
+      const bytes = length ? buffer.subarray(offset, offset + length) : EMPTY
+      if (seek) skip(length)
+      return bytes
+    },
+    seek: skip,
+    get pos() {
+      return pos
+    },
+  }
+}
+
+/** A CARv1 stream read one section at a time; see {@link readCar}. */
+type CarStream = {
+  /** The first root in the header, the only one `get` checks. */
+  root: CID | undefined
+  /** The next block, or `undefined` at the end of the stream. */
+  next(): Promise<{ cid: CID; bytes: Uint8Array } | undefined>
+}
+
+/**
+ * Read a CARv1 stream from `body` with the `@ipld/car` decoder, which checks
+ * each declared length before it reads the header or section in full. A
+ * header over {@link MAX_CAR_HEADER}, a section over
+ * {@link MAX_CAR_SECTION}, a CARv2 header, and any other framing error the
+ * decoder reports fail with `verification_failed`. CARv2 is refused because
+ * the decoder would seek to its `dataOffset`. An error of `body` itself, such
+ * as an abort, passes through unchanged. Exported for tests.
+ *
+ * @see https://ipld.io/specs/transport/car/carv1/
+ */
+export async function readCar(
+  body: AsyncIterable<Uint8Array>,
+  url: string
+): Promise<CarStream> {
+  const chunks = body[Symbol.asyncIterator]()
+  let failed = false
+  const reader = spanReader(async () => {
+    try {
+      return await chunks.next()
+    } catch (error) {
+      failed = true
+      throw error
+    }
+  })
+  const decode = async <T>(step: () => Promise<T>): Promise<T> => {
+    try {
+      return await step()
+    } catch (error) {
+      if (failed) throw error
+      const reason = error instanceof Error ? error.message : String(error)
+      throw invalid(`${url} sent an invalid CAR: ${reason}.`)
+    }
+  }
+  const root = await decode(async () => {
+    const [first] = (await readHeader(reader, 1, MAX_CAR_HEADER)).roots
+    return first && CID.decode(first.bytes)
+  })
+  return {
+    root,
+    next: () =>
+      decode(async () => {
+        if ((await reader.upTo(8)).length === 0) return
+        const head = await readBlockHead(reader, MAX_CAR_SECTION)
+        const bytes = await reader.exactly(head.blockLength, true)
+        return { cid: CID.decode(head.cid.bytes), bytes }
+      }),
+  }
+}
+
 /** An `unsafe_path` error. */
 function unsafe(message: string): CliError {
   return new CliError({ code: ErrorCodes.unsafePath, message })
@@ -148,6 +301,10 @@ function unsafe(message: string): CliError {
  * read back from where it was written, and a dag-pb node is walked again
  * from a copy kept in memory. The CAR order must be `dfs`.
  *
+ * Only CARv1 is read. A header over {@link MAX_CAR_HEADER} or a section
+ * over {@link MAX_CAR_SECTION} fails with `verification_failed` before its
+ * bytes are read in full.
+ *
  * Supports UnixFS files, directories and HAMT-sharded directories, with
  * dag-pb and raw blocks. Symlinks and entry names that leave the output
  * directory are rejected with `unsafe_path`.
@@ -165,7 +322,7 @@ export async function downloadDag(
   }
   const root = CID.parse(options.rootCid)
   // Aborted when the walk fails, so the provider stops sending: leaving the
-  // block loop does not cancel the body under the CAR iterator.
+  // block loop does not cancel the body under the CAR reader.
   const stop = new AbortController()
   const response = await fetchContent(options.url, {
     accept: DFS_CAR_ACCEPT,
@@ -195,15 +352,14 @@ export async function downloadDag(
     if (kind === 'folder' && existing) throw outputExists(options.output)
   })
   try {
-    const blocks = await CarBlockIterator.fromIterable(
-      response.body as AsyncIterable<Uint8Array>
-    )
-    const [headerRoot] = await blocks.getRoots()
-    if (headerRoot && !sameBlock(root, CID.decode(headerRoot.bytes))) {
-      throw invalid(`CAR root is ${headerRoot}, expected ${root}.`)
+    const car = await readCar(response.body as AsyncIterable<Uint8Array>, url)
+    if (car.root && !sameBlock(root, car.root)) {
+      throw invalid(
+        `CAR root is ${describe(car.root)}, expected ${describe(root)}.`
+      )
     }
-    for await (const block of blocks) {
-      await walk.next(CID.decode(block.cid.bytes), block.bytes)
+    for (let block = await car.next(); block; block = await car.next()) {
+      await walk.next(block.cid, block.bytes)
     }
     await walk.end()
     if (existing) await rm(output, { force: true })
@@ -271,8 +427,8 @@ class DagWalk {
       if (cid.multihash.code === IDENTITY_CODE) return
       throw invalid(
         frame
-          ? `Expected block ${frame.cid}, got ${cid}.`
-          : `Unexpected block ${cid} after the end of the DAG.`
+          ? `Expected block ${describe(frame.cid)}, got ${describe(cid)}.`
+          : `Unexpected block ${describe(cid)} after the end of the DAG.`
       )
     }
     this.#stack.pop()
@@ -287,7 +443,7 @@ class DagWalk {
       const frame = this.#stack.at(-1) as { cid: CID; role: Role } | undefined
       if (!frame) return
       if (await this.#rebuild(frame)) continue
-      throw invalid(`The CAR ended before block ${frame.cid}.`)
+      throw invalid(`The CAR ended before block ${describe(frame.cid)}.`)
     }
   }
 
@@ -347,7 +503,8 @@ class DagWalk {
   async #visit(role: Role, cid: CID, bytes: Uint8Array): Promise<void> {
     const key = this.#reuse ? keyOf(cid) : ''
     if (cid.code === Raw.code) {
-      if (role.kind === 'shard') throw invalid(`Shard ${cid} is a raw block.`)
+      if (role.kind === 'shard')
+        throw invalid(`Shard ${describe(cid)} is a raw block.`)
       let sink: Sink
       if (role.kind === 'chunk') {
         sink = role.sink
@@ -368,11 +525,11 @@ class DagWalk {
     }
     if (cid.code !== DagPb.code) {
       throw invalid(
-        `Block ${cid} has codec 0x${cid.code.toString(16)}, not UnixFS.`
+        `Block ${describe(cid)} has codec 0x${cid.code.toString(16)}, not UnixFS.`
       )
     }
     const node = DagPb.decode(bytes)
-    if (!node.Data) throw invalid(`Block ${cid} has no UnixFS data.`)
+    if (!node.Data) throw invalid(`Block ${describe(cid)} has no UnixFS data.`)
     if (this.#reuse && !this.#nodes.has(key)) this.#nodes.set(key, bytes)
     const unixfs = UnixFS.unmarshal(node.Data)
     const links = node.Links.map((link) => ({
@@ -381,7 +538,8 @@ class DagWalk {
     })).reverse()
 
     if (unixfs.type === 'file' || unixfs.type === 'raw') {
-      if (role.kind === 'shard') throw invalid(`Shard ${cid} is a file.`)
+      if (role.kind === 'shard')
+        throw invalid(`Shard ${describe(cid)} is a file.`)
       let sink: Sink
       if (role.kind === 'chunk') {
         sink = role.sink
@@ -398,10 +556,11 @@ class DagWalk {
     }
 
     if (role.kind === 'chunk') {
-      throw invalid(`File chunk ${cid} is a ${unixfs.type}.`)
+      throw invalid(`File chunk ${describe(cid)} is a ${unixfs.type}.`)
     }
     if (unixfs.type === 'directory') {
-      if (role.kind === 'shard') throw invalid(`Shard ${cid} is a directory.`)
+      if (role.kind === 'shard')
+        throw invalid(`Shard ${describe(cid)} is a directory.`)
       this.#found(role, 'folder')
       await mkdir(role.path, { recursive: true })
       for (const link of links) {
@@ -435,9 +594,11 @@ class DagWalk {
       return
     }
     if (unixfs.type === 'symlink') {
-      throw unsafe(`Refusing to write the symlink ${cid}.`)
+      throw unsafe(`Refusing to write the symlink ${describe(cid)}.`)
     }
-    throw invalid(`Block ${cid} is an unsupported UnixFS ${unixfs.type}.`)
+    throw invalid(
+      `Block ${describe(cid)} is an unsupported UnixFS ${unixfs.type}.`
+    )
   }
 
   /** Record the root's kind, the first time an entry is the root. */
