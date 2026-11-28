@@ -483,6 +483,7 @@ The tests use the Node test runner and need no network. msw replaces `fetch` for
 ## Known limits
 
 - `filecoin` rejects content smaller than 127 bytes or larger than 68,182,605,824 bytes (63.5 GiB).
+- `put` and `get` don't encrypt yet. [`@filecoin-project/encryption`](../../packages/encryption/README.md) implements filecoin-pin's encrypted format for them to call ([#168](https://github.com/filecoin-project/agents/issues/168)).
 - A CAR put reads its source twice, and a resume reads it twice more. `put` cannot ask the provider whether it already holds a CAR's piece before it uploads it, because the PieceCID is known only after the upload.
 - A CAR put keeps every UnixFS node of its DAG in memory between the passes: 1 to 2 KiB of heap per file in a folder of small files, and about 200 bytes per MiB of a large file.
 - Nothing removes the staging folder that `filecoin` 0.7.0 and earlier left for a put that is never resumed.
