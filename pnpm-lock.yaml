@@ -209,6 +209,46 @@ importers:
         specifier: 4.163.0
         version: 4.163.0(@types/node@26.6.6)
 
+  packages/encryption:
+    dependencies:
+      '@filoz/keysmith':
+        specifier: ^0.2.0
+        version: 0.2.0(viem@2.58.8(typescript@7.0.2)(zod@4.6.7))
+      '@ipld/dag-cbor':
+        specifier: ^11.0.0
+        version: 11.0.0
+      '@ipld/dag-pb':
+        specifier: ^4.2.0
+        version: 4.2.0
+      filecoin-encryption-envelope:
+        specifier: ^0.1.1
+        version: 0.1.1
+      ipfs-unixfs:
+        specifier: ^13.1.2
+        version: 13.1.2
+      ipfs-unixfs-importer:
+        specifier: ^17.1.1
+        version: 17.1.1(supports-color@10.2.2)
+      multiformats:
+        specifier: ^14.0.8
+        version: 14.0.8
+    devDependencies:
+      '@ipld/car':
+        specifier: ^6.2.1
+        version: 6.2.1
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.6
+      playwright-test:
+        specifier: ^16.0.0
+        version: 16.0.0
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      viem:
+        specifier: ^2.58.8
+        version: 2.58.8(typescript@7.0.2)(zod@4.6.7)
+
   packages/filecoin-api-client:
     dependencies:
       openapi-fetch:
@@ -781,6 +821,11 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@filoz/keysmith@0.2.0':
+    resolution: {integrity: sha512-fX2hcDKRUsjh13CGX75xOY5Gra0ueqfKkbSuu5B72CUO40qnB8LUHY+dPKWGN65i3EGHMjRF8U9r0r7KL0Xlxw==}
+    peerDependencies:
+      viem: 2.x
+
   '@filoz/synapse-core@0.11.0':
     resolution: {integrity: sha512-KqgVP3bKYwCIThsH8MlIGY6DxQVzqLdLoBzgES/3AibbNoj2EXB4bwf4Ah/2lee79VZLOzyiuqzAMYRyJJ4TXA==}
     peerDependencies:
@@ -1142,6 +1187,10 @@ packages:
   '@noble/curves@1.9.7':
     resolution: {integrity: sha512-gbKGcRUYIjA3/zCCNaWDciTMFI0dCkvou3TL8Zmy5Nc7sJ47a0jtOeZoTaMxkuqRo9cRhjOdZJXegxYE5FN/xw==}
     engines: {node: ^14.21.3 || >=16}
+
+  '@noble/curves@2.4.0':
+    resolution: {integrity: sha512-P4/62zrgfH33CneE3Dn4WhJVA22YUU0eR51wKIan4NVRvwsA0YnPTwWGpNbpuacSujmSFLvyzpyuR30+fbq2Ew==}
+    engines: {node: '>= 20.19.0'}
 
   '@noble/hashes@1.8.0':
     resolution: {integrity: sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A==}
@@ -2220,6 +2269,14 @@ packages:
     resolution: {integrity: sha512-oc6Pzg/gkTobxHZNgMmny+G99dOeBMbAmnGHcZWMKtolxZBIVwfi0Pj0khxEtNU8HMFdbT5sK0HmtgecDUPP0A==}
     hasBin: true
 
+  cborg@6.1.2:
+    resolution: {integrity: sha512-hQfFh6FuuCDoycN68FtUpjtQx5kCtxOLA8msbpJZxjtxaMqxgHl+4GNwO+0YexH/lHmVzhhAKa0ua+vtmTRoVw==}
+    hasBin: true
+
+  cborg@6.2.1:
+    resolution: {integrity: sha512-DwiF3Jd5RW6kJuTQMzQb/sdZD03utp15EcQNOMTvE/ZYCdDPzETsGOY5lj8imKxbsEuYvOzcMSiKLiT4C2/2Lw==}
+    hasBin: true
+
   cborg@7.0.0:
     resolution: {integrity: sha512-YYXJ+ozY26INm46oz2P+iOww/LhrfgPz2CuHaskDcitt0rKyh6LlWhNCfMlxxcdD+k7m0TspkRvcPPXAGYzZ8w==}
     hasBin: true
@@ -2235,6 +2292,10 @@ packages:
   chokidar@5.0.0:
     resolution: {integrity: sha512-TQMmc3w+5AxjpL8iIiwebF73dRDF4fBIieAqGn9RGCWaEVwQ6Fb2cGe31Yns0RRIzii5goJ1Y7xbMwo1TxMplw==}
     engines: {node: '>= 20.19.0'}
+
+  chokidar@6.0.0:
+    resolution: {integrity: sha512-Ec2Z7wpcKBiMpR7DxteoqS/sq5G5d2A4fpxzPv6+fD7xNNdrTghn7L11YwV5EN1B3i72Erc3XVT5FkWIDx90+A==}
+    engines: {node: '>= 22.22'}
 
   cjs-module-lexer@1.2.3:
     resolution: {integrity: sha512-0TNiGstbQmCFwt4akjjBg5pLRTSyj/PkWQ1ZoO2zntmg9yLqSRxwEa4iCfQLGjqhiqBfOJa7W/E8wfGrTDmlZQ==}
@@ -2434,6 +2495,10 @@ packages:
   es-module-lexer@2.3.2:
     resolution: {integrity: sha512-poHGpORABojJJucnV9KbOavETW8lBVnphkW77ER5/BQ5Fz7oXSoCNek7IH3vR5nRjdsEz926ibFYX8KtLQmdyw==}
 
+  esbuild-plugin-wasm@1.1.0:
+    resolution: {integrity: sha512-0bQ6+1tUbySSnxzn5jnXHMDvYnT0cN/Wd4Syk8g/sqAIJUg7buTIi22svS3Qz6ssx895NT+TgLPb33xi1OkZig==}
+    engines: {node: '>=0.10.0'}
+
   esbuild@0.28.2:
     resolution: {integrity: sha512-HKVLS8dvII+xoKW9kmqxbRKrnWEXfJJr/FZhhJmiqIB0e053QNYFqOBouTMO/k5sID4MvCiUCvv8b9M4h32wIA==}
     engines: {node: '>=18'}
@@ -2464,6 +2529,10 @@ packages:
   execa@9.6.1:
     resolution: {integrity: sha512-9Be3ZoN4LmYR90tUoVu2te2BsbzHfhJyfEiAVfz7N5/zv+jduIfLrV2xdQXOHbaD6KgpGdO9PRPM1Y4Q9QkPkA==}
     engines: {node: ^18.19.0 || >=20.5.0}
+
+  exit-hook@5.1.0:
+    resolution: {integrity: sha512-INjr2xyxHo7bhAqf5ong++GZPPnpcuBcaXUKt03yf7Fie9yWD7FapL4teOU0+awQazGs5ucBh7xWs/AD+6nhog==}
+    engines: {node: '>=20'}
 
   expect-type@1.4.0:
     resolution: {integrity: sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==}
@@ -2509,6 +2578,9 @@ packages:
   figures@6.1.0:
     resolution: {integrity: sha512-d+l3qxjSesT4V7v2fh+QnmFnUWv9lSpjarhShNTgBOfA0ttejbQUAlHLitbjkoRiDulW0OPoQPYIGhIC8ohejg==}
     engines: {node: '>=18'}
+
+  filecoin-encryption-envelope@0.1.1:
+    resolution: {integrity: sha512-9bDMdM/udMjuFzr/jLLymDHndRfqCp6KyZj1SWUDkWTgyc4FCyO1UbSSypq53vpJp4bOT3loJP3p/7FPlbwNMQ==}
 
   fill-range@7.1.1:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
@@ -2880,6 +2952,10 @@ packages:
     resolution: {integrity: sha512-WkUDrojuJs0xkgGf2udWxa3yGBRxPtxUkB79i6aCZLRgc7PM8fZe9TosfPDcvEpQZbuFASnHYmRLBLUbmLOIIA==}
     engines: {node: '>= 12.0.0'}
 
+  lilconfig@3.1.5:
+    resolution: {integrity: sha512-aRAOI9Ia43ygL4o1EOmC/sc/0OFxrm7qcQngiIyWaqVnSnz932ybJ07zyCcgMNGSDP8Yxaf88Xj1zHEXmvQ4SA==}
+    engines: {node: '>=14'}
+
   locate-path@3.0.0:
     resolution: {integrity: sha512-7AO748wWnIhNqAuaty2ZWHkQHRSNfPVIsPIfwEOWO22AmaoVrWavlOcMR5nzTLNYvp36X220/maaRsrec1G65A==}
     engines: {node: '>=6'}
@@ -2970,6 +3046,10 @@ packages:
       typescript:
         optional: true
 
+  mri@1.2.0:
+    resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
+    engines: {node: '>=4'}
+
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
@@ -2998,6 +3078,9 @@ packages:
 
   multiformats@14.0.5:
     resolution: {integrity: sha512-vbIm83F2yZ1pWJGS0yl0ysracIvv56LtbrIyiIQHoLdYDJOMoLfVFsXhh9DUH4SFdkdkFhucyWniihsNzVEjkQ==}
+
+  multiformats@14.0.8:
+    resolution: {integrity: sha512-zIqvA0fi/y9lFJhC0IysGlXKMBB3CDDi2Ppp8NWiR85dwRhyl54rVK8ZtjfeNz/f1tdq+aZSFIF5aRGpDjZ6Bw==}
 
   mute-stream@4.0.0:
     resolution: {integrity: sha512-gSrprq0fJ3EiOErzjdIZrjysVVmJ4uu1QWfCDss5LypA5OXvrMje5Ym5z6V6RLyJ2eF87lasX7t6a0AnFvZblg==}
@@ -3306,6 +3389,21 @@ packages:
     resolution: {integrity: sha512-nDywThFk1i4BQK4twPQ6TA4RT8bDY96yeuCVBWL3ePARCiEKDRSrNGbFIgUJpLp+XeIR65v8ra7WuJOFUBtkMA==}
     engines: {node: '>=8'}
 
+  playwright-core@1.65.1:
+    resolution: {integrity: sha512-hqPpz7blSMPxWVdoeE1yiBSzXsKiVOd2k+kjCvmUywD2GPO2Dd9HfcWnq9NN0GHbNZDFgZ9JfBFr+X5/BLo0qw==}
+    engines: {node: '>=20'}
+    hasBin: true
+
+  playwright-test@16.0.0:
+    resolution: {integrity: sha512-gSt6Nyu3aaW/w2ak1cdyIlrC4a7kDW9vlXzOYzpoJsg8xPuDZDZ92L4cX8xgLCPKc1CqC0f9rIoC5ze4gpuW3Q==}
+    engines: {node: '>=24.0.0'}
+    hasBin: true
+    peerDependencies:
+      cf: ^1.0.0-rc.1
+    peerDependenciesMeta:
+      cf:
+        optional: true
+
   postcss-selector-parser@6.0.10:
     resolution: {integrity: sha512-IQ7TZdoaqbT+LCpShg46jnZVlhWD2w6iQYAcYXfHARZ7X1t/UGhhceQDs5X0cGqKvYlHNOuv7Oa1xmb0oQuA3w==}
     engines: {node: '>=4'}
@@ -3439,6 +3537,10 @@ packages:
 
   run-parallel@1.2.0:
     resolution: {integrity: sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==}
+
+  sade@1.8.1:
+    resolution: {integrity: sha512-xal3CZX1Xlo/k4ApwCFrHVACi9fBqJ7V+mwhBsuf/1IOKbBy098Fex+Wa/5QMubw09pSZ/u8EY8PWgevJsXp1A==}
+    engines: {node: '>=6'}
 
   safe-buffer@5.2.1:
     resolution: {integrity: sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==}
@@ -3805,6 +3907,17 @@ packages:
 
   viem@2.57.20:
     resolution: {integrity: sha512-LSvREzKT7xFXpmxW2YFJ/OtcZRkSGLp5zywSgadBf0qQCeqh2+FxHHWyrS2zEG7ZfBWQQvk8HI1i4HPzSMD14g==}
+    peerDependencies:
+      mppx: '>=0.17.0'
+      typescript: '>=5.0.4'
+    peerDependenciesMeta:
+      mppx:
+        optional: true
+      typescript:
+        optional: true
+
+  viem@2.58.8:
+    resolution: {integrity: sha512-kQBP9j2gkL1j+eCIV3qs+cfS2NvltlNX2BcJ2C1qKlCIjP6ibqvIlZSJN8OJ+CR8j/pJpUUoG97179upObcw3g==}
     peerDependencies:
       mppx: '>=0.17.0'
       typescript: '>=5.0.4'
@@ -4533,6 +4646,13 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
+  '@filoz/keysmith@0.2.0(viem@2.58.8(typescript@7.0.2)(zod@4.6.7))':
+    dependencies:
+      '@noble/curves': 2.4.0
+      '@noble/hashes': 2.4.0
+      cborg: 6.2.1
+      viem: 2.58.8(typescript@7.0.2)(zod@4.6.7)
+
   '@filoz/synapse-core@0.11.0(typescript@7.0.2)(viem@2.57.20(typescript@7.0.2)(zod@4.6.7))':
     dependencies:
       '@hugomrdias/commp-wasm': 0.1.4
@@ -4755,13 +4875,13 @@ snapshots:
     dependencies:
       '@ipld/dag-cbor': 11.0.0
       cborg: 7.0.0
-      multiformats: 14.0.5
+      multiformats: 14.0.8
       varint: 6.0.0
 
   '@ipld/dag-cbor@11.0.0':
     dependencies:
       cborg: 7.0.0
-      multiformats: 14.0.5
+      multiformats: 14.0.8
 
   '@ipld/dag-cbor@9.2.7':
     dependencies:
@@ -4770,7 +4890,7 @@ snapshots:
 
   '@ipld/dag-pb@4.2.0':
     dependencies:
-      multiformats: 14.0.5
+      multiformats: 14.0.8
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
@@ -4805,7 +4925,7 @@ snapshots:
       '@multiformats/dns': 1.0.15
       '@multiformats/multiaddr': 13.0.3
       main-event: 1.0.5
-      multiformats: 14.0.5
+      multiformats: 14.0.8
       progress-events: 1.1.0
       uint8arraylist: 3.0.2
 
@@ -4814,7 +4934,7 @@ snapshots:
       '@libp2p/interface': 3.3.0
       '@multiformats/multiaddr': 13.0.3
       interface-datastore: 10.0.1
-      multiformats: 14.0.5
+      multiformats: 14.0.8
       weald: 1.1.3
 
   '@modelcontextprotocol/core@2.3.1':
@@ -4860,13 +4980,13 @@ snapshots:
   '@multiformats/multiaddr@13.0.3':
     dependencies:
       '@chainsafe/is-ip': 2.1.0
-      multiformats: 14.0.5
+      multiformats: 14.0.8
       uint8-varint: 3.0.0
       uint8arrays: 6.1.1
 
   '@multiformats/murmur3@2.2.8':
     dependencies:
-      multiformats: 14.0.5
+      multiformats: 14.0.8
 
   '@napi-rs/wasm-runtime@1.2.6(@emnapi/core@2.0.0-beta.2)(@emnapi/runtime@2.0.0-beta.2)':
     dependencies:
@@ -4884,6 +5004,10 @@ snapshots:
   '@noble/curves@1.9.7':
     dependencies:
       '@noble/hashes': 1.8.0
+
+  '@noble/curves@2.4.0':
+    dependencies:
+      '@noble/hashes': 2.4.0
 
   '@noble/hashes@1.8.0': {}
 
@@ -5799,7 +5923,7 @@ snapshots:
       it-all: 3.0.11
       it-filter: 3.1.6
       it-merge: 3.0.15
-      multiformats: 14.0.5
+      multiformats: 14.0.8
 
   brace-expansion@5.0.13:
     dependencies:
@@ -5830,6 +5954,10 @@ snapshots:
 
   cborg@5.1.11: {}
 
+  cborg@6.1.2: {}
+
+  cborg@6.2.1: {}
+
   cborg@7.0.0: {}
 
   chai@6.3.0: {}
@@ -5837,6 +5965,10 @@ snapshots:
   chalk@5.6.2: {}
 
   chokidar@5.0.0:
+    dependencies:
+      readdirp: 5.1.1
+
+  chokidar@6.0.0:
     dependencies:
       readdirp: 5.1.1
 
@@ -6010,6 +6142,8 @@ snapshots:
 
   es-module-lexer@2.3.2: {}
 
+  esbuild-plugin-wasm@1.1.0: {}
+
   esbuild@0.28.2:
     optionalDependencies:
       '@esbuild/aix-ppc64': 0.28.2
@@ -6078,6 +6212,8 @@ snapshots:
       strip-final-newline: 4.0.0
       yoctocolors: 2.2.0
 
+  exit-hook@5.1.0: {}
+
   expect-type@1.4.0: {}
 
   exsolve@1.2.0: {}
@@ -6117,6 +6253,11 @@ snapshots:
   figures@6.1.0:
     dependencies:
       is-unicode-supported: 2.1.0
+
+  filecoin-encryption-envelope@0.1.1:
+    dependencies:
+      cborg: 6.1.2
+      zod: 4.6.7
 
   fill-range@7.1.1:
     dependencies:
@@ -6191,7 +6332,7 @@ snapshots:
   interface-blockstore@7.0.1:
     dependencies:
       interface-store: 8.0.0
-      multiformats: 14.0.5
+      multiformats: 14.0.8
 
   interface-datastore@10.0.1:
     dependencies:
@@ -6217,7 +6358,7 @@ snapshots:
       it-batch: 3.0.11
       it-first: 3.0.11
       it-parallel-batch: 3.0.11
-      multiformats: 14.0.5
+      multiformats: 14.0.8
       progress-events: 1.1.0
       rabin-wasm: 0.1.5(supports-color@10.2.2)
       uint8arraylist: 3.0.2
@@ -6441,6 +6582,8 @@ snapshots:
       lightningcss-win32-arm64-msvc: 1.33.0
       lightningcss-win32-x64-msvc: 1.33.0
 
+  lilconfig@3.1.5: {}
+
   locate-path@3.0.0:
     dependencies:
       p-locate: 3.0.0
@@ -6524,6 +6667,8 @@ snapshots:
     optionalDependencies:
       typescript: 7.0.2
 
+  mri@1.2.0: {}
+
   ms@2.1.3: {}
 
   ms@4.0.0-nightly.202508271359: {}
@@ -6552,6 +6697,8 @@ snapshots:
   multiformats@13.4.2: {}
 
   multiformats@14.0.5: {}
+
+  multiformats@14.0.8: {}
 
   mute-stream@4.0.0: {}
 
@@ -6718,6 +6865,22 @@ snapshots:
     dependencies:
       find-up: 3.0.0
 
+  playwright-core@1.65.1: {}
+
+  playwright-test@16.0.0:
+    dependencies:
+      '@jridgewell/trace-mapping': 0.3.31
+      chokidar: 6.0.0
+      esbuild: 0.28.2
+      esbuild-plugin-wasm: 1.1.0
+      exit-hook: 5.1.0
+      lilconfig: 3.1.5
+      path-browserify: 1.0.1
+      playwright-core: 1.65.1
+      sade: 1.8.1
+      std-env: 4.3.0
+      tinyglobby: 0.2.17
+
   postcss-selector-parser@6.0.10:
     dependencies:
       cssesc: 3.0.0
@@ -6864,6 +7027,10 @@ snapshots:
   run-parallel@1.2.0:
     dependencies:
       queue-microtask: 1.2.3
+
+  sade@1.8.1:
+    dependencies:
+      mri: 1.2.0
 
   safe-buffer@5.2.1: {}
 
@@ -7142,7 +7309,7 @@ snapshots:
 
   uint8arrays@6.1.1:
     dependencies:
-      multiformats: 14.0.5
+      multiformats: 14.0.8
 
   undici-types@8.9.0: {}
 
@@ -7211,6 +7378,23 @@ snapshots:
   varint@6.0.0: {}
 
   viem@2.57.20(typescript@7.0.2)(zod@4.6.7):
+    dependencies:
+      '@noble/curves': 1.9.1
+      '@noble/hashes': 1.8.0
+      '@scure/bip32': 1.7.0
+      '@scure/bip39': 1.6.0
+      abitype: 1.2.3(typescript@7.0.2)(zod@4.6.7)
+      isows: 1.0.7(ws@8.21.0)
+      ox: 0.14.67(typescript@7.0.2)(zod@4.6.7)
+      ws: 8.21.0
+    optionalDependencies:
+      typescript: 7.0.2
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+      - zod
+
+  viem@2.58.8(typescript@7.0.2)(zod@4.6.7):
     dependencies:
       '@noble/curves': 1.9.1
       '@noble/hashes': 1.8.0
