@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.9.0](https://github.com/filecoin-project/agents/compare/filecoin-cli-v0.8.0...filecoin-cli-v0.9.0) (2026-11-28)
+
+
+### Features
+
+* **filecoin-cli:** add --include-hidden to put ([#176](https://github.com/filecoin-project/agents/issues/176)) ([429bfd9](https://github.com/filecoin-project/agents/commit/429bfd940585d9b3c622295e802e8aa2db68a95c))
+
+
+### Bug Fixes
+
+* **filecoin-cli:** bound CAR header and section reads in get ([d919b0a](https://github.com/filecoin-project/agents/commit/d919b0a5a9491cff6f83729e0e4ea853796da135)), closes [#178](https://github.com/filecoin-project/agents/issues/178)
+* **filecoin-cli:** reject a symlink as the input of put ([#171](https://github.com/filecoin-project/agents/issues/171)) ([5500a07](https://github.com/filecoin-project/agents/commit/5500a077280e67cd4d64611239f2865517d840a8))
+* **filecoin-cli:** reject special files and backslash names in put ([#173](https://github.com/filecoin-project/agents/issues/173)) ([d2667f4](https://github.com/filecoin-project/agents/commit/d2667f46756db6b3d2f63e16cb9dde2a12cfb6c3))
+* **filecoin-cli:** report every symlink when put rejects a folder ([#170](https://github.com/filecoin-project/agents/issues/170)) ([c9ef3f2](https://github.com/filecoin-project/agents/commit/c9ef3f2f0673a7da062042cecd9084be124e6d78))
+
 ## [0.8.0](https://github.com/filecoin-project/agents/compare/filecoin-cli-v0.7.0...filecoin-cli-v0.8.0) (2026-11-17)
 
 
