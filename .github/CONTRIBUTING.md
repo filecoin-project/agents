@@ -51,7 +51,7 @@ release-please reads these messages to pick each release's version and write its
 | `docs`, `style`, `chore`, `refactor`, `test`, `build`, `ci` | Hidden                   | No                               |
 
 - **Breaking changes.** Add `!` after the type or scope, such as `feat(filecoin-cli)!: rename the put command`, and describe the change and the migration in a `BREAKING CHANGE:` footer. The footer text goes into the changelog. Below 1.0.0, a breaking change bumps the minor version. A breaking change triggers a release even with a hidden type.
-- **One component per commit.** Keep each commit to the files of one component, and scope it with that component: `filecoin-cli`, `filecoin-api-client`, `filecoin-api`, `filecoin-app`, or `filecoin-plugin`. [`release-please-config.json`](release-please-config.json) maps each directory to its component. Split a change that spans components into one commit for each. A commit that touches only root files takes no scope. The scope only labels the changelog entry. release-please decides which components a commit releases from the files it changes, not from its scope.
+- **One component per commit.** Keep each commit to the files of one component, and scope it with that component: `filecoin-cli`, `filecoin-api-client`, `encryption`, `filecoin-api`, `filecoin-app`, or `filecoin-plugin`. [`release-please-config.json`](release-please-config.json) maps each directory to its component. Split a change that spans components into one commit for each. A commit that touches only root files takes no scope. The scope only labels the changelog entry. release-please decides which components a commit releases from the files it changes, not from its scope.
 - **Shipped text.** Pick the type by what users get, not by the file extension. The skills in `plugins/filecoin/skills/` are what the plugin ships, so a skill change is `feat` when it teaches agents something new and `fix` when it corrects or clarifies what agents do. Keep `docs` for text that changes no behavior, such as a README. A `docs` commit gets no version and no changelog entry, so a skill change typed `docs` stays unreleased until the next `feat` or `fix` to the plugin. Until then, Claude Code keeps installed plugins on the old skill, because it updates a plugin only when the version changes.
 - **Root-only changes.** A commit that touches only files outside `packages/`, `apps/`, and `plugins/`, such as `.github/`, `scripts/`, or `docs/`, releases nothing. A change to `pnpm-lock.yaml` alone releases nothing either. A change to `packages/filecoin-api-client` releases the client and also redeploys filecoin-app, which bundles it.
 
@@ -71,6 +71,7 @@ release-please reads these messages to pick each release's version and write its
 | --------------------- | ------------------------------ | -------------------------------- | ----------------------------------------------------------- |
 | `filecoin-cli`        | `packages/filecoin-cli`        | `filecoin-cli-v<version>`        | npm as `filecoin`, and a GitHub release                     |
 | `filecoin-api-client` | `packages/filecoin-api-client` | `filecoin-api-client-v<version>` | npm as `@filecoin-project/api-client`, and a GitHub release |
+| `encryption`          | `packages/encryption`          | `encryption-v<version>`          | npm as `@filecoin-project/encryption`, and a GitHub release |
 | `filecoin-api`        | `apps/filecoin-api`            | `filecoin-api-v<version>`        | A GitHub release                                            |
 | `filecoin-app`        | `apps/filecoin-app`            | `filecoin-app-v<version>`        | A GitHub release                                            |
 | `filecoin-plugin`     | `plugins/filecoin`             | `filecoin-plugin-v<version>`     | A GitHub release, and the marketplaces serve it from `main` |
@@ -89,7 +90,7 @@ The first release of each component was 0.1.0, because `initial-version` overrid
 1. Open the release pull request for the component, titled like `chore(main): release filecoin-cli 0.6.0`.
 2. Read the changelog in its diff. Fix any wrong entry at its source, as the next section describes, instead of editing the pull request.
 3. Wait for its checks to pass, then squash-merge it.
-4. Check that the Release workflow tagged the release, created the GitHub release, and, for an npm package, published the version to npm: [`filecoin`](https://www.npmjs.com/package/filecoin) or [`@filecoin-project/api-client`](https://www.npmjs.com/package/@filecoin-project/api-client).
+4. Check that the Release workflow tagged the release, created the GitHub release, and, for an npm package, published the version to npm: [`filecoin`](https://www.npmjs.com/package/filecoin), [`@filecoin-project/api-client`](https://www.npmjs.com/package/@filecoin-project/api-client), or [`@filecoin-project/encryption`](https://www.npmjs.com/package/@filecoin-project/encryption).
 
 Leave a release pull request open to batch more changes into that release. Each push to `main` updates it.
 
@@ -119,7 +120,7 @@ Leave a release pull request open to batch more changes into that release. Each 
 
 ### Publishing credentials
 
-The workflow publishes through [npm trusted publishing](https://docs.npmjs.com/trusted-publishers), so the repository holds no npm token. `filecoin` and `@filecoin-project/api-client` each have a trusted publisher on npmjs.com for the `filecoin-project/agents` repository and the `release.yml` workflow.
+The workflow publishes through [npm trusted publishing](https://docs.npmjs.com/trusted-publishers), so the repository holds no npm token. `filecoin` and `@filecoin-project/api-client` each have a trusted publisher on npmjs.com for the `filecoin-project/agents` repository and the `release.yml` workflow. `@filecoin-project/encryption` needs one after its first publish by hand, as [Add a component](#add-a-component) describes.
 
 The publish job runs in the `npm` GitHub environment, which GitHub creates on the first run. Naming `npm` as the trusted publisher's optional environment limits publishing to that job, and the environment's protection rules can later require a reviewer or the `main` branch.
 
