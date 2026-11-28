@@ -27,7 +27,6 @@ Don't guess flags or fields. The installed CLI describes itself:
 
 ## Rules
 
-- `put` skips dot-named files and folders inside a folder. `--include-hidden` stores all of them, and files such as `.env`, `.git`, and `.DS_Store` become public. Pass it only when the user asks to publish them all, and pass it to both `put --dry-run` and `put`. When the user wants only some of them, such as `.well-known`, copy just the files to publish into a new folder and put that folder with the flag.
 - Never ask for or pass a private key. Logging in needs the user: `auth_required` or `login_pending` means relay the `by: "user"` step (the Filecoin Pay console approval link) and stop. After the user approves, run `filecoin login --check` once to confirm. On `session_conflict`, keep the saved key unless the user agrees to approve a new one.
 - `insufficient_funds` and `session_expired` also need the user. Relay their `next` steps.
 - `filecoin delete <target>` takes a ref, a PieceCID, a root CID, or a `<dataSetId>/<pieceId>` from `ls`. A CID removes every copy the wallet pays for, including other tools' copies. Run it with `--dry-run` first and show the user the copies. It needs `--yes`. On `confirmation_required`, relay the reason and rerun with `--yes` only after the user agrees.
