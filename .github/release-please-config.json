@@ -24,6 +24,7 @@
   "packages": {
     "packages/filecoin-cli": { "component": "filecoin-cli" },
     "packages/filecoin-api-client": { "component": "filecoin-api-client" },
+    "packages/encryption": { "component": "encryption" },
     "apps/filecoin-api": {
       "component": "filecoin-api",
       "extra-files": [
